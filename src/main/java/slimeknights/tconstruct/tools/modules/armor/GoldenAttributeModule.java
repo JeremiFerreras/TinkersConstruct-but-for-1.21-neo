@@ -9,6 +9,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
@@ -43,13 +45,12 @@ import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
  * Module that applies an attribute conditioned on the amount of gold the player is wearing.
  * Used for {@link slimeknights.tconstruct.tools.data.ModifierIds#goldGuard} and {@link slimeknights.tconstruct.tools.data.ModifierIds#chrysophilite} */
-public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> dataKey, Attribute attribute, UUID uuid, Operation operation, LevelingValue amount, ModifierCondition<IToolStackView> condition) implements ModifierModule, EquipmentChangeModifierHook, TooltipModifierHook, ConditionalModule<IToolStackView> {
+public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> dataKey, Attribute attribute, ResourceLocation uuid, Operation operation, LevelingValue amount, ModifierCondition<IToolStackView> condition) implements ModifierModule, EquipmentChangeModifierHook, TooltipModifierHook, ConditionalModule<IToolStackView> {
   private static final List<ModuleHook<?>> DEFAULT_HOOKS = HookProvider.<GoldenAttributeModule>defaultHooks(ModifierHooks.EQUIPMENT_CHANGE, ModifierHooks.TOOLTIP);
   public static final RecordLoadable<GoldenAttributeModule> LOADER = RecordLoadable.create(
     new AttributeUniqueField<>(GoldenAttributeModule::unique),
@@ -65,7 +66,7 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
   public GoldenAttributeModule {}
 
   private GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> dataKey, Attribute attribute, Operation operation, LevelingValue amount, ModifierCondition<IToolStackView> condition) {
-    this(unique, dataKey, attribute, UUID.nameUUIDFromBytes(unique.getBytes()), operation, amount, condition);
+    this(unique, dataKey, attribute, ResourceLocation.fromNamespaceAndPath("tconstruct", unique), operation, amount, condition);
   }
 
   @Override
@@ -91,12 +92,12 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
   /** Updates the attribute on the given entity */
   private void updateAttribute(LivingEntity living, int totalGold) {
     // update attribute
-    AttributeInstance instance = living.getAttribute(attribute);
+    AttributeInstance instance = living.getAttribute(BuiltInRegistries.ATTRIBUTE.wrapAsHolder(attribute));
     if (instance != null) {
       if (instance.getModifier(uuid) != null) {
         instance.removeModifier(uuid);
       }
-      instance.addTransientModifier(new AttributeModifier(uuid, unique, amount.compute(totalGold), operation));
+      instance.addTransientModifier(new AttributeModifier(uuid, amount.compute(totalGold), operation));
       checkHealth(living, instance);
     }
   }
