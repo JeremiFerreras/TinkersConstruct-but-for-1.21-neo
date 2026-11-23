@@ -1,8 +1,11 @@
 package slimeknights.tconstruct.tools.client;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.Vec3;
 
 // TOOD: can this be removed?
@@ -72,8 +75,27 @@ public class RayTracer {
    * @return the block reach distance
    */
   public static double getBlockReachDistance(Player player) {
-    // PORT: Attributes.BLOCK_INTERACTION_RANGE moved into vanilla as Attributes.BLOCK_INTERACTION_RANGE, and
-    // Player#blockInteractionRange() reads it on both sides, so no client/server split is needed
-    return player.blockInteractionRange();
+    return player.level().isClientSide ? ClientOnly.getBlockReachDistanceClient() : player instanceof ServerPlayer serverPlayer ? getBlockReachDistanceServer(serverPlayer) : 5D;
+  }
+
+  /**
+   * Gets the block reach distance from the server
+   *
+   * @return the block reach distance from the server
+   */
+  private static double getBlockReachDistanceServer(ServerPlayer player) {
+    return player.getAttributeValue(Attributes.BLOCK_INTERACTION_RANGE);
+  }
+
+  private static class ClientOnly {
+    /**
+     * Gets the block reach distance from the client
+     * @return the block reach distance from the client
+     */
+    private static double getBlockReachDistanceClient() {
+      Player player = Minecraft.getInstance().player;
+      assert player != null;
+      return player.blockInteractionRange();
+    }
   }
 }

@@ -1,19 +1,18 @@
 package slimeknights.tconstruct.gadgets.entity;
 
 import lombok.Getter;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.Items;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -116,7 +115,7 @@ public class FancyArmorStandEntity extends ArmorStand {
 
   /** Sets the type of this stand */
   public void setStandType(StandType type) {
-    this.entityData.set(VARIANT, type.ordinal());
+    this.entityData.set(VARIANT, type.getId());
   }
 
   /** Makes this armor stand small */
@@ -143,15 +142,14 @@ public class FancyArmorStandEntity extends ArmorStand {
   }
 
   @Override
-  public ItemEntity spawnAtLocation(ItemStack stack, float offsetY) {
-    if (stack.is(Items.ARMOR_STAND)) {
-      ItemStack replacement = new ItemStack(getStandItem());
-      if (this.hasCustomName()) {
-        replacement.set(DataComponents.CUSTOM_NAME, this.getCustomName());
-      }
-      stack = replacement;
+  protected void brokenByPlayer(ServerLevel level, DamageSource source) {
+    ItemStack stack = new ItemStack(getStandItem());
+    if (this.hasCustomName()) {
+      stack.set(DataComponents.CUSTOM_NAME, this.getCustomName());
     }
-    return super.spawnAtLocation(stack, offsetY);
+    Block.popResource(this.level(), this.blockPosition(), stack);
+
+    this.brokenByAnything(level, source);
   }
 
 

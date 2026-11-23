@@ -1,8 +1,8 @@
 package slimeknights.tconstruct.tools.logic;
 
-import net.minecraft.core.dispenser.BlockSource;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Position;
+import net.minecraft.core.dispenser.BlockSource;
 import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -19,6 +19,7 @@ public class ModifiableShurikenDispenserBehavior extends DefaultDispenseItemBeha
 
   @Override
   public ItemStack execute(BlockSource source, ItemStack stack) {
+    // 1.21: BlockSource is a record, use the record accessors (level/pos/state) instead of the old getter methods
     Level level = source.level();
     Position position = DispenserBlock.getDispensePosition(source);
     Direction direction = source.state().getValue(DispenserBlock.FACING);

@@ -24,7 +24,6 @@ public enum ModifierModelLoadable implements Loadable<ModifierModel> {
   /** Loadable for a list of {@link #OPTIONAL_TYPE} of size 2 or more. */
   public static final Loadable<List<ModifierModel>> LIST = OPTIONAL_TYPE.list(2);
 
-  @SuppressWarnings("removal")
   @Override
   public ModifierModel convert(JsonElement element, String key, TypedMap context) {
     // array? load as compound

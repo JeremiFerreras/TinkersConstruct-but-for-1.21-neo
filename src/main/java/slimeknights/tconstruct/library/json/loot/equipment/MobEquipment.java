@@ -1,7 +1,5 @@
 package slimeknights.tconstruct.library.json.loot.equipment;
 
-
-import net.minecraft.core.registries.Registries;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -82,7 +80,6 @@ public record MobEquipment(EquipmentSlot slot, IJsonPredicate<Item> match, ItemO
     // since this is risky, only do this if we know we want our equipment there
     if (!apply.isEmpty()) {
       ServerLevelAccessor level = event.getLevel();
-      // PORT: finalizeSpawn no longer takes a CompoundTag spawn tag
       mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()), event.getSpawnType(), event.getSpawnData());
 
       // apply any replacements
@@ -95,6 +92,7 @@ public record MobEquipment(EquipmentSlot slot, IJsonPredicate<Item> match, ItemO
   }
 
   /** Applies this replacement to the target */
+  @SuppressWarnings("deprecation")
   public void apply(Mob mob) {
     // check if the slot is replaceable
     if (match.matches(mob.getItemBySlot(slot).getItem())) {

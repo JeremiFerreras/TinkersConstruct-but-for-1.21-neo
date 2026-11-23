@@ -162,10 +162,10 @@ public abstract class AbstractMaterialDataProvider extends GenericDataProvider {
   /** @deprecated {@link MaterialBuilder#compat(String...)} */
   @Deprecated
   protected void addCompatMaterial(MaterialId location, int tier, int order, boolean craftable, String... tagNames) {
-    ICondition condition = new OrCondition(List.of(Stream.concat(
+    ICondition condition = new OrCondition(Stream.concat(
       Stream.of(ConfigEnabledCondition.FORCE_INTEGRATION_MATERIALS),
       Arrays.stream(tagNames).map(AbstractMaterialDataProvider::tagExistsCondition)
-    ).toArray(ICondition[]::new)));
+    ).collect(Collectors.toList()));
     addMaterial(location, tier, order, craftable, false, condition);
   }
 
@@ -279,7 +279,7 @@ public abstract class AbstractMaterialDataProvider extends GenericDataProvider {
 
     /** Adds the compat material conditions */
     private MaterialBuilder compat(Stream<ICondition> conditions) {
-      return condition(new OrCondition(List.of(Stream.concat(Stream.of(ConfigEnabledCondition.FORCE_INTEGRATION_MATERIALS), conditions).toArray(ICondition[]::new))));
+      return condition(new OrCondition(Stream.concat(Stream.of(ConfigEnabledCondition.FORCE_INTEGRATION_MATERIALS), conditions).toList()));
     }
 
     /** Adds the compat material conditions */
@@ -361,7 +361,7 @@ public abstract class AbstractMaterialDataProvider extends GenericDataProvider {
       if (count == 1) {
         condition = conditions.get(0);
       } else if (count > 1) {
-        condition = new AndCondition(List.of(conditions.toArray(new ICondition[0])));
+        condition = new AndCondition(List.copyOf(conditions));
       }
       JsonRedirect[] redirects = null;
       if (!this.redirects.isEmpty()) {

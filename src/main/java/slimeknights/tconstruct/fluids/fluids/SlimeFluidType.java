@@ -8,7 +8,7 @@ import slimeknights.tconstruct.common.TinkerTags;
 
 import java.util.function.Consumer;
 
-/** Fluid Type that does not affect slimes */
+/** Fluid type that does not drown slimes, so slimes and magma cubes can live in their own liquid. */
 public class SlimeFluidType extends TextureFluidType {
   public SlimeFluidType(Properties properties) {
     super(properties);
@@ -19,6 +19,7 @@ public class SlimeFluidType extends TextureFluidType {
     return !entity.getType().is(TinkerTags.EntityTypes.SLIMES);
   }
 
+  /** Slime fluid type with the flipped in-world texture, used by ichor. */
   public static class Inverted extends SlimeFluidType {
     public Inverted(Properties properties) {
       super(properties);

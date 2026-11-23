@@ -95,6 +95,8 @@ import java.util.function.Supplier;
  */
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ToolModel implements IUnbakedGeometry<ToolModel> {
+  /** Location used for baking dynamic models, name does not matter so just using a constant */
+  private static final ResourceLocation BAKE_LOCATION = TConstruct.getResource("dynamic_model_baking");
   /** Shared loader instance */
   public static final IGeometryLoader<ToolModel> LOADER = ToolModel::deserialize;
   /** Set of transform types that make tools render small */
@@ -363,7 +365,7 @@ public class ToolModel implements IUnbakedGeometry<ToolModel> {
   }
 
   /**
-   * Same as {@link #bake(IGeometryBakingContext, ModelBaker, Function, ModelState, ItemOverrides, ResourceLocation)}, but uses fewer arguments and does not require an instance
+   * Same as {@link #bake(IGeometryBakingContext, ModelBaker, Function, ModelState, ItemOverrides)}, but uses fewer arguments and does not require an instance
    * @param owner           Model configuration
    * @param spriteGetter    Sprite getter function
    * @param largeTransforms Transform to apply to the large parts. If null, only generates small parts
@@ -507,13 +509,13 @@ public class ToolModel implements IUnbakedGeometry<ToolModel> {
   }
 
   @Override
-  public BakedModel bake(IGeometryBakingContext owner, ModelBaker baker, Function<Material,TextureAtlasSprite> spriteGetter, ModelState modelTransform, ItemOverrides overrides, ResourceLocation modelLocation) {
+  public BakedModel bake(IGeometryBakingContext owner, ModelBaker baker, Function<Material,TextureAtlasSprite> spriteGetter, ModelState modelTransform, ItemOverrides overrides) {
     // warn on deprecated keys
     if (showTraits) {
-      TConstruct.LOG.warn("Using deprecated key 'show_traits' in tool model {}, use 'constant' in modifier model maps with 'tconstruct:trait' instead", modelLocation);
+      TConstruct.LOG.warn("Using deprecated key 'show_traits' in tool model {}, use 'constant' in modifier model maps with 'tconstruct:trait' instead", BAKE_LOCATION);
     }
     if (!firstModifiers.isEmpty()) {
-      TConstruct.LOG.warn("Using deprecated key 'first_modifiers' in tool model {}, use 'constant' in modifier model maps with 'tconstruct:crafted' and an early ID instead", modelLocation);
+      TConstruct.LOG.warn("Using deprecated key 'first_modifiers' in tool model {}, use 'constant' in modifier model maps with 'tconstruct:crafted' and an early ID instead", BAKE_LOCATION);
     }
 
     // default is just a single part named tool, no material
@@ -533,7 +535,7 @@ public class ToolModel implements IUnbakedGeometry<ToolModel> {
       }
     }
     // load modifier models
-    ModifierModelMap modifierModels = ModifierModelMapManager.INSTANCE.getModelsForTool(spriteGetter, this.modifierModels, smallModifierRoots, largeModifierRoots, modelLocation);
+    ModifierModelMap modifierModels = ModifierModelMapManager.INSTANCE.getModelsForTool(spriteGetter, this.modifierModels, smallModifierRoots, largeModifierRoots, BAKE_LOCATION);
 
     // build transforms for various states
     // large tools are stretched in X and Y by 200%, and get a special offset
@@ -822,11 +824,12 @@ public class ToolModel implements IUnbakedGeometry<ToolModel> {
       ItemStack ammo;
       ModDataNBT persistentData = tool.getPersistentData();
       if (ammoKey != null && persistentData.contains(ammoKey, Tag.TAG_COMPOUND)) {
-        ammo = ItemStack.of(persistentData.getCompound(ammoKey));
+        CompoundTag ammoTag = persistentData.getCompound(ammoKey);
+        ammo = ItemStack.parseOptional(Minecraft.getInstance().level.registryAccess(), ammoTag);
         builder.add(ammo.getItem());
-        CompoundTag tag = ammo.getTag();
-        if (tag != null) {
-          builder.add(tag);
+        // 1.21: item NBT moved to components; the serialized ammo tag is the stable cache discriminator
+        if (!ammoTag.isEmpty()) {
+          builder.add(ammoTag);
         }
       } else {
         ammo = ItemStack.EMPTY;

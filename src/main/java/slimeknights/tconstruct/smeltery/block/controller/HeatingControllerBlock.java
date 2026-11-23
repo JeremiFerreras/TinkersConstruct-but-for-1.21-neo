@@ -2,21 +2,23 @@ package slimeknights.tconstruct.smeltery.block.controller;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.HitResult;
 import slimeknights.mantle.block.RetexturedBlock;
 import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.smeltery.block.entity.controller.HeatingStructureBlockEntity;
 import slimeknights.tconstruct.smeltery.block.entity.multiblock.MultiblockResult;
+import slimeknights.tconstruct.smeltery.menu.HeatingStructureContainerMenu;
 import slimeknights.tconstruct.smeltery.network.StructureErrorPositionPacket;
 
 import javax.annotation.Nullable;
@@ -32,13 +34,21 @@ public abstract class HeatingControllerBlock extends ControllerBlock {
 
   @Override
   protected boolean openGui(Player player, Level world, BlockPos pos) {
-    super.openGui(player, world, pos);
-    // only need to update if holding the proper items
     if (!world.isClientSide && world.getBlockEntity(pos) instanceof HeatingStructureBlockEntity te) {
+      BlockState state = world.getBlockState(pos);
+      if (state.is(this) && canOpenGui(state) && player instanceof ServerPlayer serverPlayer) {
+        // same as InventoryBlock#openGui, but the open data also carries the melting slot count so the client menu gets as many slots as the server menu
+        HeatingStructureContainerMenu.open(serverPlayer, te);
+      } else {
+        super.openGui(player, world, pos);
+      }
+      // only need to update if holding the proper items
       MultiblockResult result = te.getStructureResult();
       if (!result.isSuccess() && te.showDebugBlockBorder(player)) {
         TinkerNetwork.getInstance().sendTo(new StructureErrorPositionPacket(pos, result.getPos()), player);
       }
+    } else {
+      super.openGui(player, world, pos);
     }
     return true;
   }
@@ -56,7 +66,7 @@ public abstract class HeatingControllerBlock extends ControllerBlock {
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, @Nullable BlockGetter pLevel, List<Component> tooltip, TooltipFlag flag) {
+  public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
     RetexturedHelper.addTooltip(stack, tooltip, flag);
   }
 
@@ -65,7 +75,7 @@ public abstract class HeatingControllerBlock extends ControllerBlock {
     super.setPlacedBy(world, pos, state, placer, stack);
     if (world.getBlockEntity(pos) instanceof HeatingStructureBlockEntity te) {
       // update controller texture
-      if (stack.hasTag()) {
+      if (!stack.isComponentsPatchEmpty()) {
         te.updateTexture(RetexturedHelper.getTextureName(stack));
       }
       // check structure
@@ -83,7 +93,7 @@ public abstract class HeatingControllerBlock extends ControllerBlock {
   }
 
   @Override
-  public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter world, BlockPos pos, Player player) {
+  public ItemStack getCloneItemStack(LevelReader world, BlockPos pos, BlockState state) {
     return RetexturedBlock.getPickBlock(world, pos, state);
   }
 

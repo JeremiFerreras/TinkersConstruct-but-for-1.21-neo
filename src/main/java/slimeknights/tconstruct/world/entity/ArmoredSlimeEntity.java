@@ -1,10 +1,13 @@
 package slimeknights.tconstruct.world.entity;
 
+import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
@@ -20,10 +23,12 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
+import slimeknights.tconstruct.TConstruct;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDate;
@@ -36,9 +41,9 @@ public abstract class ArmoredSlimeEntity extends Slime {
   public ArmoredSlimeEntity(EntityType<? extends ArmoredSlimeEntity> type, Level world) {
     super(type, world);
     if (!world.isClientSide) {
-      tryAddAttribute(Attributes.ARMOR, new AttributeModifier("tconstruct.small_armor_bonus", 3, Operation.MULTIPLY_TOTAL));
-      tryAddAttribute(Attributes.ARMOR_TOUGHNESS, new AttributeModifier("tconstruct.small_toughness_bonus", 3, Operation.MULTIPLY_TOTAL));
-      tryAddAttribute(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier("tconstruct.small_resistence_bonus", 3, Operation.MULTIPLY_TOTAL));
+      tryAddAttribute(Attributes.ARMOR, new AttributeModifier(TConstruct.getResource("small_armor_bonus"), 3, Operation.ADD_MULTIPLIED_TOTAL));
+      tryAddAttribute(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(TConstruct.getResource("small_toughness_bonus"), 3, Operation.ADD_MULTIPLIED_TOTAL));
+      tryAddAttribute(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier(TConstruct.getResource("small_resistence_bonus"), 3, Operation.ADD_MULTIPLIED_TOTAL));
     }
     this.entityData.set(METAL, false);
   }
@@ -50,9 +55,9 @@ public abstract class ArmoredSlimeEntity extends Slime {
   }
 
   @Override
-  protected void defineSynchedData() {
-    super.defineSynchedData();
-    this.entityData.define(METAL, false);
+  protected void defineSynchedData(SynchedEntityData.Builder builder) {
+    super.defineSynchedData(builder);
+    builder.define(METAL, false);
   }
 
   @Override
@@ -79,7 +84,7 @@ public abstract class ArmoredSlimeEntity extends Slime {
   }
 
   /** Adds an attribute if possible */
-  private void tryAddAttribute(Attribute attribute, AttributeModifier modifier) {
+  private void tryAddAttribute(Holder<Attribute> attribute, AttributeModifier modifier) {
     AttributeInstance instance = getAttribute(attribute);
     if (instance != null) {
       instance.addTransientModifier(modifier);
@@ -88,8 +93,8 @@ public abstract class ArmoredSlimeEntity extends Slime {
 
   @Nullable
   @Override
-  public SpawnGroupData finalizeSpawn(ServerLevelAccessor pLevel, DifficultyInstance difficulty, MobSpawnType pReason, @Nullable SpawnGroupData pSpawnData, @Nullable CompoundTag pDataTag) {
-    SpawnGroupData spawnData = super.finalizeSpawn(pLevel, difficulty, pReason, pSpawnData, pDataTag);
+  public SpawnGroupData finalizeSpawn(ServerLevelAccessor pLevel, DifficultyInstance difficulty, MobSpawnType pReason, @Nullable SpawnGroupData pSpawnData) {
+    SpawnGroupData spawnData = super.finalizeSpawn(pLevel, difficulty, pReason, pSpawnData);
     this.setCanPickUpLoot(this.random.nextFloat() < (0.55f * difficulty.getSpecialMultiplier()));
 
     this.populateDefaultEquipmentSlots(random, difficulty);
@@ -110,7 +115,7 @@ public abstract class ArmoredSlimeEntity extends Slime {
   protected abstract void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty);
 
   @Override
-  protected void populateDefaultEquipmentEnchantments(RandomSource random, DifficultyInstance difficulty) {
+  protected void populateDefaultEquipmentEnchantments(ServerLevelAccessor level, RandomSource random, DifficultyInstance difficulty) {
     // no-op, unused
   }
 
@@ -126,7 +131,7 @@ public abstract class ArmoredSlimeEntity extends Slime {
   }
 
   @Override
-  protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
+  protected void dropCustomDeathLoot(ServerLevel serverLevel, DamageSource source, boolean recentlyHit) {
     ItemStack stack = this.getItemBySlot(EquipmentSlot.HEAD);
     float slotChance = this.getEquipmentDropChance(EquipmentSlot.HEAD);
     // items do not always drop if a large slime, increases chance of inheritance
@@ -135,8 +140,8 @@ public abstract class ArmoredSlimeEntity extends Slime {
       slotChance = 0.25f;
     }
     boolean alwaysDrop = slotChance > 1.0F;
-    if (!stack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(stack) && (recentlyHit || alwaysDrop)) {
-      if ((this.random.nextFloat() - (looting * 0.01f)) < slotChance) {
+    if (!stack.isEmpty() && !EnchantmentHelper.has(stack, EnchantmentEffectComponents.PREVENT_EQUIPMENT_DROP) && (recentlyHit || alwaysDrop)) {
+      if (this.random.nextFloat() < slotChance) {
         if (!alwaysDrop && stack.isDamageableItem()) {
           int max = stack.getMaxDamage();
           stack.setDamageValue(max - this.random.nextInt(1 + this.random.nextInt(Math.max(max - 3, 1))));
@@ -197,9 +202,12 @@ public abstract class ArmoredSlimeEntity extends Slime {
     }
 
     // calling supper does the split reason again, but we need to transfer armor
+    // from LivingEntity
+    if (reason == Entity.RemovalReason.KILLED || reason == Entity.RemovalReason.DISCARDED) {
+      this.triggerOnDeathMobEffects(reason);
+    }
     // from Entity
     this.setRemoved(reason);
-    this.invalidateCaps();
     // from LivingEntity
     this.brain.clearMemories();
   }

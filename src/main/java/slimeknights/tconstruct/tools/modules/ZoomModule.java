@@ -1,7 +1,5 @@
 package slimeknights.tconstruct.tools.modules;
 
-import javax.annotation.Nullable;
-
 import lombok.Getter;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
@@ -91,19 +89,18 @@ public enum ZoomModule implements ModifierModule, GeneralInteractionModifierHook
 
   /** Starts spyglass style zooming */
   private static void setZoom(ModifierEntry modifier, LivingEntity living, float amount) {
-    TinkerDataCapability.getOptional(living).ifPresent(data -> data.computeIfAbsent(TinkerDataKeys.FOV_MODIFIER).set(modifier.getId(), amount));
-  }
-
-  /** Stops zooming */
-  private static void stopZoom(ModifierEntry modifier, @Nullable TinkerDataCapability.Holder tinkerData) {
-    if (tinkerData != null) {
-      tinkerData.computeIfAbsent(TinkerDataKeys.FOV_MODIFIER).remove(modifier.getId());
+    TinkerDataCapability.Holder data = TinkerDataCapability.getData(living);
+    if (data != null) {
+      data.computeIfAbsent(TinkerDataKeys.FOV_MODIFIER).set(modifier.getId(), amount);
     }
   }
 
   /** Stops zooming */
   private static void stopZoom(ModifierEntry modifier, LivingEntity entity) {
-    stopZoom(modifier, TinkerDataCapability.getOptional(entity).orElse(null));
+    TinkerDataCapability.Holder data = TinkerDataCapability.getData(entity);
+    if (data != null) {
+      data.computeIfAbsent(TinkerDataKeys.FOV_MODIFIER).remove(modifier.getId());
+    }
   }
 
 
@@ -162,10 +159,10 @@ public enum ZoomModule implements ModifierModule, GeneralInteractionModifierHook
 
   @Override
   public void onUnequip(IToolStackView tool, ModifierEntry modifier, EquipmentChangeContext context) {
-    if (context.getEntity().level().isClientSide) {
+    if (context.getEntity().level().isClientSide) { // TODO(neoport): context.getEntity() cascade from EquipmentContext port
       IToolStackView replacement = context.getReplacementTool();
       if (replacement == null || replacement.getModifierLevel(modifier.getModifier()) == 0) {
-        stopZoom(modifier, context.getTinkerData());
+        stopZoom(modifier, context.getEntity()); // TODO(neoport): context.getEntity() cascade from EquipmentContext port
       }
     }
   }

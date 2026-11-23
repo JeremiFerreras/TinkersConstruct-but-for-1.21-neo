@@ -1,11 +1,11 @@
 package slimeknights.tconstruct.library.recipe.tinkerstation;
 
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
@@ -19,8 +19,10 @@ import java.util.List;
  * If you wish to use {@link #isFiltered()} or {@link #showUnfocused()} in the crafting table, this must not be implemented on the recipe, and instead returned from {@link slimeknights.tconstruct.library.recipe.display.VanillaFilteredRecipe}.
  */
 public interface IDisplayCraftingTinkering extends IDisplayToolTinkering, CraftingRecipe {
-  /** Gets the ID for the crafting table tab. */
-  @Override
+  /**
+   * Gets the ID for the crafting table tab.
+   * In 1.21 recipes no longer carry their ID, so this is used to wrap the display recipe in a {@link net.minecraft.world.item.crafting.RecipeHolder} for JEI.
+   */
   ResourceLocation getId();
 
   /** Gets the ID for the tinker station tab. */
@@ -58,17 +60,17 @@ public interface IDisplayCraftingTinkering extends IDisplayToolTinkering, Crafti
   }
 
   @Override
-  default boolean matches(CraftingContainer container, Level pLevel) {
+  default boolean matches(CraftingInput container, Level pLevel) {
     return false;
   }
 
   @Override
-  default ItemStack getResultItem(RegistryAccess access) {
+  default ItemStack getResultItem(HolderLookup.Provider access) {
     return ItemStack.EMPTY;
   }
 
   @Override
-  default ItemStack assemble(CraftingContainer container, RegistryAccess access) {
+  default ItemStack assemble(CraftingInput container, HolderLookup.Provider access) {
     return ItemStack.EMPTY;
   }
 

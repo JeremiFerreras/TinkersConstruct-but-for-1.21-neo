@@ -5,12 +5,8 @@ import slimeknights.tconstruct.library.recipe.material.ShapelessMaterialsRecipe;
 
 import java.util.List;
 
-/** Logic to show {@link ShapelessMaterialsRecipe} in JEI */
+/** Logic to show {@link ShapelessMaterialsRecipe} in JEI. */
 public class ShapelessMaterialsExtension extends MaterialsCraftingExtension<ShapelessMaterialsRecipe> {
-  ShapelessMaterialsExtension(ShapelessMaterialsRecipe recipe) {
-    super(recipe);
-  }
-
   /** Gets the material slots for the given recipe */
   @Override
   protected int[] getMaterialSlots(ShapelessMaterialsRecipe recipe, Ingredient part) {

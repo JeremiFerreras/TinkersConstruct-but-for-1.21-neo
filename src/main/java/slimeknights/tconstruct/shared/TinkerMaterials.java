@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.shared;
 
-import net.neoforged.neoforge.registries.DeferredItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTab.ItemDisplayParameters;
 import net.minecraft.world.item.CreativeModeTab.Output;
@@ -9,7 +8,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
-import net.neoforged.neoforge.common.crafting.CraftingHelper;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import slimeknights.mantle.registration.object.FenceBuildingBlockObject;
@@ -59,15 +57,15 @@ public final class TinkerMaterials extends TinkerModule {
   public static final MetalItemObject soulsteel   = BLOCKS.registerMetal("soulsteel", metalBuilder(MapColor.COLOR_BROWN).noOcclusion(), BLOCK_ITEM, ITEM_PROPS);
 
   // nuggets
-  public static final DeferredItem<Item> copperNugget = ITEMS.register("copper_nugget", ITEM_PROPS);
-  public static final DeferredItem<Item> netheriteNugget = ITEMS.register("netherite_nugget", ITEM_PROPS);
-  public static final DeferredItem<Item> debrisNugget = ITEMS.register("debris_nugget", TOOLTIP_ITEM);
+  public static final ItemObject<Item> copperNugget = ITEMS.register("copper_nugget", ITEM_PROPS);
+  public static final ItemObject<Item> netheriteNugget = ITEMS.register("netherite_nugget", ITEM_PROPS);
+  public static final ItemObject<Item> debrisNugget = ITEMS.register("debris_nugget", TOOLTIP_ITEM);
 
   // non-metal
-  public static final DeferredItem<Item> necroticBone = ITEMS.register("necrotic_bone", TOOLTIP_ITEM);
-  public static final DeferredItem<Item> venombone = ITEMS.register("venombone", TOOLTIP_ITEM);
-  public static final DeferredItem<Item> blazingBone = ITEMS.register("blazing_bone", TOOLTIP_ITEM);
-  public static final DeferredItem<Item> necroniumBone = ITEMS.register("necronium_bone", TOOLTIP_ITEM);
+  public static final ItemObject<Item> necroticBone = ITEMS.register("necrotic_bone", TOOLTIP_ITEM);
+  public static final ItemObject<Item> venombone = ITEMS.register("venombone", TOOLTIP_ITEM);
+  public static final ItemObject<Item> blazingBone = ITEMS.register("blazing_bone", TOOLTIP_ITEM);
+  public static final ItemObject<Item> necroniumBone = ITEMS.register("necronium_bone", TOOLTIP_ITEM);
   public static final FenceBuildingBlockObject nahuatl = BLOCKS.registerFenceBuilding("nahuatl", builder(MapColor.COLOR_PURPLE, SoundType.WOOD).instrument(NoteBlockInstrument.BASS).requiresCorrectToolForDrops().strength(25f, 300f), BLOCK_ITEM);
   public static final FenceBuildingBlockObject blazewood = BLOCKS.registerFenceBuilding("blazewood", woodBuilder(MapColor.TERRACOTTA_RED).requiresCorrectToolForDrops().strength(25f, 300f).lightLevel(s -> 7), BLOCK_ITEM);
 
@@ -77,9 +75,6 @@ public final class TinkerMaterials extends TinkerModule {
   @SubscribeEvent
   void registerSerializers(RegisterEvent event) {
     if (event.getRegistryKey() == Registries.RECIPE_SERIALIZER) {
-      CraftingHelper.register(MaterialIngredient.Serializer.ID, MaterialIngredient.Serializer.INSTANCE);
-      CraftingHelper.register(MaterialValueIngredient.Serializer.ID, MaterialValueIngredient.Serializer.INSTANCE);
-
       MaterialPredicate.LOADER.register(getResource("variant"), MaterialVariantPredicate.LOADER);
       MaterialPredicate.LOADER.register(getResource("id"), MaterialIdPredicate.LOADER);
       MaterialPredicate.LOADER.register(getResource("has_part"), MaterialHasPartPredicate.LOADER);

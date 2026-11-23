@@ -1,6 +1,9 @@
 package slimeknights.tconstruct.tools.modules.armor;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup.RegistryLookup;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
@@ -12,6 +15,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.CommonHooks;
 import slimeknights.mantle.client.TooltipKey;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.tconstruct.library.json.LevelingInt;
@@ -47,17 +51,22 @@ public record SoulSpeedModule(LevelingInt level, ModifierCondition<IToolStackVie
   }
 
   @Override
-  public int updateEnchantmentLevel(IToolStackView tool, ModifierEntry modifier, Enchantment enchantment, int level) {
-    if (enchantment == Enchantments.SOUL_SPEED && condition.matches(tool, modifier)) {
+  public int updateEnchantmentLevel(IToolStackView tool, ModifierEntry modifier, Holder<Enchantment> enchantment, int level) {
+    if (enchantment.is(Enchantments.SOUL_SPEED) && condition.matches(tool, modifier)) {
       level += this.level.compute(modifier);
     }
     return level;
   }
 
   @Override
-  public void updateEnchantments(IToolStackView tool, ModifierEntry modifier, Map<Enchantment, Integer> map) {
+  public void updateEnchantments(IToolStackView tool, ModifierEntry modifier, Map<Holder<Enchantment>,Integer> map) {
     if (condition.matches(tool, modifier)) {
-      EnchantmentModifierHook.addEnchantment(map, Enchantments.SOUL_SPEED, this.level.compute(modifier));
+      // 1.21: enchantments are a datapack registry, so the holder must be resolved at runtime rather than statically.
+      // Matches how vanilla's own enchantment iteration resolves a lookup when it lacks registry context.
+      RegistryLookup<Enchantment> lookup = CommonHooks.resolveLookup(Registries.ENCHANTMENT);
+      if (lookup != null) {
+        lookup.get(Enchantments.SOUL_SPEED).ifPresent(soulSpeed -> EnchantmentModifierHook.addEnchantment(map, soulSpeed, this.level.compute(modifier)));
+      }
     }
   }
 

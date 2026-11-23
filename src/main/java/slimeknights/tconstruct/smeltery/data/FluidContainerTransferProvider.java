@@ -50,11 +50,11 @@ public class FluidContainerTransferProvider extends AbstractFluidContainerTransf
   @SuppressWarnings("removal")
   protected void addContainerlessEmpty(String name, String domain, FluidOutput fluid) {
     ResourceLocation id = ResourceLocation.fromNamespaceAndPath(domain, name);
-    addTransfer(domain + '_' + name, new EmptyFluidContainerTransfer(ItemNameIngredient.from(id), ItemOutput.EMPTY, fluid), new ItemExistsCondition(id));
+    addTransfer(domain + '_' + name, new EmptyFluidContainerTransfer(ItemNameIngredient.from(id).toVanilla(), ItemOutput.EMPTY, fluid), new ItemExistsCondition(id));
   }
 
   @Override
   public String getName() {
-    return "Tinkers' Construct Fluid Container Transfer";
+    return "Neo Tinkers Fluid Container Transfer";
   }
 }

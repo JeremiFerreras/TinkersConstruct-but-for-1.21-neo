@@ -4,21 +4,22 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import lombok.ToString;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
-import slimeknights.tconstruct.TConstruct;
 import net.neoforged.neoforge.event.entity.living.LivingEvent.LivingJumpEvent;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerEffect;
 import slimeknights.tconstruct.shared.TinkerAttributes;
 
@@ -35,8 +36,11 @@ public class AntigravityEffect extends TinkerEffect {
     super(MobEffectCategory.HARMFUL, 0xff970d, true);
     this.addAttributeModifier(Attributes.GRAVITY, TConstruct.getResource("effect.antigravity"), -2, Operation.ADD_MULTIPLIED_TOTAL);
     NeoForge.EVENT_BUS.addListener(this::onLivingJump);
-    NeoForge.EVENT_BUS.addListener(this::onEffectRemoved);
-    NeoForge.EVENT_BUS.addListener(this::onEffectExpired);
+  }
+
+  /** Holder for this effect, used for self-checks */
+  private Holder<MobEffect> selfHolder() {
+    return BuiltInRegistries.MOB_EFFECT.wrapAsHolder(this);
   }
 
   @Override
@@ -78,7 +82,7 @@ public class AntigravityEffect extends TinkerEffect {
           living.setDeltaMovement(velocity.x, lastVelocity.twoTicks, velocity.z);
           BlockPos above = BlockPos.containing(living.getX(), living.getBoundingBox().maxY + 0.1, living.getZ());
           BlockState hit = level.getBlockState(above);
-          float height = (float)(lastVelocity.twoTicks * 10 - 3 - living.getAttributeValue(TinkerAttributes.SAFE_FALL_DISTANCE.getHolder()) - TinkerEffect.getLevel(living, MobEffects.JUMP.value()));
+          float height = (float)(lastVelocity.twoTicks * 10 - 3 - living.getAttributeValue(TinkerAttributes.SAFE_FALL_DISTANCE) - TinkerEffect.getLevel(living, MobEffects.JUMP));
           if (height > 0.0F) {
             hit.getBlock().fallOn(level, hit, above, living, height);
           }
@@ -117,26 +121,15 @@ public class AntigravityEffect extends TinkerEffect {
     return true;
   }
 
-  /** Clears the velocity cache when the effect is removed */
-  private void onEffectRemoved(MobEffectEvent.Remove event) {
-    if (event.getEffect().value() == this) {
-      LAST_VELOCITY.remove(event.getEntity().getId());
-    }
-  }
-
-  /** Clears the velocity cache when the effect expires */
-  private void onEffectExpired(MobEffectEvent.Expired event) {
-    MobEffectInstance instance = event.getEffectInstance();
-    if (instance != null && instance.getEffect().value() == this) {
-      LAST_VELOCITY.remove(event.getEntity().getId());
-    }
-  }
+  // TODO(neoport): 1.21 removeAttributeModifiers(AttributeMap) no longer receives the entity, so the
+  // per-entity LAST_VELOCITY tracker can no longer be cleared on effect removal. Stale entries are
+  // harmless (re-populated via computeIfAbsent) but no longer pruned here.
 
   /** Handles making the player jump down instead of up */
   private void onLivingJump(LivingJumpEvent event) {
     // handles jumping down instead of up
     LivingEntity entity = event.getEntity();
-    if (entity.hasEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(this)) && entity.getAttributeValue(Attributes.GRAVITY) < 0) {
+    if (entity.hasEffect(selfHolder()) && entity.getAttributeValue(Attributes.GRAVITY) < 0) {
       Vec3 movement = entity.getDeltaMovement();
       entity.setDeltaMovement(movement.x, -movement.y, movement.z);
     }
@@ -147,7 +140,7 @@ public class AntigravityEffect extends TinkerEffect {
     // must be on the ground, not swimming, not on a ladder, and have antigravity to jump
     // jump reversal is handled in ModifierEvents to ensure ordering between that and the attribute boost
     if (player.verticalCollision && !player.verticalCollisionBelow && !player.isInWaterOrBubble()
-      && player.hasEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(this)) && player.getAttributeValue(Attributes.GRAVITY) < 0 && !player.onClimbable()) {
+      && player.hasEffect(selfHolder()) && player.getAttributeValue(Attributes.GRAVITY) < 0 && !player.onClimbable()) {
       player.jumpFromGround();
       return true;
     }

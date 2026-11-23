@@ -1,16 +1,17 @@
 package slimeknights.tconstruct.tools.recipe;
 
 import lombok.Getter;
+import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.BannerItem;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -18,9 +19,8 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BannerPattern;
+import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import net.minecraft.world.level.block.entity.BannerPatterns;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -105,15 +105,8 @@ public class BannerModifierRecipe implements ITinkerStationRecipe, IMultiRecipe<
 
   /** Gets the list of patterns from the banner stack */
   private static ListTag getBannerPatterns(ItemStack banner) {
-    // get the banner data
-    CompoundTag bannerData = BlockItem.getBlockEntityData(banner);
-    ListTag patterns;
-    if (bannerData != null) {
-      patterns = bannerData.getList("Patterns", Tag.TAG_COMPOUND);
-    } else {
-      patterns = new ListTag();
-    }
-    return patterns;
+    // get the banner data: convert the BANNER_PATTERNS component back into the legacy ListTag format BannerModule consumes
+    return bannerPatternsToListTag(banner.get(DataComponents.BANNER_PATTERNS));
   }
 
   @Override
@@ -166,6 +159,24 @@ public class BannerModifierRecipe implements ITinkerStationRecipe, IMultiRecipe<
     return ITinkerStationRecipe.success(tool, inv);
   }
 
+  /**
+   * Converts the 1.21 {@link BannerPatternLayers} component into the legacy banner {@link ListTag} format
+   * (entries with {@code Pattern} and {@code Color}) consumed by {@link BannerModule#copyPatterns}.
+   */
+  private static ListTag bannerPatternsToListTag(@Nullable BannerPatternLayers layers) {
+    ListTag patterns = new ListTag();
+    if (layers != null) {
+      for (BannerPatternLayers.Layer layer : layers.layers()) {
+        CompoundTag tag = new CompoundTag();
+        // store the pattern as its registry path, matching the convention used for the base pattern in BannerModule
+        tag.putString("Pattern", layer.pattern().unwrapKey().map(key -> key.location().getPath()).orElse(""));
+        tag.putInt("Color", layer.color().getId());
+        patterns.add(tag);
+      }
+    }
+    return patterns;
+  }
+
   @Override
   public RecipeSerializer<?> getSerializer() {
     return TinkerModifiers.bannerModifierSerializer.get();
@@ -177,21 +188,10 @@ public class BannerModifierRecipe implements ITinkerStationRecipe, IMultiRecipe<
   @Nullable
   private List<IDisplayModifierRecipe> displayRecipes;
 
-  /** Creates the tag for a single pattern with the given color */
-  private static CompoundTag createDisplayPatternTag(BannerPattern pattern, DyeColor color) {
-    ListTag singlePattern = new ListTag();
-    CompoundTag patternTag = new CompoundTag();
-    patternTag.putString("Pattern", pattern.getHashname());
-    patternTag.putInt("Color", color.getId());
-    singlePattern.add(patternTag);
-
-    // create NBT for the banner stacks
-    CompoundTag blockEntityData = new CompoundTag();
-    blockEntityData.put("Patterns", singlePattern);
-    BlockEntity.addEntityType(blockEntityData, BlockEntityType.BANNER);
-    CompoundTag stackTag = new CompoundTag();
-    stackTag.put("BlockEntityTag", blockEntityData);
-    return stackTag;
+  /** Creates the banner pattern component for a single pattern with the given color */
+  private static BannerPatternLayers createDisplayPatterns(Holder<BannerPattern> pattern, DyeColor color) {
+    // 1.21: banner patterns live in the BANNER_PATTERNS component instead of BlockEntityTag NBT
+    return new BannerPatternLayers(List.of(new BannerPatternLayers.Layer(pattern, color)));
   }
 
   @Override
@@ -224,19 +224,23 @@ public class BannerModifierRecipe implements ITinkerStationRecipe, IMultiRecipe<
         if (clearInput != Ingredient.EMPTY) {
           // we want a pattern on it to make it more clear what it does
           // but put a white pattern on the black banner for visibility
-          CompoundTag stackTag, stackTagBlack;
-          BannerPattern cross = BuiltInRegistries.BANNER_PATTERN.get(BannerPatterns.CROSS);
+          // 1.21: banner patterns are a data driven registry, so look up the cross through the registry access
+          BannerPatternLayers patterns, patternsBlack;
+          Holder<BannerPattern> cross = access.registryOrThrow(Registries.BANNER_PATTERN).getHolder(BannerPatterns.CROSS).orElse(null);
           if (cross != null) {
-            stackTag = createDisplayPatternTag(cross, DyeColor.BLACK);
-            stackTagBlack = createDisplayPatternTag(cross, DyeColor.WHITE);
+            patterns = createDisplayPatterns(cross, DyeColor.BLACK);
+            patternsBlack = createDisplayPatterns(cross, DyeColor.WHITE);
           } else {
-            stackTag = null;
-            stackTagBlack = null;
+            patterns = null;
+            patternsBlack = null;
           }
           // add the recipe to the end of the stream
           List<ItemStack> bannersWithPattern = banners.stream().map(stack -> {
             stack = stack.copy();
-            stack.setTag(stack.getItem() == Items.BLACK_BANNER ? stackTagBlack : stackTag);
+            BannerPatternLayers layers = stack.getItem() == Items.BLACK_BANNER ? patternsBlack : patterns;
+            if (layers != null) {
+              stack.set(DataComponents.BANNER_PATTERNS, layers);
+            }
             return stack;
           }).toList();
           recipes.add(new DisplayRecipe(id, toolInputs, bannersWithPattern, List.of(clearInput.getItems())));

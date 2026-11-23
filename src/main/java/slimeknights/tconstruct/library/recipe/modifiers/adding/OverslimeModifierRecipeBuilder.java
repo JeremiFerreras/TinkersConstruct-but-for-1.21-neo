@@ -1,22 +1,17 @@
 package slimeknights.tconstruct.library.recipe.modifiers.adding;
 
-import net.minecraft.advancements.AdvancementHolder;
-
-
-import net.minecraft.core.registries.Registries;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
+import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.recipe.data.AbstractRecipeBuilder;
 import slimeknights.tconstruct.common.TinkerTags;
-
-import java.util.function.Consumer;
 
 /**
  * Builder for overslime recipes
@@ -39,7 +34,7 @@ public class OverslimeModifierRecipeBuilder extends AbstractRecipeBuilder<Oversl
     if (stacks.length == 0) {
       throw new IllegalStateException("Empty ingredient not allowed");
     }
-    save(consumer, BuiltInRegistries.ITEM.getKey(stacks[0].getItem()));
+    save(consumer, Loadables.ITEM.getKey(stacks[0].getItem()));
   }
 
   @Override
@@ -47,8 +42,8 @@ public class OverslimeModifierRecipeBuilder extends AbstractRecipeBuilder<Oversl
     if (ingredient == Ingredient.EMPTY) {
       throw new IllegalStateException("Empty ingredient not allowed");
     }
-    AdvancementHolder advancementId = buildOptionalAdvancement(consumer, id, "modifiers");
-    consumer.accept(id, new OverslimeModifierRecipe(id, tools, ingredient, restoreAmount), advancementId);
+    AdvancementHolder advancement = buildOptionalAdvancement(id, "modifiers");
+    consumer.accept(id, new OverslimeModifierRecipe(id, tools, ingredient, restoreAmount), advancement);
   }
 
   /** Creates a crafting table overslime repair recipe */
@@ -56,8 +51,8 @@ public class OverslimeModifierRecipeBuilder extends AbstractRecipeBuilder<Oversl
     if (ingredient == Ingredient.EMPTY) {
       throw new IllegalStateException("Empty ingredient not allowed");
     }
-    AdvancementHolder advancementId = buildOptionalAdvancement(consumer, id, "modifiers");
-    consumer.accept(id, new OverslimeCraftingTableRecipe(id, tools, ingredient, restoreAmount), advancementId);
+    AdvancementHolder advancement = buildOptionalAdvancement(id, "modifiers");
+    consumer.accept(id, new OverslimeCraftingTableRecipe(id, tools, ingredient, restoreAmount), advancement);
     return this;
   }
 }

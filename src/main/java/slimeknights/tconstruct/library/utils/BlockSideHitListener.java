@@ -6,8 +6,6 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action;
-import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.bus.api.EventPriority;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability;
@@ -18,7 +16,6 @@ import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.Tin
  */
 public class BlockSideHitListener {
   private static final TinkerDataKey<Direction> HIT_FACE = TConstruct.createKey("hit_face");
-  private static final TinkerDataKey<Integer> LAST_XP = TConstruct.createKey("last_xp");
   @Getter
   private static Direction clientSideHit = Direction.UP;
   private static boolean init = false;
@@ -31,7 +28,6 @@ public class BlockSideHitListener {
     }
     init = true;
     NeoForge.EVENT_BUS.addListener(BlockSideHitListener::onLeftClickBlock);
-    NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, BlockSideHitListener::breakBlock);
   }
 
   /** Called when the player left-clicks a block to store the face */
@@ -52,14 +48,6 @@ public class BlockSideHitListener {
     }
   }
 
-  /** Called on block break to store the last break XP */
-  private static void breakBlock(BlockEvent.BreakEvent event) {
-    TinkerDataCapability.Holder data = TinkerDataCapability.getData(event.getPlayer());
-    if (data != null) {
-      data.put(LAST_XP, event.getExpToDrop());
-    }
-  }
-
   /**
    * Gets the side this player last hit, should return correct values in most modifier hooks related to block breaking
    * @param player  Player
@@ -74,14 +62,5 @@ public class BlockSideHitListener {
       return data.get(HIT_FACE, Direction.UP);
     }
     return Direction.UP;
-  }
-
-  /** Gets the last XP from the break block event */
-  public static int getLastXP(Player player) {
-    TinkerDataCapability.Holder data = TinkerDataCapability.getData(player);
-    if (data != null) {
-      return data.get(LAST_XP, 0);
-    }
-    return 0;
   }
 }

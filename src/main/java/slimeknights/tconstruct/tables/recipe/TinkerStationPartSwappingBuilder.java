@@ -14,7 +14,6 @@ import slimeknights.tconstruct.library.recipe.tinkerstation.building.ToolMateria
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 /** Builder for {@link TinkerStationPartSwapping} and {@link ToolMaterialSwappingRecipe} */
 @RequiredArgsConstructor(staticName = "tools")
@@ -50,16 +49,16 @@ public class TinkerStationPartSwappingBuilder extends AbstractRecipeBuilder<Tink
   }
 
   @Override
-  public void save(RecipeOutput consumer) {
-    save(consumer, Loadables.ITEM.getKey(tools.getItems()[0].getItem()));
+  public void save(RecipeOutput output) {
+    save(output, Loadables.ITEM.getKey(tools.getItems()[0].getItem()));
   }
 
   @Override
-  public void save(RecipeOutput consumer, ResourceLocation id) {
+  public void save(RecipeOutput output, ResourceLocation id) {
     if (fromTool) {
-      consumer.accept(id, new ToolMaterialSwappingRecipe(id, tools, maxStackSize, extraRequirements), null);
+      output.accept(id, new ToolMaterialSwappingRecipe(id, tools, extraRequirements), null);
     } else {
-      consumer.accept(id, new TinkerStationPartSwapping(id, tools, maxStackSize, extraRequirements), null);
+      output.accept(id, new TinkerStationPartSwapping(id, tools, maxStackSize, extraRequirements), null);
     }
   }
 }

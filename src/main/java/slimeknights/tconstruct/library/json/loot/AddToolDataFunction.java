@@ -1,7 +1,6 @@
 package slimeknights.tconstruct.library.json.loot;
 
 import com.google.common.collect.ImmutableList;
-import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import lombok.experimental.Accessors;
@@ -12,6 +11,8 @@ import net.minecraft.world.level.storage.loot.functions.LootItemConditionalFunct
 import net.minecraft.world.level.storage.loot.functions.LootItemFunction;
 import net.minecraft.world.level.storage.loot.functions.LootItemFunctionType;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
+import slimeknights.mantle.data.loadable.LoadableCodec;
+import slimeknights.mantle.data.loadable.primitive.FloatLoadable;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.library.materials.RandomMaterial;
@@ -27,10 +28,12 @@ import java.util.List;
 /** Loot function to add data to a tool. */
 public class AddToolDataFunction extends LootItemConditionalFunction {
   public static final ResourceLocation ID = TConstruct.getResource("add_tool_data");
-  public static final MapCodec<AddToolDataFunction> CODEC = RecordCodecBuilder.mapCodec(instance -> commonFields(instance).and(instance.group(
-    Codec.floatRange(0, 1).optionalFieldOf("damage_percent", 0f).forGetter(function -> function.damage),
-    RandomMaterial.LOADER.codec().listOf().optionalFieldOf("materials", List.of()).forGetter(function -> function.materials)
-  )).apply(instance, AddToolDataFunction::new));
+
+  /** Codec for this function */
+  public static final MapCodec<AddToolDataFunction> CODEC = RecordCodecBuilder.mapCodec(inst -> commonFields(inst).and(inst.group(
+    new LoadableCodec<>(FloatLoadable.PERCENT).optionalFieldOf("damage_percent", 0f).forGetter(f -> f.damage),
+    new LoadableCodec<>(RandomMaterial.LOADER.list(0)).optionalFieldOf("materials", List.of()).forGetter(f -> f.materials)
+  )).apply(inst, AddToolDataFunction::new));
 
   /** Percentage of damage on the tool, if 0 the tool is undamaged */
   private final float damage;
@@ -49,7 +52,7 @@ public class AddToolDataFunction extends LootItemConditionalFunction {
   }
 
   @Override
-  public LootItemFunctionType getType() {
+  public LootItemFunctionType<AddToolDataFunction> getType() {
     return TinkerTools.lootAddToolData.get();
   }
 

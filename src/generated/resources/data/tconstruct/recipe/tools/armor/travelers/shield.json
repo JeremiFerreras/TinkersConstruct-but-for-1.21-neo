@@ -8,7 +8,7 @@
         "type": "tconstruct:stat_type",
         "stat_type": "tconstruct:shield_core"
       },
-      "value": 1.0
+      "value": 1
     },
     "l": {
       "type": "tconstruct:material_value",
@@ -16,19 +16,39 @@
         "type": "tconstruct:stat_type",
         "stat_type": "tconstruct:cuirass"
       },
-      "value": 1.0
+      "value": 1
     },
     "s": {
-      "tag": "forge:rods/wooden"
+      "tag": "c:rods/wooden"
     }
   },
-  "parts": "cl",
+  "parts": [
+    {
+      "type": "tconstruct:material_value",
+      "material": {
+        "type": "tconstruct:stat_type",
+        "stat_type": "tconstruct:shield_core"
+      },
+      "value": 1
+    },
+    {
+      "type": "tconstruct:material_value",
+      "material": {
+        "type": "tconstruct:stat_type",
+        "stat_type": "tconstruct:cuirass"
+      },
+      "value": 1
+    }
+  ],
   "pattern": [
     "scs",
     "lcl"
   ],
   "result": {
-    "item": "tconstruct:travelers_shield"
-  },
-  "show_notification": true
+    "components": {
+      "tconstruct:tool_data": {}
+    },
+    "count": 1,
+    "id": "tconstruct:travelers_shield"
+  }
 }

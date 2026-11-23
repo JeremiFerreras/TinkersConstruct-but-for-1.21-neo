@@ -9,7 +9,6 @@ import net.minecraft.world.level.block.grower.TreeGrower;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.tconstruct.world.TinkerWorld;
 
-
 public class SlimeSaplingBlock extends SaplingBlock {
   private final FoliageType foliageType;
   public SlimeSaplingBlock(TreeGrower treeIn, FoliageType foliageType, Properties properties) {

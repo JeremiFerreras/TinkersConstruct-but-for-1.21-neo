@@ -15,6 +15,10 @@
     ]
   ],
   "result": {
+    "components": {
+      "tconstruct:tool_data": {}
+    },
+    "count": 1,
     "id": "tconstruct:flint_and_brick"
   }
 }

@@ -6,6 +6,7 @@ import lombok.Setter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -17,8 +18,9 @@ import slimeknights.tconstruct.library.recipe.alloying.IMutableAlloyTank;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 
 /**
  * Alloy tank that takes inputs from neighboring blocks
@@ -37,8 +39,10 @@ public class MixerAlloyTank implements IMutableAlloyTank {
   private int temperature = 0;
 
   // side tank cache
-  /** Cache of tanks for each of the sides */
-  private final Map<Direction,Optional<IFluidHandler>> inputs = new EnumMap<>(Direction.class);
+  /** Cache of present fluid handlers for each of the sides; absent key with present {@link #checked} entry means no handler */
+  private final Map<Direction,IFluidHandler> inputs = new EnumMap<>(Direction.class);
+  /** Set of sides already queried since the last refresh, so we can distinguish "no handler" from "not yet fetched" */
+  private final Set<Direction> checked = EnumSet.noneOf(Direction.class);
   /** Map of tank index to tank on the side */
   @Nullable
   private IFluidHandler[] indexedList = null;
@@ -64,9 +68,9 @@ public class MixerAlloyTank implements IMutableAlloyTank {
         int nextTank = 0;
         for (Direction direction : Direction.values()) {
           if (direction != Direction.DOWN) {
-            Optional<IFluidHandler> handler = inputs.getOrDefault(direction, Optional.empty());
-            if (handler.isPresent()) {
-              indexedList[nextTank] = handler.get();
+            IFluidHandler handler = inputs.get(direction);
+            if (handler != null) {
+              indexedList[nextTank] = handler;
               nextTank++;
             }
           }
@@ -119,32 +123,50 @@ public class MixerAlloyTank implements IMutableAlloyTank {
   }
 
   /**
-   * Refreshes neighboring tanks using NeoForge's block capability API.
+   * Refreshes the cached tanks if needed
+   * After calling this method, all five tank sides will have been fetched
    */
   private void checkTanks() {
+    // need world to do anything
     Level world = parent.getLevel();
-    if (world == null || !needsRefresh) return;
-    for (Direction direction : Direction.values()) {
-      if (direction != Direction.DOWN && !inputs.containsKey(direction)) {
-        BlockPos target = parent.getBlockPos().relative(direction);
-        if (world.getBlockState(target).is(TinkerTags.Blocks.ALLOYER_TANKS)) {
-          IFluidHandler handler = world.getCapability(Capabilities.FluidHandler.BLOCK, target, direction.getOpposite());
-          inputs.put(direction, Optional.ofNullable(handler));
-          if (handler != null) currentTanks++;
+    if (world == null) {
+      return;
+    }
+    if (needsRefresh) {
+      for (Direction direction : Direction.values()) {
+        // update each direction we are missing
+        if (direction != Direction.DOWN && !checked.contains(direction)) {
+          BlockPos target = parent.getBlockPos().relative(direction);
+          // limit by blocks as that gives the modpack more control, say they want to allow only scorched tanks
+          if (world.getBlockState(target).is(TinkerTags.Blocks.ALLOYER_TANKS)) {
+            // if we found a tank, increment the number of tanks
+            IFluidHandler capability = world.getCapability(Capabilities.FluidHandler.BLOCK, target, direction.getOpposite());
+            checked.add(direction);
+            if (capability != null) {
+              inputs.put(direction, capability);
+              currentTanks++;
+            }
+          }
         }
       }
+      needsRefresh = false;
     }
-    needsRefresh = false;
   }
 
   /**
-   * Called on block update to refresh a neighboring tank.
-   */
+   * Called on block update or when a capability invalidates to mark that a direction needs updates
+   * @param direction  Side updating
+   * @param checkInput If true, validates that the side contains an input before reducing tank count. False when invalidated through the capability
+   * */
   public void refresh(Direction direction, boolean checkInput) {
-    if (direction == Direction.DOWN) return;
-    Optional<IFluidHandler> old = inputs.get(direction);
-    if (!checkInput || (old != null && old.isPresent())) currentTanks--;
+    if (direction == Direction.DOWN) {
+      return;
+    }
+    if (!checkInput || inputs.get(direction) != null) {
+      currentTanks--;
+    }
     inputs.remove(direction);
+    checked.remove(direction);
     needsRefresh = true;
     indexedList = null;
   }

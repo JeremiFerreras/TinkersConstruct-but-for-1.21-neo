@@ -1,13 +1,12 @@
 package slimeknights.tconstruct.library.recipe.ingredient;
 
-import lombok.RequiredArgsConstructor;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
+import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.neoforged.neoforge.common.crafting.IngredientType;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -22,21 +21,27 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Item ingredient matching items with a block form in the given tag */
-@RequiredArgsConstructor
-public class BlockTagIngredient implements net.neoforged.neoforge.common.crafting.ICustomIngredient {
-  public static final ResourceLocation ID = TConstruct.getResource("block_tag");
-  public static final RecordLoadable<BlockTagIngredient> LOADER = RecordLoadable.create(
+public class BlockTagIngredient implements ICustomIngredient {
+  public static final net.minecraft.resources.ResourceLocation ID = TConstruct.getResource("block_tag");
+  /** Loadable for parsing and serializing this ingredient */
+  public static final RecordLoadable<BlockTagIngredient> LOADABLE = RecordLoadable.create(
     Loadables.BLOCK_TAG.requiredField("tag", i -> i.tag),
     BlockTagIngredient::new);
-  public static final IngredientType<BlockTagIngredient> TYPE = LoadableIngredientSerializer.type(LOADER);
+  /** Ingredient type instance */
+  // TODO(neoport): register this IngredientType on NeoForgeRegistries.Keys.INGREDIENT_TYPES under id tconstruct:block_tag
+  public static final IngredientType<BlockTagIngredient> TYPE = new LoadableIngredientSerializer<>(LOADABLE).type();
 
   private final TagKey<Block> tag;
   @Nullable
   private Set<Item> matchingItems;
 
+  public BlockTagIngredient(TagKey<Block> tag) {
+    this.tag = tag;
+  }
+
   @Override
-  public boolean test(ItemStack stack) {
-    return !stack.isEmpty() && getMatchingItems().contains(stack.getItem());
+  public boolean test(@Nullable ItemStack stack) {
+    return stack != null && getMatchingItems().contains(stack.getItem());
   }
 
   @Override
@@ -45,6 +50,7 @@ public class BlockTagIngredient implements net.neoforged.neoforge.common.craftin
   }
 
   /** Gets the ordered matching items set */
+  @SuppressWarnings("deprecation")
   private Set<Item> getMatchingItems() {
     if (matchingItems == null) {
       matchingItems = RegistryHelper.getTagValueStream(BuiltInRegistries.BLOCK, tag)
@@ -60,6 +66,7 @@ public class BlockTagIngredient implements net.neoforged.neoforge.common.craftin
     return getMatchingItems().stream().map(ItemStack::new);
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public IngredientType<?> getType() {
     return TYPE;

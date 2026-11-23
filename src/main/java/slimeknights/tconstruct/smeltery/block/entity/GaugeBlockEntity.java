@@ -11,8 +11,13 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.EmptyFluidHandler;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 
+import javax.annotation.Nullable;
+
 /** This class exists simply to allow us to have a block entity renderer for obsidian gauges. Though it is useful as a cache for the capability to render. */
 public class GaugeBlockEntity extends BlockEntity {
+  @Nullable
+  private IFluidHandler neighbor;
+  private boolean fetchedNeighbor = false;
   public GaugeBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
     super(type, pos, state);
   }
@@ -21,13 +26,18 @@ public class GaugeBlockEntity extends BlockEntity {
     this(TinkerSmeltery.gauge.get(), pos, state);
   }
 
-  /** Gets the neighboring fluid handler for rendering. */
+  /** Gets the neighbor fluid handler. Used mainly for rendering client side */
   public IFluidHandler getTank() {
     if (level == null) {
       return EmptyFluidHandler.INSTANCE;
     }
-    Direction side = getBlockState().getValue(BlockStateProperties.FACING);
-    IFluidHandler handler = level.getCapability(Capabilities.FluidHandler.BLOCK, getBlockPos().relative(side.getOpposite()), side);
-    return handler == null ? EmptyFluidHandler.INSTANCE : handler;
+    // if we have not fetched the neighbor, fetch it
+    if (!fetchedNeighbor) {
+      Direction side = getBlockState().getValue(BlockStateProperties.FACING);
+      neighbor = level.getCapability(Capabilities.FluidHandler.BLOCK, getBlockPos().relative(side.getOpposite()), side);
+      fetchedNeighbor = true;
+    }
+    // return tank or empty tank
+    return neighbor != null ? neighbor : EmptyFluidHandler.INSTANCE;
   }
 }

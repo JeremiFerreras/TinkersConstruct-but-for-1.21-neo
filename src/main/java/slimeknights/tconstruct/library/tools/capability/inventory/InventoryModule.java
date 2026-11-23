@@ -44,6 +44,8 @@ import slimeknights.tconstruct.library.tools.nbt.IToolContext;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ModDataNBT;
 import slimeknights.tconstruct.library.tools.nbt.ToolDataNBT;
+import slimeknights.tconstruct.library.tools.nbt.ToolStack;
+import slimeknights.tconstruct.library.utils.TagUtil;
 
 import javax.annotation.Nullable;
 import java.util.BitSet;
@@ -145,7 +147,7 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
       for (int i = 0; i < list.size(); i++) {
         CompoundTag compound = list.getCompound(i);
         if (compound.getInt(TAG_SLOT) == slot) {
-          return ItemStack.of(compound);
+          return readStack(compound);
         }
       }
     }
@@ -155,6 +157,9 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
   @Override
   public void setStack(IToolStackView tool, ModifierEntry modifier, int slot, ItemStack stack) {
     if (slot < getSlots(tool, modifier)) {
+      // stored tools never tick, so ensure a tool saved by an older version (e.g. placed straight from the cursor) is rebuilt before storing
+      // tools already stored when this tool was saved by an older version are updated when this tool rebuilds
+      ToolStack.updateDataVersion(stack);
       ListTag list;
       ModDataNBT modData = tool.getPersistentData();
       // if the tag exists, fetch it
@@ -173,6 +178,9 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
               compound.getAllKeys().clear();
               writeStack(stack, slot, compound);
             }
+            // in 1.21 the tool data is a copy of the item's data component, so put the list back to flush the
+            // mutation onto the backing stack. Mutating the list alone never marks the tool data dirty.
+            modData.put(key, list);
             return;
           // try to keep the stacks in order by inserting after the last slot smaller than the target
           } else if (listSlot < slot) {
@@ -184,7 +192,6 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
         return;
       } else {
         list = new ListTag();
-        modData.put(key, list);
       }
 
       // list did not contain the slot, so add it
@@ -197,6 +204,8 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
           list.add(insertIndex, compound);
         }
       }
+      // flush the mutated list back onto the backing stack, see above
+      modData.put(key, list);
     }
   }
 
@@ -208,7 +217,7 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
   public Component validate(IToolStackView tool, ModifierEntry modifier) {
     // don't validate if the module is not running
     if (condition.tool().matches(tool) && validationLevel.test(modifier.getLevel())) {
-      IModDataView persistentData = tool.getPersistentData();
+      ModDataNBT persistentData = tool.getPersistentData();
       ResourceLocation key = getKey(modifier.getModifier());
       int maxSlots = getSlots(tool, modifier);
       if (persistentData.contains(key, Tag.TAG_LIST)) {
@@ -223,6 +232,7 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
           for (int i = 0; i < listNBT.size(); i++) {
             freeSlots.set(listNBT.getCompound(i).getInt(TAG_SLOT), false);
           }
+          boolean changed = false;
           for (int i = 0; i < listNBT.size(); i++) {
             CompoundTag compoundNBT = listNBT.getCompound(i);
             if (compoundNBT.getInt(TAG_SLOT) >= maxSlots) {
@@ -232,8 +242,13 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
               } else {
                 freeSlots.set(free, false);
                 compoundNBT.putInt(TAG_SLOT, free);
+                changed = true;
               }
             }
+          }
+          // as in setStack, the list is a copy of the item's data component, so put it back to keep the re-homed slots
+          if (changed) {
+            persistentData.put(key, listNBT);
           }
         }
       }
@@ -258,6 +273,11 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
 
   /* Helpers */
 
+  /** Reads a stack from the given compound, the inverse of {@link #writeStack(ItemStack, int, CompoundTag)} */
+  static ItemStack readStack(CompoundTag compound) {
+    return ItemStack.parseOptional(TagUtil.registryAccess(), compound);
+  }
+
   /**
    * Writes a stack to NBT, including the slot
    * @param stack  Stack to write
@@ -266,7 +286,13 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
    * @return Tag written to, same as {@code compound}.
    */
   public static CompoundTag writeStack(ItemStack stack, int slot, CompoundTag compound) {
-    stack.save(compound);
+    // 1.21: ItemStack.save returns a new tag (a copy of the prefix with the item merged in) rather than writing into
+    // the one passed in. Callers such as setStack and SmeltingModule rewrite an entry that is already in the list, so
+    // copy the encoded item into compound to keep writing in place, as 1.20.1 did.
+    CompoundTag saved = (CompoundTag) stack.save(TagUtil.registryAccess());
+    for (String key : saved.getAllKeys()) {
+      compound.put(key, saved.get(key));
+    }
     compound.putInt(TAG_SLOT, slot);
     return compound;
   }
@@ -286,7 +312,7 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
           // slot must be valid
           int slot = compound.getInt(TAG_SLOT);
           if (slot < max) {
-            ItemStack stack = ItemStack.of(compound);
+            ItemStack stack = readStack(compound);
             if (!stack.isEmpty() && predicate.test(stack)) {
               return new StackMatch(stack, slot);
             }
@@ -314,7 +340,7 @@ public class InventoryModule implements ModifierModule, InventoryModifierHook, V
           // slot must be valid
           int slot = compound.getInt(TAG_SLOT);
           if (slot < max) {
-            parsed[slot] = ItemStack.of(compound);
+            parsed[slot] = readStack(compound);
           }
         }
         // add stacks into the list

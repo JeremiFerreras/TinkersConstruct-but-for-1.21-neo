@@ -10,7 +10,7 @@ import java.util.List;
 
 /** Interface for melting recipes that are displayable in JEI */
 public interface IDisplayableMeltingRecipe {
-  /** Gets the ID of this recipe, usually just a call to {@link net.minecraft.world.item.crafting.Recipe#getId} */
+  /** Gets the ID of this recipe, usually just the ID from {@link net.minecraft.world.item.crafting.RecipeHolder#id()} */
   ResourceLocation getRecipeId();
 
   /** List of input items to melt. Will be focus linked to  */

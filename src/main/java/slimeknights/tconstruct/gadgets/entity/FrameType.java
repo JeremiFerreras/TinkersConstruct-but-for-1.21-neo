@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.gadgets.entity;
 
-import lombok.Getter;
 import net.minecraft.util.StringRepresentable;
 
 import java.util.Locale;
@@ -16,9 +15,9 @@ public enum FrameType implements StringRepresentable {
   NETHERITE; // immune to fire and explosions
 
   private static final FrameType[] VALUES = values();
-  @Getter
   private final int id = ordinal();
 
+  /** Gets the saved id of this frame type */
   public int getId() {
     return id;
   }

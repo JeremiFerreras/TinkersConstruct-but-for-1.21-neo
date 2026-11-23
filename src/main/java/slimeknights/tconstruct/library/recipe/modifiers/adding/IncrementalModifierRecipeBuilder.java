@@ -1,7 +1,6 @@
 package slimeknights.tconstruct.library.recipe.modifiers.adding;
 
 import net.minecraft.advancements.AdvancementHolder;
-
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -13,8 +12,6 @@ import slimeknights.mantle.recipe.helper.ItemOutput;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
 import slimeknights.tconstruct.library.modifiers.util.LazyModifier;
-
-import java.util.function.Consumer;
 
 /** Recipe that supports not just adding multiple of an item, but also adding a partial amount */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
@@ -118,7 +115,7 @@ public class IncrementalModifierRecipeBuilder extends AbstractModifierRecipeBuil
     if (input == Ingredient.EMPTY) {
       throw new IllegalStateException("Must set input");
     }
-    AdvancementHolder advancementId = buildOptionalAdvancement(consumer, id, "modifiers");
-    consumer.accept(id, new IncrementalModifierRecipe(id, input, amountPerItem, neededPerLevel, tools, maxToolSize, result, ModifierEntry.VALID_LEVEL.range(minLevel, maxLevel), slots, leftover, allowCrystal, checkTraitLevel), advancementId);
+    AdvancementHolder advancement = buildOptionalAdvancement(id, "modifiers");
+    consumer.accept(id, new IncrementalModifierRecipe(id, input, amountPerItem, neededPerLevel, tools, maxToolSize, result, ModifierEntry.VALID_LEVEL.range(minLevel, maxLevel), slots, leftover, allowCrystal, checkTraitLevel), advancement);
   }
 }

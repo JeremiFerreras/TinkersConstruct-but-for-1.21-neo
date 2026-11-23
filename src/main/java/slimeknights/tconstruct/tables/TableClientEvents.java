@@ -14,12 +14,12 @@ import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.ClientEventBase;
 import slimeknights.tconstruct.shared.block.entity.TableBlockEntity;
 import slimeknights.tconstruct.tables.block.entity.chest.TinkersChestBlockEntity;
+import slimeknights.tconstruct.tables.item.TinkersChestBlockItem;
 import slimeknights.tconstruct.tables.client.inventory.CraftingStationScreen;
 import slimeknights.tconstruct.tables.client.inventory.ModifierWorktableScreen;
 import slimeknights.tconstruct.tables.client.inventory.PartBuilderScreen;
 import slimeknights.tconstruct.tables.client.inventory.TinkerChestScreen;
 import slimeknights.tconstruct.tables.client.inventory.TinkerStationScreen;
-import slimeknights.tconstruct.tables.item.TinkersChestBlockItem;
 
 @SuppressWarnings("unused")
 @EventBusSubscriber(modid=TConstruct.MOD_ID, value=Dist.CLIENT, bus=Bus.MOD)
@@ -33,7 +33,6 @@ public class TableClientEvents extends ClientEventBase {
     event.registerBlockEntityRenderer(TinkerTables.partBuilderTile.get(), tableRenderer);
   }
 
-  /** PORT: MenuScreens.register is private in 1.21, screens register through RegisterMenuScreensEvent */
   @SubscribeEvent
   static void registerScreens(final RegisterMenuScreensEvent event) {
     event.register(TinkerTables.craftingStationContainer.get(), CraftingStationScreen::new);

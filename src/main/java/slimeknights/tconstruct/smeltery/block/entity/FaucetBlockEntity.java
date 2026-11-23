@@ -3,27 +3,27 @@ package slimeknights.tconstruct.smeltery.block.entity;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.capabilities.BlockCapabilityCache;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
+
+import javax.annotation.Nullable;
 import slimeknights.tconstruct.library.recipe.FluidValues;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 import slimeknights.tconstruct.smeltery.network.FaucetActivationPacket;
 
 import static slimeknights.tconstruct.smeltery.block.FaucetBlock.FACING;
-
-import javax.annotation.Nullable;
 
 public class FaucetBlockEntity extends MantleBlockEntity {
   /** amount of MB to extract from the input at a time */
@@ -51,6 +51,13 @@ public class FaucetBlockEntity extends MantleBlockEntity {
   /** Used for pulse detection */
   private boolean lastRedstoneState = false;
 
+  /** Cached fluid handler of the input to the faucet */
+  @Nullable
+  private BlockCapabilityCache<IFluidHandler,Direction> inputHandler;
+  /** Cached fluid handler of the output from the faucet */
+  @Nullable
+  private BlockCapabilityCache<IFluidHandler,Direction> outputHandler;
+
   public FaucetBlockEntity(BlockPos pos, BlockState state) {
     this(TinkerSmeltery.faucet.get(), pos, state);
   }
@@ -64,32 +71,53 @@ public class FaucetBlockEntity extends MantleBlockEntity {
   /* Fluid handler */
 
   /**
-   * Finds the fluid handler on the given side using NeoForge's live block capability API.
-   * @param side side to check
-   * @return fluid handler, or null if none is available
+   * Creates a fluid handler cache for the given side
+   * @param side  Side to check
+   * @return  Capability cache
    */
-  @Nullable
-  private IFluidHandler findFluidHandler(Direction side) {
-    if (level == null) {
-      return null;
-    }
-    return level.getCapability(Capabilities.FluidHandler.BLOCK, worldPosition.relative(side), side.getOpposite());
-  }
-
-  private IFluidHandler getInputHandler() {
-    return findFluidHandler(getBlockState().getValue(FACING).getOpposite());
-  }
-
-  private IFluidHandler getOutputHandler() {
-    return findFluidHandler(Direction.DOWN);
+  private BlockCapabilityCache<IFluidHandler,Direction> createCache(Direction side) {
+    assert level instanceof ServerLevel;
+    return BlockCapabilityCache.create(Capabilities.FluidHandler.BLOCK, (ServerLevel) level, worldPosition.relative(side), side.getOpposite());
   }
 
   /**
-   * Called when a neighbor changes. No cached handler is retained.
+   * Gets the input fluid handler
+   * @return  Input fluid handler, or null if absent
+   */
+  @Nullable
+  private IFluidHandler getInputHandler() {
+    if (inputHandler == null) {
+      inputHandler = createCache(getBlockState().getValue(FACING).getOpposite());
+    }
+    return inputHandler.getCapability();
+  }
+
+  /**
+   * Gets the output fluid handler
+   * @return  Output fluid handler, or null if absent
+   */
+  @Nullable
+  private IFluidHandler getOutputHandler() {
+    if (outputHandler == null) {
+      outputHandler = createCache(Direction.DOWN);
+    }
+    return outputHandler.getCapability();
+  }
+
+  /**
+   * Called when a neighbor changes to invalidate the cached fluid handler
+   * @param neighbor  Neighbor position that changed
    */
   public void neighborChanged(BlockPos neighbor) {
-    // Queries use the live world capability, so there is nothing to invalidate.
+    // if the neighbor was below us, remove output
+    if (worldPosition.equals(neighbor.above())) {
+      outputHandler = null;
+      // neighbor behind us
+    } else if (worldPosition.equals(neighbor.relative(getBlockState().getValue(FACING)))) {
+      inputHandler = null;
+    }
   }
+
 
   /* Data */
 
@@ -271,11 +299,6 @@ public class FaucetBlockEntity extends MantleBlockEntity {
     }
   }
 
-  @Override
-  public AABB getRenderBoundingBox() {
-    return new AABB(worldPosition.getX(), worldPosition.getY() - 1, worldPosition.getZ(), worldPosition.getX() + 1, worldPosition.getY() + 1, worldPosition.getZ() + 1);
-  }
-
 
   /* NBT and networking */
 
@@ -307,39 +330,39 @@ public class FaucetBlockEntity extends MantleBlockEntity {
   }
 
   @Override
-  protected void saveSynced(CompoundTag compound) {
-    super.saveSynced(compound);
+  protected void saveSynced(CompoundTag compound, HolderLookup.Provider registries) {
+    super.saveSynced(compound, registries);
     compound.putByte(TAG_STATE, (byte)faucetState.ordinal());
     if (!renderFluid.isEmpty()) {
-      compound.put(TAG_RENDER_FLUID, renderFluid.writeToNBT(new CompoundTag()));
+      compound.put(TAG_RENDER_FLUID, renderFluid.save(registries, new CompoundTag()));
     }
   }
 
   @Override
-  public void saveAdditional(CompoundTag compound) {
-    super.saveAdditional(compound);
+  public void saveAdditional(CompoundTag compound, HolderLookup.Provider registries) {
+    super.saveAdditional(compound, registries);
     compound.putBoolean(TAG_STOP, stopPouring);
     compound.putBoolean(TAG_LAST_REDSTONE, lastRedstoneState);
     if (!drained.isEmpty()) {
-      compound.put(TAG_DRAINED, drained.writeToNBT(new CompoundTag()));
+      compound.put(TAG_DRAINED, drained.save(registries, new CompoundTag()));
     }
   }
 
   @Override
-  public void load(CompoundTag compound) {
-    super.load(compound);
+  public void loadAdditional(CompoundTag compound, HolderLookup.Provider registries) {
+    super.loadAdditional(compound, registries);
 
     faucetState = FaucetState.fromIndex(compound.getByte(TAG_STATE));
     stopPouring = compound.getBoolean(TAG_STOP);
     lastRedstoneState = compound.getBoolean(TAG_LAST_REDSTONE);
     // fluids
     if (compound.contains(TAG_DRAINED, Tag.TAG_COMPOUND)) {
-      drained = FluidStack.loadFluidStackFromNBT(compound.getCompound(TAG_DRAINED));
+      drained = FluidStack.parseOptional(registries, compound.getCompound(TAG_DRAINED));
     } else {
       drained = FluidStack.EMPTY;
     }
     if (compound.contains(TAG_RENDER_FLUID, Tag.TAG_COMPOUND)) {
-      renderFluid = FluidStack.loadFluidStackFromNBT(compound.getCompound(TAG_RENDER_FLUID));
+      renderFluid = FluidStack.parseOptional(registries, compound.getCompound(TAG_RENDER_FLUID));
     } else {
       renderFluid = FluidStack.EMPTY;
     }

@@ -66,7 +66,7 @@ public class ToolTierStat implements IToolStat<Tier> {
     if (tag.getId() == Tag.TAG_STRING) {
       ResourceLocation tierId = ResourceLocation.tryParse(tag.getAsString());
       if (tierId != null) {
-        return HarvestTiers.byId(tierId);
+        return HarvestTiers.byName(tierId);
       }
     }
     return null;
@@ -84,7 +84,7 @@ public class ToolTierStat implements IToolStat<Tier> {
   @Override
   public Tier deserialize(JsonElement json) {
     ResourceLocation id = JsonHelper.convertToResourceLocation(json, getName().toString());
-    Tier tier = HarvestTiers.byId(id);
+    Tier tier = HarvestTiers.byName(id);
     if (tier != null) {
       return tier;
     }
@@ -99,7 +99,7 @@ public class ToolTierStat implements IToolStat<Tier> {
   @Override
   public Tier fromNetwork(FriendlyByteBuf buffer) {
     ResourceLocation id = buffer.readResourceLocation();
-    Tier tier = HarvestTiers.byId(id);
+    Tier tier = HarvestTiers.byName(id);
     if (tier != null) {
       return tier;
     }

@@ -1,8 +1,6 @@
 package slimeknights.tconstruct.smeltery.item;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
@@ -10,7 +8,6 @@ import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import slimeknights.tconstruct.smeltery.block.entity.component.TankBlockEntity;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * Handler that works with a tank item to adjust its tank in NBT
@@ -18,8 +15,12 @@ import javax.annotation.Nullable;
 @RequiredArgsConstructor
 public class TankItemFluidHandler implements IFluidHandlerItem {
   private final TankItem tankItem;
-  @Getter
   private final ItemStack container;
+
+  @Override
+  public ItemStack getContainer() {
+    return container;
+  }
 
   /** Gets the tank on the stack */
   private FluidTank getTank() {

@@ -3,13 +3,13 @@
   "allow_crystal": false,
   "inputs": [
     {
-      "tag": "forge:nuggets/cobalt"
+      "tag": "c:nuggets/cobalt"
     },
     {
       "item": "minecraft:end_crystal"
     },
     {
-      "tag": "forge:nuggets/cobalt"
+      "tag": "c:nuggets/cobalt"
     },
     {
       "item": "tconstruct:earth_slime_crystal_block"
@@ -23,16 +23,19 @@
     "value": "defense"
   },
   "tools": {
-    "type": "forge:intersection",
+    "type": "neoforge:intersection",
     "children": [
-      [
-        {
-          "tag": "tconstruct:modifiable/armor"
-        },
-        {
-          "tag": "tconstruct:modifiable/held"
-        }
-      ],
+      {
+        "type": "neoforge:compound",
+        "children": [
+          {
+            "tag": "tconstruct:modifiable/armor"
+          },
+          {
+            "tag": "tconstruct:modifiable/held"
+          }
+        ]
+      },
       {
         "tag": "tconstruct:modifiable/bonus_slots"
       }

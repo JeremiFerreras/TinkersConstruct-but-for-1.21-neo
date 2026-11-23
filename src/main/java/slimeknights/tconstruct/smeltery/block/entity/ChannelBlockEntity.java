@@ -4,17 +4,20 @@ import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Plane;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.capabilities.BlockCapabilityCache;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import net.neoforged.neoforge.fluids.capability.templates.EmptyFluidHandler;
+import net.minecraft.server.level.ServerLevel;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.library.fluid.FillOnlyFluidHandler;
@@ -30,7 +33,6 @@ import slimeknights.tconstruct.smeltery.network.FluidUpdatePacket.IFluidPacketRe
 import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Logic for channel fluid transfer
@@ -46,11 +48,9 @@ public class ChannelBlockEntity extends MantleBlockEntity implements IFluidPacke
 			map.put(direction, new ChannelSideTank(this, tank, direction));
 		}
 	});
-	/** Tanks for inserting on each side */
-	/** Tanks for alerting neighbors the given side is present */
 
-	/** Cache of tanks on all neighboring sides */
-	/** Consumers to attach to each of the neighbors */
+	/** Cache of fluid handlers on all neighboring sides */
+	private final Map<Direction,BlockCapabilityCache<IFluidHandler,Direction>> neighborTanks = new EnumMap<>(Direction.class);
 
   /** Ticker instance for this TE, serverside only */
   public static final BlockEntityTicker<ChannelBlockEntity> SERVER_TICKER = (level, pos, state, self) -> self.tick(state);
@@ -74,50 +74,76 @@ public class ChannelBlockEntity extends MantleBlockEntity implements IFluidPacke
 		return this.tank.getFluid();
 	}
 
-	@Override
-	public AABB getRenderBoundingBox() {
-		return new AABB(worldPosition.getX(), worldPosition.getY() - 1, worldPosition.getZ(), worldPosition.getX() + 1, worldPosition.getY() + 1, worldPosition.getZ() + 1);
+
+	/* Fluid handlers */
+
+	/** Gets the fluid handler for the given side, used by {@code RegisterCapabilitiesEvent} */
+	@Nullable
+	public IFluidHandler getFluidHandler(@Nullable Direction side) {
+		// top side gets the insert direct
+		if (side == null || side == Direction.UP) {
+			return topHandler;
+		}
+		// side tanks keep track of which side inserts
+		if (side != Direction.DOWN) {
+			ChannelConnection connection = getBlockState().getValue(ChannelBlock.DIRECTION_MAP.get(side));
+			if (connection == ChannelConnection.IN) {
+				return sideTanks.get(side);
+			}
+			// for out, return an empty fluid handler so the block we are pouring into knows we support fluids, even though we disallow any interaction
+			if (connection == ChannelConnection.OUT) {
+				return EmptyFluidHandler.INSTANCE;
+			}
+		}
+		return null;
 	}
 
 	/**
- * Returns the handler exposed by this channel on the queried side.
- * The result is calculated from the live block state.
- */
-@Nullable
-public IFluidHandler getExposedFluidHandler(@Nullable Direction side) {
-  if (side == null || side == Direction.UP) return topHandler;
-  if (side != Direction.DOWN) {
-    ChannelConnection connection = getBlockState().getValue(ChannelBlock.DIRECTION_MAP.get(side));
-    if (connection == ChannelConnection.IN) return sideTanks.get(side);
-    // Expose an inert handler on output sides so adjacent blocks still detect the connection.
-    if (connection == ChannelConnection.OUT) return EmptyFluidHandler.INSTANCE;
-  }
-  return null;
-}
+	 * Gets the fluid handler from a neighbor
+	 * @param side  Side of the neighbor to fetch
+	 * @return  Fluid handler, or null
+	 */
+	@Nullable
+	protected IFluidHandler getNeighborHandler(Direction side) {
+		assert level != null;
+		if (level.isClientSide) {
+			return null;
+		}
+		BlockCapabilityCache<IFluidHandler,Direction> cache = neighborTanks.computeIfAbsent(side, s ->
+			BlockCapabilityCache.create(Capabilities.FluidHandler.BLOCK, (ServerLevel) level, worldPosition.relative(s), s.getOpposite()));
+		return cache.getCapability();
+	}
 
-/** Queries a neighboring block's handler using the face adjacent to this channel. */
-private Optional<IFluidHandler> getNeighborHandlerUncached(Direction side) {
-  if (level == null) return Optional.empty();
-  IFluidHandler handler = level.getCapability(Capabilities.FluidHandler.BLOCK, worldPosition.relative(side), side.getOpposite());
-  return Optional.ofNullable(handler);
-}
+	/**
+	 * Removes a cached handler from the given neighbor as the block changed
+	 * @param side  Side to remove
+	 */
+	public void removeCachedNeighbor(Direction side) {
+		neighborTanks.remove(side);
+	}
 
-/** Gets the current fluid handler from a neighbor. */
-protected Optional<IFluidHandler> getNeighborHandler(Direction side) {
-  return getNeighborHandlerUncached(side);
-}
+	/**
+	 * Refreshes a neighbor based on the new connection
+	 * @param state  The state that will later be put in the world, may not be the state currently in the world
+	 * @param side   Side to update
+	 */
+	public void refreshNeighbor(BlockState state, Direction side) {
+		// for below, only thing that needs to invalidate is if we are no longer connected down, remove the listener below
+		if (side == Direction.DOWN) {
+			if (!state.getValue(ChannelBlock.DOWN)) {
+				neighborTanks.remove(Direction.DOWN);
+			}
+		} else if (side != Direction.UP) {
+			ChannelConnection connection = state.getValue(ChannelBlock.DIRECTION_MAP.get(side));
+			// if no longer flowing out, remove the neighbor tank
+			if (connection != ChannelConnection.OUT) {
+				neighborTanks.remove(side);
+			}
+		}
+	}
 
-/** No local cache is retained after migration to dynamic NeoForge capabilities. */
-public void removeCachedNeighbor(Direction side) {
-  // Deliberately empty: the neighbor capability is queried again on the next transfer.
-}
 
-/** Invalidates provider caches when a channel connection changes. */
-public void refreshNeighbor(BlockState state, Direction side) {
-  if (level != null) level.invalidateCapabilities(worldPosition);
-}
-
-/* Flowing property */
+	/* Flowing property */
 
 	/**
 	 * Gets the index for the given side for flowing. Same as regular index but without up
@@ -266,9 +292,8 @@ public void refreshNeighbor(BlockState state, Direction side) {
 		}
 
 		// get the handler on the side, try filling
-    // TODO: handle the case of no fluid handler on the side that may later become a handler
-		return getNeighborHandler(side).filter(handler -> fill(side, handler, flowRate))
-																	 .isPresent();
+		IFluidHandler handler = getNeighborHandler(side);
+		return handler != null && fill(side, handler, flowRate);
 	}
 
 	/**
@@ -326,15 +351,15 @@ public void refreshNeighbor(BlockState state, Direction side) {
   }
 
   @Override
-  protected void saveSynced(CompoundTag nbt) {
-    super.saveSynced(nbt);
+  protected void saveSynced(CompoundTag nbt, HolderLookup.Provider registries) {
+    super.saveSynced(nbt, registries);
     nbt.putByteArray(TAG_IS_FLOWING, isFlowing);
-    nbt.put(TAG_TANK, tank.writeToNBT(new CompoundTag()));
+    nbt.put(TAG_TANK, tank.writeToNBT(registries, new CompoundTag()));
   }
 
 	@Override
-	public void load(CompoundTag nbt) {
-		super.load(nbt);
+	public void loadAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
+		super.loadAdditional(nbt, registries);
 
 		// isFlowing
 		if (nbt.contains(TAG_IS_FLOWING)) {
@@ -354,6 +379,6 @@ public void refreshNeighbor(BlockState state, Direction side) {
 
 		// tank
 		CompoundTag tankTag = nbt.getCompound(TAG_TANK);
-		tank.readFromNBT(tankTag);
+		tank.readFromNBT(registries, tankTag);
 	}
 }

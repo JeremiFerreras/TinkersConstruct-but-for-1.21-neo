@@ -6,7 +6,7 @@
       "item": "tconstruct:blazewood_slab"
     },
     "S": {
-      "tag": "forge:wither_bones"
+      "tag": "c:wither_bones"
     }
   },
   "pattern": [
@@ -15,7 +15,7 @@
     "SBS"
   ],
   "result": {
+    "count": 1,
     "id": "tconstruct:necrotic_bone_armor_stand"
-  },
-  "show_notification": true
+  }
 }

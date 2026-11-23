@@ -1,14 +1,12 @@
 package slimeknights.tconstruct.library.recipe.alloying;
 
-
-import net.minecraft.core.registries.Registries;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
+import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.recipe.data.AbstractRecipeBuilder;
 import slimeknights.mantle.recipe.helper.FluidOutput;
 import slimeknights.mantle.recipe.ingredient.FluidIngredient;
@@ -17,7 +15,6 @@ import slimeknights.tconstruct.library.recipe.alloying.AlloyRecipe.AlloyIngredie
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static slimeknights.tconstruct.library.recipe.melting.IMeltingRecipe.getTemperature;
 
@@ -115,7 +112,7 @@ public class AlloyRecipeBuilder extends AbstractRecipeBuilder<AlloyRecipeBuilder
 
   @Override
   public void save(RecipeOutput consumer) {
-    save(consumer, BuiltInRegistries.FLUID.getKey(output.get().getFluid()));
+    save(consumer, Loadables.FLUID.getKey(output.get().getFluid()));
   }
 
   @Override
@@ -123,6 +120,6 @@ public class AlloyRecipeBuilder extends AbstractRecipeBuilder<AlloyRecipeBuilder
     if (inputs.size() < 2) {
       throw new IllegalStateException("Invalid alloying recipe " + id + ", must have at least two inputs");
     }
-    consumer.accept(id, new AlloyRecipe(id, inputs, output, temperature), this.buildOptionalAdvancement(consumer, id, "alloys"));
+    consumer.accept(id, new AlloyRecipe(id, inputs, output, temperature), this.buildOptionalAdvancement(id, "alloys"));
   }
 }

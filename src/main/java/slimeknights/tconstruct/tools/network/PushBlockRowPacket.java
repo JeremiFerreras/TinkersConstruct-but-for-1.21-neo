@@ -1,19 +1,24 @@
 package slimeknights.tconstruct.tools.network;
 
-import net.minecraft.network.codec.StreamCodec;
-import slimeknights.tconstruct.TConstruct;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import slimeknights.mantle.network.packet.ISimplePacket;
+import slimeknights.mantle.network.packet.IThreadsafePacket;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.modifiers.fluid.block.MoveBlocksFluidEffect;
 
 /** Packet handling {@link MoveBlocksFluidEffect} syncing to the client */
-public record PushBlockRowPacket(BlockPos pos, Direction direction, boolean push, int moving) implements ISimplePacket {
-  public PushBlockRowPacket(RegistryFriendlyByteBuf buffer) {
+public record PushBlockRowPacket(BlockPos pos, Direction direction, boolean push, int moving) implements IThreadsafePacket {
+  public static final Type<PushBlockRowPacket> TYPE = new Type<>(TConstruct.getResource("push_block_row"));
+  public static final StreamCodec<RegistryFriendlyByteBuf,PushBlockRowPacket> STREAM_CODEC = ISimplePacket.codec(PushBlockRowPacket::new);
+
+  public PushBlockRowPacket(FriendlyByteBuf buffer) {
     this(buffer.readBlockPos(), buffer.readEnum(Direction.class), buffer.readBoolean(), buffer.readVarInt());
   }
 
@@ -22,7 +27,8 @@ public record PushBlockRowPacket(BlockPos pos, Direction direction, boolean push
     return push ? direction : direction.getOpposite();
   }
 
-  public void encode(RegistryFriendlyByteBuf buffer) {
+  @Override
+  public void encode(FriendlyByteBuf buffer) {
     buffer.writeBlockPos(pos);
     buffer.writeEnum(direction);
     buffer.writeBoolean(push);
@@ -30,7 +36,12 @@ public record PushBlockRowPacket(BlockPos pos, Direction direction, boolean push
   }
 
   @Override
-  public void handle(IPayloadContext context) {
+  public Type<PushBlockRowPacket> type() {
+    return TYPE;
+  }
+
+  @Override
+  public void handleThreadsafe(IPayloadContext context) {
     HandleClient.handle(this);
   }
 
@@ -42,13 +53,5 @@ public record PushBlockRowPacket(BlockPos pos, Direction direction, boolean push
         MoveBlocksFluidEffect.moveBlocks(level, packet.pos, level.getBlockState(packet.pos), packet.facing(), packet.direction, packet.moving);
       }
     }
-  }
-  public static final Type<PushBlockRowPacket> TYPE = new Type<>(TConstruct.getResource("push_block_row"));
-  public static final StreamCodec<RegistryFriendlyByteBuf, PushBlockRowPacket> CODEC =
-    StreamCodec.ofMember(PushBlockRowPacket::encode, PushBlockRowPacket::new);
-
-  @Override
-  public Type<PushBlockRowPacket> type() {
-    return TYPE;
   }
 }

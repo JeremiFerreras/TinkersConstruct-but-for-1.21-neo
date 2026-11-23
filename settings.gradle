@@ -1,16 +1,18 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
+        // NeoForged: ModDevGradle plugin + NeoForge artifacts
         maven { url = 'https://maven.neoforged.net/releases' }
+        // Parchment mappings
         maven { url = 'https://maven.parchmentmc.org' }
+        maven { url = 'https://maven.neoforged.net/releases' }
     }
 }
 
 plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
 }
 
-// Neo Mantle is the 1.21.1 Mantle port required by this Tinkers' Construct port.
 // Keep the dependency pinned as a Git submodule so CI and local builds use the same API.
 if (!file('neomantle/settings.gradle').exists()) {
     throw new GradleException("Missing Neo Mantle submodule. Run: git submodule update --init --recursive")

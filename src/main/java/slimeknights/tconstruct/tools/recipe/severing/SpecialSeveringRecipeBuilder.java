@@ -1,37 +1,35 @@
 package slimeknights.tconstruct.tools.recipe.severing;
 
-
-import net.minecraft.core.registries.Registries;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import slimeknights.mantle.recipe.data.AbstractRecipeBuilder;
+import slimeknights.mantle.recipe.helper.ItemOutput;
+import slimeknights.mantle.recipe.ingredient.EntityIngredient;
 import slimeknights.tconstruct.library.recipe.modifiers.severing.SeveringRecipe;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /** Builder for severing recipes that have only the base chance and looting bonus as fields */
 @Setter
 @Accessors(chain = true)
+@RequiredArgsConstructor(staticName = "serializer")
 public class SpecialSeveringRecipeBuilder extends AbstractRecipeBuilder<SpecialSeveringRecipeBuilder> {
   private final RecipeSerializer<? extends SeveringRecipe> serializer;
-  private final RecipeFactory factory;
   private float baseChance = 0.05f;
   private float lootingBonus = 0.01f;
 
-  private SpecialSeveringRecipeBuilder(RecipeSerializer<? extends SeveringRecipe> serializer, RecipeFactory factory) {
-    this.serializer = serializer;
-    this.factory = factory;
-  }
-
   /** Creates a new builder for the given serializer. */
-  public static SpecialSeveringRecipeBuilder serializer(Supplier<? extends RecipeSerializer<? extends SeveringRecipe>> supplier, RecipeFactory factory) {
-    return new SpecialSeveringRecipeBuilder(supplier.get(), factory);
+  public static SpecialSeveringRecipeBuilder serializer(Supplier<? extends RecipeSerializer<? extends SeveringRecipe>> supplier) {
+    return serializer(supplier.get());
   }
 
   /** Doubles the drop chances for this rare mob */
@@ -41,19 +39,30 @@ public class SpecialSeveringRecipeBuilder extends AbstractRecipeBuilder<SpecialS
     return this;
   }
 
-  @SuppressWarnings("deprecation")
   @Override
-  public void save(RecipeOutput consumer) {
-    save(consumer, Objects.requireNonNull(BuiltInRegistries.RECIPE_SERIALIZER.getKey(serializer)));
+  public void save(RecipeOutput output) {
+    save(output, Objects.requireNonNull(BuiltInRegistries.RECIPE_SERIALIZER.getKey(serializer)));
   }
 
   @Override
-  public void save(RecipeOutput consumer, ResourceLocation id) {
-    consumer.accept(id, factory.create(id, baseChance, lootingBonus), null);
+  public void save(RecipeOutput output, ResourceLocation id) {
+    AdvancementHolder advancement = buildOptionalAdvancement(id, "modifier");
+    output.accept(id, new Finished(id, baseChance, lootingBonus), advancement);
   }
 
-  @FunctionalInterface
-  public interface RecipeFactory {
-    SeveringRecipe create(ResourceLocation id, float baseChance, float lootingBonus);
+  /**
+   * Recipe instance for datagen output. The special severing serializers only serialize the per-level chance and looting
+   * bonus (plus the recipe ID), so the entity and output values are unused placeholders here. {@link #getSerializer()} is
+   * overridden so the loadable serializer wired by the builder is used to encode the recipe.
+   */
+  private class Finished extends SeveringRecipe {
+    public Finished(ResourceLocation id, float baseChance, float lootingBonus) {
+      super(id, EntityIngredient.of(EntityType.PLAYER), ItemOutput.fromItem(Items.AIR), baseChance, lootingBonus);
+    }
+
+    @Override
+    public RecipeSerializer<?> getSerializer() {
+      return serializer;
+    }
   }
 }

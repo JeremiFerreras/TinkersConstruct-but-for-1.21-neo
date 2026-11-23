@@ -22,10 +22,10 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import java.util.function.Supplier;
 
 public record EmptyBottleIntoWater(Supplier<Item> empty, CauldronInteraction fallback) implements CauldronInteraction {
-  // PORT: CauldronInteraction#interact returns ItemInteractionResult in 1.21, and potions moved to POTION_CONTENTS
   @Override
   public ItemInteractionResult interact(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, ItemStack stack) {
-    if (state.getValue(LayeredCauldronBlock.LEVEL) == 3 || !stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).is(Potions.WATER)) {
+    PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+    if (state.getValue(LayeredCauldronBlock.LEVEL) == 3 || contents == null || !contents.is(Potions.WATER)) {
       return fallback.interact(state, level, pos, player, hand, stack);
     }
     if (!level.isClientSide) {

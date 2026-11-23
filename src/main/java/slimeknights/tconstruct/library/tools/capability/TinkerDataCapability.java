@@ -14,7 +14,6 @@ import slimeknights.tconstruct.TConstruct;
 import javax.annotation.Nullable;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -48,11 +47,6 @@ public class TinkerDataCapability {
   @Nullable
   public static TinkerDataCapability.Holder getData(LivingEntity entity) {
     return entity.getData(ATTACHMENT);
-  }
-
-  /** Optional access for callers that want to preserve the previous capability-style API. */
-  public static Optional<TinkerDataCapability.Holder> getOptional(LivingEntity entity) {
-    return Optional.ofNullable(getData(entity));
   }
 
 

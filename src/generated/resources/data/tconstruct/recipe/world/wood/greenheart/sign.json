@@ -7,7 +7,7 @@
       "item": "tconstruct:greenheart_planks"
     },
     "X": {
-      "tag": "forge:rods/wooden"
+      "tag": "c:rods/wooden"
     }
   },
   "pattern": [
@@ -16,8 +16,7 @@
     " X "
   ],
   "result": {
-    "id": "tconstruct:greenheart_sign",
-    "count": 3
-  },
-  "show_notification": true
+    "count": 3,
+    "id": "tconstruct:greenheart_sign"
+  }
 }

@@ -1,14 +1,13 @@
 package slimeknights.tconstruct.smeltery.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.items.IItemHandler;
 import slimeknights.tconstruct.common.config.Config;
@@ -129,7 +128,7 @@ public interface ITankBlockEntity extends IFluidTankUpdater, FluidUpdatePacket.I
     return 0;
   }
 
-  /** Helper to implement {@link net.minecraft.world.level.block.Block#getCloneItemStack(BlockState, HitResult, BlockGetter, BlockPos, Player)} */
+  /** Helper to implement {@link net.minecraft.world.level.block.Block#getCloneItemStack(LevelReader, BlockPos, BlockState)} */
   static ItemStack getCloneItemStack(ItemStack stack, BlockGetter world, BlockPos pos) {
     if (world.getBlockEntity(pos) instanceof ITankBlockEntity tank) {
       tank.setTankTag(stack);

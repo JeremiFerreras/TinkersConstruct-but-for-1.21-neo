@@ -3,6 +3,7 @@ package slimeknights.tconstruct.library.recipe.partbuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -10,8 +11,6 @@ import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.recipe.data.AbstractRecipeBuilder;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 import slimeknights.tconstruct.library.materials.definition.MaterialId;
-
-import java.util.function.Consumer;
 
 /** Builder for {@link ItemPartRecipe} */
 @Accessors(chain = true)
@@ -45,7 +44,7 @@ public class ItemPartRecipeBuilder extends AbstractRecipeBuilder<ItemPartRecipeB
 
   @Override
   public void save(RecipeOutput consumer, ResourceLocation id) {
-    ResourceLocation advancementId = buildOptionalAdvancement(id, "parts");
-    saveRecipe(consumer, id, new ItemPartRecipe(id, materialId, pattern, patternItem, cost, result, titleKey), advancementId);
+    AdvancementHolder advancementId = buildOptionalAdvancement(id, "parts");
+    consumer.accept(id, new ItemPartRecipe(id, materialId, pattern, patternItem, cost, result, titleKey), advancementId);
   }
 }

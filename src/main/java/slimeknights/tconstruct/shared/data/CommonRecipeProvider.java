@@ -1,14 +1,20 @@
 package slimeknights.tconstruct.shared.data;
 
+import net.minecraft.advancements.Criterion;
+import net.minecraft.advancements.critereon.InventoryChangeTrigger;
+import net.minecraft.advancements.critereon.ItemPredicate;
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeCategory;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.data.recipes.ShapelessRecipeBuilder;
 import net.minecraft.data.recipes.SimpleCookingRecipeBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -31,7 +37,6 @@ import slimeknights.tconstruct.tables.TinkerTables;
 import slimeknights.tconstruct.world.TinkerWorld;
 
 import java.util.Locale;
-import java.util.function.Consumer;
 
 public class CommonRecipeProvider extends BaseRecipeProvider implements ICommonRecipeHelper {
   public CommonRecipeProvider(PackOutput output) {
@@ -40,7 +45,7 @@ public class CommonRecipeProvider extends BaseRecipeProvider implements ICommonR
 
   @Override
   public String getName() {
-    return "Tinkers' Construct Common Recipes";
+    return "Neo Tinkers Common Recipes";
   }
 
   @Override
@@ -191,7 +196,7 @@ public class CommonRecipeProvider extends BaseRecipeProvider implements ICommonR
     RecipeOutput vanillaGlassConsumer = withCondition(consumer, ConfigEnabledCondition.GLASS_RECIPE_FIX);
     ShapedRecipeBuilder.shaped(RecipeCategory.MISC, Blocks.BEACON)
                        .define('S', Items.NETHER_STAR)
-                       .define('G', Tags.Items.GLASS_COLORLESS)
+                       .define('G', Tags.Items.GLASS_BLOCKS_COLORLESS)
                        .define('O', Blocks.OBSIDIAN)
                        .pattern("GGG")
                        .pattern("GSG")
@@ -200,7 +205,7 @@ public class CommonRecipeProvider extends BaseRecipeProvider implements ICommonR
                        .save(vanillaGlassConsumer, prefix(id(Blocks.BEACON), glassVanillaFolder));
     ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, Blocks.DAYLIGHT_DETECTOR)
                        .define('Q', Items.QUARTZ)
-                       .define('G', Tags.Items.GLASS_COLORLESS)
+                       .define('G', Tags.Items.GLASS_BLOCKS_COLORLESS)
                        .define('W', ItemTags.WOODEN_SLABS)
                        .pattern("GGG")
                        .pattern("QQQ")
@@ -210,17 +215,17 @@ public class CommonRecipeProvider extends BaseRecipeProvider implements ICommonR
     ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, Items.END_CRYSTAL)
                        .define('T', Items.GHAST_TEAR)
                        .define('E', Items.ENDER_EYE)
-                       .define('G', Tags.Items.GLASS_COLORLESS)
+                       .define('G', Tags.Items.GLASS_BLOCKS_COLORLESS)
                        .pattern("GGG")
                        .pattern("GEG")
                        .pattern("GTG")
                        .unlockedBy("has_ender_eye", has(Items.ENDER_EYE))
                        .save(vanillaGlassConsumer, prefix(id(Items.END_CRYSTAL), glassVanillaFolder));
     ShapedRecipeBuilder.shaped(RecipeCategory.BREWING, Items.GLASS_BOTTLE, 3)
-                       .define('#', Tags.Items.GLASS_COLORLESS)
+                       .define('#', Tags.Items.GLASS_BLOCKS_COLORLESS)
                        .pattern("# #")
                        .pattern(" # ")
-                       .unlockedBy("has_glass", has(Tags.Items.GLASS_COLORLESS))
+                       .unlockedBy("has_glass", has(Tags.Items.GLASS_BLOCKS_COLORLESS))
                        .save(vanillaGlassConsumer, prefix(id(Items.GLASS_BOTTLE), glassVanillaFolder));
 
 

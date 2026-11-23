@@ -8,7 +8,7 @@ import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 
 /** Predicate matching tools exposing a given tool action */
 public record ToolActionPredicate(ItemAbility action) implements ToolStackPredicate {
-  public static final RecordLoadable<ToolActionPredicate> LOADER = RecordLoadable.create(Loadables.TOOL_ACTION.requiredField("action", ToolActionPredicate::action), ToolActionPredicate::new);
+  public static final RecordLoadable<ToolActionPredicate> LOADER = RecordLoadable.create(Loadables.ITEM_ABILITY.requiredField("action", ToolActionPredicate::action), ToolActionPredicate::new);
 
   @Override
   public boolean matches(IToolStackView tool) {

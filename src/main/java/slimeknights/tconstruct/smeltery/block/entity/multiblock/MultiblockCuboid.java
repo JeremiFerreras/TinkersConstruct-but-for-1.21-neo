@@ -439,14 +439,15 @@ public abstract class MultiblockCuboid<T extends MultiblockStructureData> {
    * @return  Set of positions
    */
   protected static Collection<BlockPos> readPosList(CompoundTag rootTag, String key, BlockPos offset) {
-    if (!rootTag.contains(key, Tag.TAG_LIST)) {
+    // NbtUtils.writeBlockPos now produces an int-array tag rather than a compound, but 1.20.1 worlds still hold compounds
+    // so read the raw list and let TagUtil.readPos handle either element type
+    if (!(rootTag.get(key) instanceof ListTag list)) {
       return Collections.emptyList();
     }
-    ListTag list = rootTag.getList(key, Tag.TAG_COMPOUND);
     List<BlockPos> collection = new ArrayList<>(list.size());
-    for (int i = 0; i < list.size(); i++) {
-      BlockPos pos = NbtUtils.readBlockPos(list.getCompound(i));
-      if (!pos.equals(BlockPos.ZERO)) {
+    for (Tag element : list) {
+      BlockPos pos = TagUtil.readPos(element);
+      if (pos != null && !pos.equals(BlockPos.ZERO)) {
         collection.add(pos.offset(offset));
       }
     }

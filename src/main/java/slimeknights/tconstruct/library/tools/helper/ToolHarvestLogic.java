@@ -2,7 +2,6 @@ package slimeknights.tconstruct.library.tools.helper;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,6 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.CommonHooks;
 import net.neoforged.neoforge.common.ItemAbilities;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
@@ -77,9 +78,10 @@ public class ToolHarvestLogic {
    * Actually removes a block from the world. Cloned from {@link net.minecraft.server.level.ServerPlayerGameMode}
    * @param tool     Tool used in breaking
    * @param context  Harvest context
-   * @return  True if the block was removed
+   * @return  State the block was removed with, which may differ from the context state after {@link Block#playerWillDestroy}. Null if not removed
    */
-  private static boolean removeBlock(IToolStackView tool, ToolHarvestContext context) {
+  @Nullable
+  private static BlockState removeBlock(IToolStackView tool, ToolHarvestContext context) {
     Boolean removed = null;
     if (!tool.isBroken()) {
       for (ModifierEntry entry : tool.getModifierList()) {
@@ -94,13 +96,21 @@ public class ToolHarvestLogic {
     ServerLevel world = context.getWorld();
     BlockPos pos = context.getPos();
     if (removed == null) {
-      removed = state.onDestroyedByPlayer(world, pos, context.getPlayer(), context.canHarvest(), world.getFluidState(pos));
+      // Forge 1.20 called playerWillDestroy from onDestroyedByPlayer, NeoForge 1.21 calls it from ServerPlayerGameMode before removing instead.
+      // we cancel the vanilla break, so call it here or blocks lose their break logic (particles for others, piglin anger, destroy game event,
+      // the other half of beds, doors and tall plants, creative shulker box drops). Same order as ServerPlayerGameMode#destroyBlock
+      ServerPlayer player = context.getPlayer();
+      if (player != null) {
+        state = state.getBlock().playerWillDestroy(world, pos, state, player);
+      }
+      removed = state.onDestroyedByPlayer(world, pos, player, context.canHarvest(), world.getFluidState(pos));
     }
     // if removed by anything, finally destroy it
     if (removed) {
       state.getBlock().destroy(world, pos, state);
+      return state;
     }
-    return removed;
+    return null;
   }
 
   /** @deprecated use {@link #breakBlock(ToolStack, ItemStack, ToolHarvestContext, boolean)}*/
@@ -120,7 +130,7 @@ public class ToolHarvestLogic {
    * @param tool      Tool instance
    * @param stack     Stack instance for vanilla functions
    * @param context   Harvest context
-   * @param useLastXP If true, fetches the XP from {@link BlockSideHitListener} instead of firing the event. Prevents firing {@link net.minecraftforge.event.level.BlockEvent.BreakEvent} twice.
+   * @param useLastXP If true, the break event already fired for this block, so it is not fired again. Prevents firing {@link net.neoforged.neoforge.event.level.BlockEvent.BreakEvent} twice.
    * @return  True if broken
    */
   protected static boolean breakBlock(IToolStackView tool, ItemStack stack, ToolHarvestContext context, boolean useLastXP) {
@@ -129,12 +139,18 @@ public class ToolHarvestLogic {
     ServerLevel world = context.getWorld();
     BlockPos pos = context.getPos();
     GameType type = player.gameMode.getGameModeForPlayer();
-    int exp = useLastXP ? BlockSideHitListener.getLastXP(player) : CommonHooks.onBlockBreakEvent(world, type, player, pos);
-    if (exp == -1) {
-      return false;
+    BlockState state = context.getState();
+    // 1.21: BlockEvent.BreakEvent no longer carries the experience to drop (ForgeHooks.onBlockBreakEvent is gone), so we
+    // fire it only for its veto. useLastXP means the event already fired for this block (see ToolEvents.onBlockBreak),
+    // so we must not fire it a second time. Experience is dropped by playerDestroy below: NeoForge pops it from
+    // CommonHooks.handleBlockDrops after BlockDropsEvent, where ModifierEvents#beforeBlockBreak applies the experienced bonus.
+    if (!useLastXP) {
+      BlockEvent.BreakEvent breakEvent = CommonHooks.fireBlockBreak(world, type, player, pos, state);
+      if (breakEvent.isCanceled()) {
+        return false;
+      }
     }
-    // checked after the Forge hook, so we have to recheck
-    // TODO: is this needed? Seems its called inside CommonHooks.onBlockBreakEvent
+    // checked after the break event, so we have to recheck
     if (player.blockActionRestricted(world, pos, type)) {
       return false;
     }
@@ -146,23 +162,24 @@ public class ToolHarvestLogic {
     }
 
     // determine damage to do
-    BlockState state = context.getState();
     int damage = getDamage(tool, world, pos, state);
 
     // remove the block
     boolean canHarvest = context.canHarvest();
     BlockEntity te = canHarvest ? world.getBlockEntity(pos) : null; // ensures tile entity is fetched so it's around for afterBlockBreak
-    boolean removed = removeBlock(tool, context);
+    BlockState removedState = removeBlock(tool, context);
+    boolean removed = removedState != null;
 
-    // harvest drops
+    // harvest drops, using the state from playerWillDestroy like vanilla (e.g. cracked decorated pots)
     Block block = state.getBlock();
     if (removed && canHarvest) {
-      block.playerDestroy(world, player, pos, state, te, stack);
-    }
-
-    // drop XP
-    if (removed && exp > 0) {
-      block.popExperience(world, pos, exp);
+      block.playerDestroy(world, player, pos, removedState, te, stack);
+      // Loot generation runs the PROCESS_LOOT modifier hooks via ModifierLootModifier, which builds its own tool stack
+      // view from the held stack; the melting modifier uses that view to fill the tool tank. Our view was read before
+      // those edits, so resync it here or the hooks and damage below would flush the older data back and undo them.
+      if (tool instanceof ToolStack toolStack) {
+        toolStack.refreshFromStack();
+      }
     }
 
     // handle modifiers if not broken
@@ -214,7 +231,7 @@ public class ToolHarvestLogic {
 
   /**
    * Call on block break to break a block.
-   * Used in {@link net.minecraftforge.common.extensions.IForgeItem#onBlockStartBreak(ItemStack, BlockPos, Player)}.
+   * Used in {@link net.neoforged.neoforge.common.extensions.IForgeItem#onBlockStartBreak(ItemStack, BlockPos, Player)}.
    * See also {@link net.minecraft.client.multiplayer.MultiPlayerGameMode#destroyBlock(BlockPos)} (client)
    * and {@link net.minecraft.server.level.ServerPlayerGameMode#destroyBlock(BlockPos)} (server)
    * @param stack   Stack instance
@@ -286,7 +303,7 @@ public class ToolHarvestLogic {
     }
     // let armor change enchantments
     // TODO: should we have a hook for non-enchantment armor responses?
-    ListTag originalEnchantments = HarvestEnchantmentsModifierHook.updateHarvestEnchantments(tool, stack, context);
+    ItemEnchantments originalEnchantments = HarvestEnchantmentsModifierHook.updateHarvestEnchantments(tool, stack, context);
     // need to calculate the iterator before we break the block, as we need the reference hardness from the center
     UseOnContext useContext = new UseOnContext(world, player, InteractionHand.MAIN_HAND, stack, Util.createTraceResult(pos, sideHit, false));
     Iterable<BlockPos> extraBlocks = context.isEffective() ? tool.getHook(ToolHooks.AOE_ITERATOR).getBlocks(tool, useContext, state, AOEMatchType.BREAKING) : Collections.emptyList();

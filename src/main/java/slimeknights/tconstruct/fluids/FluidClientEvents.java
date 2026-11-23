@@ -3,7 +3,6 @@ package slimeknights.tconstruct.fluids;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.util.FastColor;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders;
@@ -38,12 +37,17 @@ public class FluidClientEvents extends ClientEventBase {
 
   @SubscribeEvent
   static void itemColors(final RegisterColorHandlersEvent.Item event) {
-    event.register((stack, index) -> index > 0 ? -1 : FastColor.ARGB32.opaque(stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).getColor()), TinkerFluids.potion.asItem());
+    event.register((stack, index) -> {
+      if (index > 0) {
+        return -1;
+      }
+      PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+      return contents != null ? contents.getColor() : -1;
+    }, TinkerFluids.potion.asItem());
   }
 
   @SubscribeEvent
   static void registerModelLoaders(RegisterGeometryLoaders event) {
-    // PORT: RegisterGeometryLoaders.register takes ResourceLocation, not String
     event.register(TConstruct.getResource("fluid_container"), FluidContainerModel.LOADER);
   }
 

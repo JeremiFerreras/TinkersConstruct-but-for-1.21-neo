@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.library.client.book.content;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.gson.annotations.SerializedName;
@@ -10,17 +9,18 @@ import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.crafting.CraftingRecipe;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.locale.Language;
+import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
-import net.neoforged.fml.i18n.FMLTranslations;
 import slimeknights.mantle.client.book.HTMLUtils;
 import slimeknights.mantle.client.book.data.BookData;
 import slimeknights.mantle.client.book.data.content.PageContent;
@@ -112,7 +112,7 @@ public class ContentTool extends PageContent {
   public ContentTool(IModifiableDisplay tool) {
     this.tool = tool;
     this.toolName = Loadables.ITEM.getKey(tool.asItem()).toString();
-    this.text = new TextData[] { new TextData(ForgeI18n.getPattern(tool.asItem().getDescriptionId() + ".description"))};
+    this.text = new TextData[] { new TextData(Language.getInstance().getOrDefault(tool.asItem().getDescriptionId() + ".description"))};
   }
 
   public ContentTool(Item item) {
@@ -122,7 +122,7 @@ public class ContentTool extends PageContent {
     } else {
       this.tool = new Fallback(item);
     }
-    this.text = new TextData[] { new TextData(ForgeI18n.getPattern(tool.asItem().getDescriptionId() + ".description"))};
+    this.text = new TextData[] { new TextData(Language.getInstance().getOrDefault(tool.asItem().getDescriptionId() + ".description"))};
   }
 
   @SuppressWarnings("removal")
@@ -160,7 +160,8 @@ public class ContentTool extends PageContent {
       RegistryAccess access = level.registryAccess();
 
       // get the stacks for the first crafting table recipe, prefer this option over parts as it may not be craftable with said parts
-      CraftingRecipe craftingRecipe = level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING).stream().map(RecipeHolder::value)
+      CraftingRecipe craftingRecipe = level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING).stream()
+        .map(RecipeHolder::value)
         .filter(r -> r.getResultItem(access).getItem() == tool.asItem())
         .findFirst().orElse(null);
       if (craftingRecipe != null) {
@@ -175,7 +176,8 @@ public class ContentTool extends PageContent {
         }
       } else {
         // fetch the tool building recipe for extra ingredients
-        ToolBuildingRecipe toolBuilding = level.getRecipeManager().getAllRecipesFor(TinkerRecipeTypes.TINKER_STATION.get()).stream().map(RecipeHolder::value)
+        ToolBuildingRecipe toolBuilding = level.getRecipeManager().getAllRecipesFor(TinkerRecipeTypes.TINKER_STATION.get()).stream()
+          .map(RecipeHolder::value)
           // only fetch recipes with the correct tool and that have the same number of parts - fixes issues with tools having multiple recipes
           .filter(r -> r instanceof ToolBuildingRecipe toolRecipe && toolRecipe.getOutput() == tool)
           .map(r -> ((ToolBuildingRecipe) r))

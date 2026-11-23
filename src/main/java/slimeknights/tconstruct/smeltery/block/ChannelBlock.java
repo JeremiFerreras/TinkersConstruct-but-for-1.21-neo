@@ -151,7 +151,7 @@ public class ChannelBlock extends Block implements EntityBlock {
 	}
 
   @Override
-  public boolean isPathfindable(BlockState state, BlockGetter worldIn, BlockPos pos, PathComputationType type) {
+  protected boolean isPathfindable(BlockState state, PathComputationType type) {
     return false;
   }
 
@@ -284,14 +284,13 @@ public class ChannelBlock extends Block implements EntityBlock {
 		return null;
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
-	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+	protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
 		Direction hitFace = hit.getDirection();
 		if (world.getBlockState(pos.relative(hitFace)).canBeReplaced()) {
 			// if the player is holding a channel, skip unless we clicked the top
 			// they can shift click to place one on the top
-			ItemStack stack = player.getItemInHand(hand);
+			ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
 			if (stack.getItem() == this.asItem()) {
 				return InteractionResult.PASS;
 			}

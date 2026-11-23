@@ -1,8 +1,9 @@
 package slimeknights.tconstruct.smeltery.menu;
 
-import net.neoforged.neoforge.fluids.FluidUtil;
 import lombok.Getter;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -10,8 +11,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import slimeknights.mantle.inventory.BaseContainerMenu;
 import slimeknights.mantle.fluid.FluidTransferHelper;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
 import slimeknights.mantle.fluid.transfer.IFluidContainerTransfer.TransferDirection;
@@ -35,7 +38,7 @@ public class HeatingStructureContainerMenu extends TriggeringMultiModuleContaine
   private final SideInventoryContainer<HeatingStructureBlockEntity> sideInventory;
   @Getter
   private final Container bucketContainer;
-  @Getter
+  /** Current transfer direction. Explicit getter below (instead of lombok @Getter) so the TransferDirectionSupplier override is always recognized even if lombok skips generation. */
   private TransferDirection transferDirection = TransferDirection.AUTO;
   private final Slot bucketResultSlot;
   public HeatingStructureContainerMenu(int id, @Nullable Inventory inv, @Nullable HeatingStructureBlockEntity structure) {
@@ -69,12 +72,60 @@ public class HeatingStructureContainerMenu extends TriggeringMultiModuleContaine
   }
 
   public HeatingStructureContainerMenu(int id, Inventory inv, FriendlyByteBuf buf) {
-    this(id, inv, getTileEntityFromBuf(buf, HeatingStructureBlockEntity.class));
+    this(id, inv, readStructure(buf));
+  }
+
+  /**
+   * Opens the menu for the given structure, sending the melting slot count along with the position so the client menu matches the server menu.
+   * @param player     Player opening the menu
+   * @param structure  Structure to open
+   */
+  public static void open(ServerPlayer player, HeatingStructureBlockEntity structure) {
+    BlockPos pos = structure.getBlockPos();
+    player.openMenu(structure, buffer -> writeOpenData(buffer, pos, structure));
+    if (player.containerMenu instanceof BaseContainerMenu<?> menu) {
+      menu.syncOnOpen(player);
+    }
+  }
+
+  /**
+   * Writes the menu open data: the controller position, then the number of melting slots in the server menu.
+   * @see slimeknights.tconstruct.smeltery.block.controller.HeatingControllerBlock#openGui
+   */
+  public static void writeOpenData(FriendlyByteBuf buffer, BlockPos pos, HeatingStructureBlockEntity structure) {
+    buffer.writeBlockPos(pos);
+    buffer.writeVarInt(structure.getMeltingInventory().getSlots());
+  }
+
+  /**
+   * Reads the structure from the menu open data. The client menu builds its slots from the client copy of the melting inventory,
+   * so resize that to the server menu's slot count first. If the two differ, the server sends more slots than the client has,
+   * which disconnects the player with an index out of bounds.
+   */
+  @Nullable
+  private static HeatingStructureBlockEntity readStructure(@Nullable FriendlyByteBuf buf) {
+    HeatingStructureBlockEntity structure = getTileEntityFromBuf(buf, HeatingStructureBlockEntity.class);
+    // slot count is missing if something opened the menu with just the position
+    if (structure != null && buf.isReadable()) {
+      int slots = buf.readVarInt();
+      MeltingModuleInventory inventory = structure.getMeltingInventory();
+      if (inventory.getSlots() != slots) {
+        // client side, nothing to drop as the server owns the items
+        inventory.resize(slots, stack -> {});
+      }
+    }
+    return structure;
   }
 
   @Override
   protected int getInventoryYOffset() {
     return 138;
+  }
+
+  /** Gets the current transfer direction */
+  @Override
+  public TransferDirection getTransferDirection() {
+    return transferDirection;
   }
 
   /** Updates the bucket inventory */
@@ -186,7 +237,7 @@ public class HeatingStructureContainerMenu extends TriggeringMultiModuleContaine
 
     @Override
     public boolean mayPlace(ItemStack stack) {
-      return FluidContainerTransferManager.INSTANCE.mayHaveTransfer(stack) || FluidUtil.getFluidHandler(stack).isPresent();
+      return FluidContainerTransferManager.INSTANCE.mayHaveTransfer(stack) || stack.getCapability(Capabilities.FluidHandler.ITEM) != null;
     }
   }
 

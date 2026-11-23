@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -13,6 +14,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.block.entity.NameableBlockEntity;
+import slimeknights.tconstruct.TConstruct;
+import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 import slimeknights.tconstruct.tables.block.entity.inventory.IChestItemHandler;
 import slimeknights.tconstruct.tables.menu.TinkerChestContainerMenu;
 
@@ -22,8 +25,6 @@ import javax.annotation.Nullable;
 public abstract class AbstractChestBlockEntity extends NameableBlockEntity {
   private static final String KEY_ITEMS = "Items";
 
-  // PORT: capability is no longer stored on the block entity; slimeknights.tconstruct.common.TinkerCapabilityEvents
-  // registers Capabilities.ItemHandler.BLOCK for every chest block entity type via getItemHandler()
   @Getter
   private final IChestItemHandler itemHandler;
   protected AbstractChestBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, Component name, IChestItemHandler itemHandler) {
@@ -49,7 +50,7 @@ public abstract class AbstractChestBlockEntity extends NameableBlockEntity {
   }
 
   @Override
-  protected void saveAdditional(CompoundTag tags, HolderLookup.Provider registries) {
+  public void saveAdditional(CompoundTag tags, HolderLookup.Provider registries) {
     super.saveAdditional(tags, registries);
     // move the items from the serialized result
     // we don't care about the size and need it here for compat with old worlds
@@ -57,27 +58,36 @@ public abstract class AbstractChestBlockEntity extends NameableBlockEntity {
     tags.put(KEY_ITEMS, handlerNBT.getList(KEY_ITEMS, Tag.TAG_COMPOUND));
   }
 
-  /** Reads the inventory from NBT */
-  public void readInventory(CompoundTag tags, HolderLookup.Provider registries) {
-    // copy in just the items key for deserializing, don't want to change the size
-    CompoundTag handlerNBT = new CompoundTag();
-    handlerNBT.put(KEY_ITEMS, tags.getList(KEY_ITEMS, Tag.TAG_COMPOUND));
-    itemHandler.deserializeNBT(registries, handlerNBT);
-  }
-
   /**
-   * Reads the inventory from NBT using the level's registry access.
-   * PORT: 1.21 item serialization needs a {@link HolderLookup.Provider}; prefer
-   * {@link #readInventory(CompoundTag, HolderLookup.Provider)} when one is available.
+   * Reads the inventory from NBT, resiliently. Each stack is parsed independently so a single corrupt or
+   * unparseable item can never take down the whole load. Previously any exception here propagated out of
+   * {@link #loadAdditional}, and vanilla's {@code BlockEntity.loadStatic} discards the entire block entity when
+   * loading throws, so the chest reloaded completely empty (every stored item lost). Bad slots are now logged
+   * and skipped, keeping every item that still parses.
    */
-  public void readInventory(CompoundTag tags) {
-    if (level != null) {
-      readInventory(tags, level.registryAccess());
+  public void readInventory(CompoundTag tags, HolderLookup.Provider registries) {
+    ListTag items = tags.getList(KEY_ITEMS, Tag.TAG_COMPOUND);
+    int slots = itemHandler.getSlots();
+    for (int i = 0; i < items.size(); i++) {
+      CompoundTag itemTags = items.getCompound(i);
+      int slot = itemTags.getInt("Slot");
+      if (slot < 0 || slot >= slots) {
+        continue;
+      }
+      try {
+        ItemStack.parse(registries, itemTags).ifPresent(stack -> {
+          itemHandler.setStackInSlot(slot, stack);
+          // tools in chests never tick, so rebuild tools saved by an older version as they load
+          ToolStack.updateDataVersion(stack);
+        });
+      } catch (Exception e) {
+        TConstruct.LOG.error("Skipping unloadable item in Tinkers' chest at {} slot {}: {}", getBlockPos(), slot, e.toString());
+      }
     }
   }
 
   @Override
-  protected void loadAdditional(CompoundTag tags, HolderLookup.Provider registries) {
+  public void loadAdditional(CompoundTag tags, HolderLookup.Provider registries) {
     super.loadAdditional(tags, registries);
     readInventory(tags, registries);
   }

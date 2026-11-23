@@ -21,11 +21,13 @@
             }
           ]
         },
-        "value": 1.0
+        "value": 1
       },
       {
         "type": "tconstruct:material",
-        "item": "tconstruct:fake_ingot",
+        "match": {
+          "item": "tconstruct:fake_ingot"
+        },
         "material": {
           "type": "tconstruct:stat_type",
           "stat_type": "tconstruct:plating_chestplate"
@@ -38,20 +40,61 @@
         "type": "tconstruct:stat_type",
         "stat_type": "tconstruct:cuirass"
       },
-      "value": 1.0
+      "value": 1
     },
     "s": {
-      "tag": "forge:string"
+      "tag": "c:strings"
     }
   },
-  "parts": "cl",
+  "parts": [
+    [
+      {
+        "type": "tconstruct:material_value",
+        "material": {
+          "type": "mantle:and",
+          "predicates": [
+            {
+              "type": "mantle:or",
+              "predicates": [
+                "tconstruct:castable",
+                "tconstruct:composite"
+              ]
+            },
+            {
+              "type": "tconstruct:stat_type",
+              "stat_type": "tconstruct:plating_chestplate"
+            }
+          ]
+        },
+        "value": 1
+      },
+      {
+        "type": "tconstruct:material",
+        "match": {
+          "item": "tconstruct:fake_ingot"
+        },
+        "material": {
+          "type": "tconstruct:stat_type",
+          "stat_type": "tconstruct:plating_chestplate"
+        }
+      }
+    ],
+    {
+      "type": "tconstruct:material_value",
+      "material": {
+        "type": "tconstruct:stat_type",
+        "stat_type": "tconstruct:cuirass"
+      },
+      "value": 1
+    }
+  ],
   "pattern": [
     "lsl",
     "lcl",
     "lcl"
   ],
   "result": {
-    "item": "tconstruct:travelers_chestplate"
-  },
-  "show_notification": true
+    "count": 1,
+    "id": "tconstruct:travelers_chestplate"
+  }
 }

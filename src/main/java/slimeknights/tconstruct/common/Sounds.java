@@ -114,9 +114,4 @@ public enum Sounds {
     map.put(BudSize.LARGE,   new SoundType(1.0f, pitch, SoundEvents.LARGE_AMETHYST_BUD_BREAK, SoundEvents.AMETHYST_CLUSTER_STEP, SoundEvents.LARGE_AMETHYST_BUD_PLACE, SoundEvents.AMETHYST_CLUSTER_HIT, SoundEvents.AMETHYST_CLUSTER_FALL));
     return map;
   }
-
-  public SoundEvent getSound() {
-    return sound;
-  }
-
 }

@@ -1,11 +1,10 @@
 package slimeknights.tconstruct.library.json.condition;
 
-
-import net.minecraft.core.registries.Registries;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -16,19 +15,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-/** @deprecated use {@link slimeknights.mantle.recipe.condition.TagCombinationCondition#difference(TagKey, TagKey)} */
+/**
+ * Condition that checks that the difference of a base tag and a set of subtracted tags is non-empty.
+ * @deprecated use {@link slimeknights.mantle.recipe.condition.TagCombinationCondition#difference(TagKey, TagKey)}
+ */
 @Deprecated(forRemoval = true)
 public class TagDifferencePresentCondition<T> implements ICondition {
   public static final ResourceLocation NAME = TConstruct.getResource("tag_difference_present");
-  /** // PORT: conditions are codec based in 1.21.1, register this to {@code NeoForgeRegistries.Keys.CONDITION_CODECS} */
-  public static final MapCodec<TagDifferencePresentCondition<?>> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
-    ResourceLocation.CODEC.fieldOf("registry").forGetter(c -> c.base.registry().location()),
-    ResourceLocation.CODEC.fieldOf("base").forGetter(c -> c.base.location()),
-    ResourceLocation.CODEC.listOf().fieldOf("subtracted").forGetter(c -> c.subtracted.stream().map(TagKey::location).toList())
-  ).apply(inst, TagDifferencePresentCondition::readGeneric));
-  /** @deprecated use {@link #CODEC} */
-  @Deprecated(forRemoval = true)
-  public static final MapCodec<TagDifferencePresentCondition<?>> SERIALIZER = CODEC;
 
   private final TagKey<T> base;
   private final List<TagKey<T>> subtracted;
@@ -53,12 +46,21 @@ public class TagDifferencePresentCondition<T> implements ICondition {
     return new TagDifferencePresentCondition<>(baseKey, Arrays.stream(subtracted).map(name -> TagKey.create(registry, name)).toList());
   }
 
-  /** Reads with generics happy */
-  private static <T> TagDifferencePresentCondition<T> readGeneric(ResourceLocation registryName, ResourceLocation base, List<ResourceLocation> subtracted) {
-    ResourceKey<Registry<T>> registry = ResourceKey.createRegistryKey(registryName);
+  /** Codec for this condition */
+  public static final MapCodec<TagDifferencePresentCondition<?>> CODEC = RecordCodecBuilder.mapCodec(builder -> builder
+    .group(
+      // save some space in JSON by not setting registry if item (most common)
+      ResourceLocation.CODEC.optionalFieldOf("registry", Registries.ITEM.location()).forGetter(c -> c.base.registry().location()),
+      ResourceLocation.CODEC.fieldOf("base").forGetter(c -> c.base.location()),
+      ResourceLocation.CODEC.listOf().fieldOf("subtracted").forGetter(c -> c.subtracted.stream().map(TagKey::location).toList()))
+    .apply(builder, TagDifferencePresentCondition::create));
+
+  /** Builds a condition from the codec primitives */
+  private static TagDifferencePresentCondition<?> create(ResourceLocation registryName, ResourceLocation base, List<ResourceLocation> subtracted) {
+    ResourceKey<Registry<Object>> registry = ResourceKey.createRegistryKey(registryName);
     return new TagDifferencePresentCondition<>(
       TagKey.create(registry, base),
-      subtracted.stream().map(name -> TagKey.<T>create(registry, name)).toList());
+      subtracted.stream().map(name -> TagKey.create(registry, name)).toList());
   }
 
   @Override
@@ -92,10 +94,5 @@ public class TagDifferencePresentCondition<T> implements ICondition {
     }
     // no item not in any subtracted
     return false;
-  }
-
-  @Override
-  public String toString() {
-    return "TagDifferencePresentCondition(" + base + ", " + subtracted + ")";
   }
 }

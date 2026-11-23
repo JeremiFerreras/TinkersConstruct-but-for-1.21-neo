@@ -3,6 +3,7 @@ package slimeknights.tconstruct.library.recipe.modifiers.adding;
 import com.google.gson.JsonSyntaxException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -20,7 +21,6 @@ import slimeknights.tconstruct.library.tools.SlotType.SlotCount;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class AbstractMultilevelModifierRecipeBuilder<T extends AbstractMultilevelModifierRecipeBuilder<T>> extends AbstractRecipeBuilder<T> {
@@ -30,12 +30,6 @@ public abstract class AbstractMultilevelModifierRecipeBuilder<T extends Abstract
   protected Ingredient tools = Ingredient.EMPTY;
   protected int maxToolSize = ITinkerStationRecipe.DEFAULT_TOOL_STACK_SIZE;
   protected boolean checkTraitLevel = false;
-
-  /** Gets the casted builder */
-  @SuppressWarnings("unchecked")
-  private T self() {
-    return (T) this;
-  }
 
 
   /* Tool */
@@ -155,9 +149,10 @@ public abstract class AbstractMultilevelModifierRecipeBuilder<T extends Abstract
     }
     for (LevelEntry levelEntry : levels) {
       if (levelEntry.slots() != null) {
-        consumer.accept(id, new ModifierSalvage(
-          id.withSuffix("_level_" + levelEntry.level().min()),
-          tools, maxToolSize, result, levelEntry.level(), levelEntry.slots()), null);
+        ResourceLocation salvageId = id.withSuffix("_level_" + levelEntry.level().min());
+        consumer.accept(salvageId, new ModifierSalvage(
+          salvageId,
+          tools, maxToolSize, result, levelEntry.level(), levelEntry.slots()), (AdvancementHolder) null);
       }
     }
     return self();

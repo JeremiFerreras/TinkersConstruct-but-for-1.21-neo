@@ -7,6 +7,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.CraftingMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.ResultContainer;
@@ -14,6 +15,8 @@ import net.minecraft.world.inventory.ResultSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -33,9 +36,8 @@ import slimeknights.tconstruct.library.tools.capability.inventory.ToolInventoryC
 import slimeknights.tconstruct.library.tools.capability.inventory.ToolInventoryCapability.CraftingType;
 import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
+import slimeknights.tconstruct.library.tools.nbt.ToolDataComponents;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.library.utils.CapLookup;
-import slimeknights.tconstruct.library.utils.StackNBT;
 import slimeknights.tconstruct.tools.TinkerTools;
 import slimeknights.tconstruct.tools.network.ToolContainerFluidUpdatePacket;
 
@@ -72,7 +74,7 @@ public class ToolContainerMenu extends AbstractContainerMenu {
   @Getter
   private final boolean showOffhand;
   @Nullable
-  private final TransientCraftingContainer craftingContainer;
+  private final CraftingContainer craftingContainer;
   @Nullable
   private final ResultContainer resultContainer;
   /** Start index of the tool slots */
@@ -119,9 +121,9 @@ public class ToolContainerMenu extends AbstractContainerMenu {
     }
     // if the stack looks like it could be our tool, fetch the handler from it
     IItemHandler handler;
-    if (StackNBT.hasTag(stack) && stack.is(TinkerTags.Items.MODIFIABLE)) {
-      IItemHandler found = CapLookup.itemItem(stack);
-      handler = found instanceof IItemHandlerModifiable ? found : EmptyItemHandler.INSTANCE;
+    if (stack.has(ToolDataComponents.TOOL_DATA.get()) && stack.is(TinkerTags.Items.MODIFIABLE)) {
+      IItemHandler cap = stack.getCapability(Capabilities.ItemHandler.ITEM);
+      handler = cap instanceof IItemHandlerModifiable ? cap : EmptyItemHandler.INSTANCE;
       // wrong number of slots means something went wrong, use a dummy
       if (handler.getSlots() != size) {
         handler = new ItemStackHandler(size);
@@ -275,7 +277,7 @@ public class ToolContainerMenu extends AbstractContainerMenu {
   public void slotsChanged(Container pContainer) {
     super.slotsChanged(pContainer);
     if (craftingContainer != null && resultContainer != null) {
-      CraftingMenu.slotChangedCraftingGrid(this, player.level(), player, craftingContainer, resultContainer, null);
+      CraftingMenu.slotChangedCraftingGrid(this, player.level(), player, craftingContainer, resultContainer, (RecipeHolder<CraftingRecipe>) null);
     }
   }
 

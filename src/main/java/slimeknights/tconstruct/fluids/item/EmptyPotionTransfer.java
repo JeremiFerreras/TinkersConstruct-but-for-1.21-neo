@@ -3,9 +3,9 @@ package slimeknights.tconstruct.fluids.item;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -27,17 +27,15 @@ public class EmptyPotionTransfer extends EmptyFluidWithNBTTransfer {
     super(input, filled, fluid);
   }
 
-  // PORT: potions moved from NBT onto the POTION_CONTENTS data component, which FluidStack can hold directly
   @Override
   protected FluidStack getFluid(ItemStack stack) {
     PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
     if (contents != null && contents.is(Potions.WATER)) {
       return new FluidStack(Fluids.WATER, fluid.getAmount());
     }
+    // copy the item's data components onto the fluid (replaces the old NBT copy)
     FluidStack result = new FluidStack(fluid.get().getFluid(), fluid.getAmount());
-    if (contents != null) {
-      result.set(DataComponents.POTION_CONTENTS, contents);
-    }
+    result.applyComponents(stack.getComponentsPatch());
     return result;
   }
 

@@ -1,13 +1,16 @@
 {
-  "type": "tconstruct:melting",
-  "conditions": [
+  "neoforge:conditions": [
     {
-      "type": "forge:mod_loaded",
+      "type": "neoforge:mod_loaded",
       "modid": "ceramics"
     }
   ],
+  "type": "tconstruct:melting",
   "ingredient": {
-    "item": "ceramics:unfired_clay_plate"
+    "type": "mantle:item_name",
+    "items": [
+      "ceramics:unfired_clay_plate"
+    ]
   },
   "result": {
     "amount": 250,

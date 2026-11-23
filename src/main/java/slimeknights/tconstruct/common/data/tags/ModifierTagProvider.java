@@ -238,6 +238,6 @@ public class ModifierTagProvider extends AbstractModifierTagProvider {
 
   @Override
   public String getName() {
-    return "Tinkers' Construct Modifier Tag Provider";
+    return "Neo Tinkers Modifier Tag Provider";
   }
 }

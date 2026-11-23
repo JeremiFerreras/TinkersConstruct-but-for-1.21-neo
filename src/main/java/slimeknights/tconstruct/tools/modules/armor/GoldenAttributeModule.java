@@ -5,12 +5,13 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.EquipmentSlot.Type;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
@@ -50,7 +51,7 @@ import java.util.function.Supplier;
 /**
  * Module that applies an attribute conditioned on the amount of gold the player is wearing.
  * Used for {@link slimeknights.tconstruct.tools.data.ModifierIds#goldGuard} and {@link slimeknights.tconstruct.tools.data.ModifierIds#chrysophilite} */
-public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> dataKey, Attribute attribute, ResourceLocation uuid, Operation operation, LevelingValue amount, ModifierCondition<IToolStackView> condition) implements ModifierModule, EquipmentChangeModifierHook, TooltipModifierHook, ConditionalModule<IToolStackView> {
+public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> dataKey, Attribute attribute, ResourceLocation id, Operation operation, LevelingValue amount, ModifierCondition<IToolStackView> condition) implements ModifierModule, EquipmentChangeModifierHook, TooltipModifierHook, ConditionalModule<IToolStackView> {
   private static final List<ModuleHook<?>> DEFAULT_HOOKS = HookProvider.<GoldenAttributeModule>defaultHooks(ModifierHooks.EQUIPMENT_CHANGE, ModifierHooks.TOOLTIP);
   public static final RecordLoadable<GoldenAttributeModule> LOADER = RecordLoadable.create(
     new AttributeUniqueField<>(GoldenAttributeModule::unique),
@@ -66,7 +67,8 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
   public GoldenAttributeModule {}
 
   private GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> dataKey, Attribute attribute, Operation operation, LevelingValue amount, ModifierCondition<IToolStackView> condition) {
-    this(unique, dataKey, attribute, ResourceLocation.fromNamespaceAndPath("tconstruct", unique), operation, amount, condition);
+    // 1.21: attribute modifiers are identified by a resource location instead of a UUID and name
+    this(unique, dataKey, attribute, ResourceLocation.fromNamespaceAndPath(TConstruct.MOD_ID, unique), operation, amount, condition);
   }
 
   @Override
@@ -81,7 +83,7 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
 
   /** Checks that health is not over max */
   private void checkHealth(LivingEntity living, AttributeInstance instance) {
-    if (attribute == Attributes.MAX_HEALTH) {
+    if (attribute == Attributes.MAX_HEALTH.value()) {
       float newMax = (float) instance.getValue();
       if (living.getHealth() > newMax) {
         living.setHealth(newMax);
@@ -94,10 +96,10 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
     // update attribute
     AttributeInstance instance = living.getAttribute(BuiltInRegistries.ATTRIBUTE.wrapAsHolder(attribute));
     if (instance != null) {
-      if (instance.getModifier(uuid) != null) {
-        instance.removeModifier(uuid);
+      if (instance.getModifier(id) != null) {
+        instance.removeModifier(id);
       }
-      instance.addTransientModifier(new AttributeModifier(uuid, amount.compute(totalGold), operation));
+      instance.addTransientModifier(new AttributeModifier(id, amount.compute(totalGold), operation));
       checkHealth(living, instance);
     }
   }
@@ -106,7 +108,8 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
   public void onEquip(IToolStackView tool, ModifierEntry modifier, EquipmentChangeContext context) {
     // adding armor? activate bonus
     EquipmentSlot slot = context.getChangedSlot();
-    if (context.getChangedSlot().isArmor()) {
+    // 1.21: isArmor() now includes the animal body slot, check the humanoid armor type to keep the 1.20 behavior
+    if (slot.getType() == Type.HUMANOID_ARMOR) {
       TinkerDataCapability.Holder data = context.getDataHolder();
       if (data != null) {
         TotalGold gold = data.get(dataKey);
@@ -124,7 +127,7 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
 
   @Override
   public void onUnequip(IToolStackView tool, ModifierEntry modifier, EquipmentChangeContext context) {
-    if (context.getChangedSlot().isArmor()) {
+    if (context.getChangedSlot().getType() == Type.HUMANOID_ARMOR) {
       IToolStackView newTool = context.getReplacementTool();
       // when replacing with a helmet that lacks this modifier, remove bonus
       if (newTool == null || newTool.getModifierLevel(modifier.getId()) == 0) {
@@ -133,9 +136,9 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
           data.remove(dataKey);
         }
         LivingEntity living = context.getEntity();
-        AttributeInstance instance = living.getAttribute(attribute);
+        AttributeInstance instance = living.getAttribute(BuiltInRegistries.ATTRIBUTE.wrapAsHolder(attribute));
         if (instance != null) {
-          instance.removeModifier(uuid);
+          instance.removeModifier(id);
           checkHealth(living, instance);
         }
       }
@@ -146,7 +149,7 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
   public void onEquipmentChange(IToolStackView tool, ModifierEntry modifier, EquipmentChangeContext context, EquipmentSlot slotType) {
     // adding a helmet? activate bonus
     EquipmentSlot changed = context.getChangedSlot();
-    if (slotType.isArmor() && changed.isArmor()) {
+    if (slotType.getType() == Type.HUMANOID_ARMOR && changed.getType() == Type.HUMANOID_ARMOR) {
       TinkerDataCapability.Holder data = context.getDataHolder();
       if (data != null) {
         TotalGold gold = data.get(dataKey);
@@ -161,11 +164,11 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
   public void addTooltip(IToolStackView tool, ModifierEntry entry, @Nullable Player player, List<Component> tooltip, TooltipKey tooltipKey, TooltipFlag tooltipFlag) {
     double amount = this.amount.compute(tool.getVolatileData().getBoolean(ModifiableArmorItem.PIGLIN_NEUTRAL) ? 1 : 0);
     if (player != null && tooltipKey == TooltipKey.SHIFT) {
-      AttributeInstance instance = player.getAttribute(attribute);
+      AttributeInstance instance = player.getAttribute(BuiltInRegistries.ATTRIBUTE.wrapAsHolder(attribute));
       if (instance != null) {
-        AttributeModifier modifier = instance.getModifier(uuid);
+        AttributeModifier modifier = instance.getModifier(id);
         if (modifier != null) {
-          amount = (float) modifier.getAmount();
+          amount = (float) modifier.amount();
         }
       }
     }
@@ -202,7 +205,8 @@ public record GoldenAttributeModule(String unique, TinkerDataKey<TotalGold> data
      * @return true if the amount of gold changed.
      */
     public boolean setGold(EquipmentSlot slotType, boolean value) {
-      if (slotType.isArmor()) {
+      // 1.21: the body slot also counts as armor, but shares index 0 with the feet
+      if (slotType.getType() == Type.HUMANOID_ARMOR) {
         int index = slotType.getIndex();
         if (hasGold[index] != value) {
           hasGold[index] = value;

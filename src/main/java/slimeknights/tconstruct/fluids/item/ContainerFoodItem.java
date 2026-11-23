@@ -1,13 +1,12 @@
 package slimeknights.tconstruct.fluids.item;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.fluids.FluidStack;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -24,8 +23,8 @@ public class ContainerFoodItem extends slimeknights.mantle.item.ContainerFoodIte
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-    FoodProperties food = stack.getFoodProperties(null);
+  public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flagIn) {
+    FoodProperties food = stack.get(DataComponents.FOOD);
     if (food != null) {
       addEffectTooltip(food, tooltip);
     }

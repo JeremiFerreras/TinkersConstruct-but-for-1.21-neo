@@ -1,11 +1,12 @@
 package slimeknights.tconstruct.library.modifiers.modules.combat;
 
-import slimeknights.tconstruct.library.utils.EffectCureUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
@@ -64,6 +65,7 @@ import slimeknights.tconstruct.library.tools.helper.ToolDamageUtil;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ModDataNBT;
 import slimeknights.tconstruct.library.tools.nbt.ModifierNBT;
+import slimeknights.tconstruct.library.utils.TinkerEffectCures;
 import slimeknights.tconstruct.tools.modules.armor.CounterModule;
 
 import javax.annotation.Nullable;
@@ -181,7 +183,7 @@ public interface MobEffectModule extends ModifierModule, ConditionalModule<ITool
 
     /** Builds the effect */
     private ModifierMobEffect buildEffect() {
-      return new ModifierMobEffect(effect, level, time, target, curativeItems);
+      return new ModifierMobEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect), level, time, target, curativeItems);
     }
 
     /** Effect targets an entity hit with this weapon, melee or ranged */
@@ -217,9 +219,10 @@ public interface MobEffectModule extends ModifierModule, ConditionalModule<ITool
   }
 
   /** Represents a mob effect applied via a modifier. Meant to be nested inside a modifier module. */
-  record ModifierMobEffect(MobEffect effect, RandomLevelingValue level, RandomLevelingValue time, IJsonPredicate<LivingEntity> target, @Nullable List<Item> curativeItems) {
+  record ModifierMobEffect(Holder<MobEffect> effect, RandomLevelingValue level, RandomLevelingValue time, IJsonPredicate<LivingEntity> target, @Nullable List<Item> curativeItems) {
+    @SuppressWarnings("deprecation")
     public static final RecordLoadable<ModifierMobEffect> LOADER = RecordLoadable.create(
-      Loadables.MOB_EFFECT.requiredField("effect", ModifierMobEffect::effect),
+      Loadables.MOB_EFFECT.<Holder<MobEffect>>xmap((effect, error) -> BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect), (holder, error) -> holder.value()).requiredField("effect", ModifierMobEffect::effect),
       RandomLevelingValue.LOADABLE.requiredField("level", ModifierMobEffect::level),
       RandomLevelingValue.LOADABLE.requiredField("time", ModifierMobEffect::time),
       LivingEntityPredicate.LOADER.defaultField("target", ModifierMobEffect::target),
@@ -239,9 +242,8 @@ public interface MobEffectModule extends ModifierModule, ConditionalModule<ITool
       float duration = this.time.computeValue(scaledLevel);
       if (duration > 0) {
         MobEffectInstance instance = new MobEffectInstance(effect, (int)duration, level);
-        if (curativeItems != null) {
-          EffectCureUtil.set(instance, curativeItems);
-        }
+        // 1.21: per-stack curative items became EffectCure tokens. null keeps the effect's default cures; a list (possibly empty) replaces them with per-item cure tokens.
+        TinkerEffectCures.setCures(instance, curativeItems);
         target.addEffect(instance, cause);
       }
     }
@@ -526,7 +528,7 @@ public interface MobEffectModule extends ModifierModule, ConditionalModule<ITool
 
   /** Module for dealing damage with any weapon while wearing this as armor. */
   record Edible(ModifierMobEffect effect, IJsonPredicate<LivingEntity> holder, ModifierCondition<IToolStackView> condition) implements Combat, EdibleEffectHook {
-    private static final List<ModuleHook<?>> DEFAULT_HOOKS = HookProvider.<ArmorAttack>defaultHooks(ModifierHooks.DAMAGE_DEALT);
+    private static final List<ModuleHook<?>> DEFAULT_HOOKS = HookProvider.<Edible>defaultHooks(ModifierHooks.EDIBLE_EFFECT);
     public static final RecordLoadable<Edible> LOADER = RecordLoadable.create(EFFECT_FIELD, HOLDER_FIELD, ModifierCondition.TOOL_FIELD, Edible::new);
 
     /** @apiNote use {@link Builder#buildEdible()} */

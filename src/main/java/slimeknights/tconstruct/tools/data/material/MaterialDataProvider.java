@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.tools.data.material;
 
-import java.util.List;
 import net.minecraft.data.PackOutput;
 import net.minecraft.tags.FluidTags;
 import net.neoforged.neoforge.common.conditions.OrCondition;
@@ -8,6 +7,8 @@ import slimeknights.mantle.recipe.condition.TagFilledCondition;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.data.material.AbstractMaterialDataProvider;
 import slimeknights.tconstruct.library.materials.definition.MaterialId;
+
+import java.util.List;
 
 import static slimeknights.mantle.Mantle.commonResource;
 
@@ -18,7 +19,7 @@ public class MaterialDataProvider extends AbstractMaterialDataProvider {
 
   @Override
   public String getName() {
-    return "Tinker's Construct Materials";
+    return "Neo Tinkers Materials";
   }
 
   @Override

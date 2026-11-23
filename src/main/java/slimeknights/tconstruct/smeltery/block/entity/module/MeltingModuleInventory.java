@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.smeltery.block.entity.module;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -9,7 +10,6 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
 import slimeknights.tconstruct.library.recipe.melting.IMeltingContainer.IOreRate;
 import slimeknights.tconstruct.library.recipe.melting.IMeltingRecipe;
@@ -92,7 +92,8 @@ public class MeltingModuleInventory implements IItemHandlerModifiable {
 
   @Override
   public boolean isItemValid(int slot, ItemStack stack) {
-    return true;
+    // a menu opened before the structure shrank still has slots past the end, setStackInSlot ignores those so placing there deletes the item
+    return validSlot(slot);
   }
 
   /** Returns true if a slot is defined in the array */
@@ -224,9 +225,9 @@ public class MeltingModuleInventory implements IItemHandlerModifiable {
     MeltingModule module = getModule(slot);
     boolean canInsert = module.getStack().isEmpty();
     if (!simulate && canInsert) {
-      setStackInSlot(slot, ItemHandlerHelper.copyStackWithSize(stack, 1));
+      setStackInSlot(slot, stack.copyWithCount(1));
     }
-    return canInsert ? ItemHandlerHelper.copyStackWithSize(stack, stack.getCount() - 1) : stack;
+    return canInsert ? stack.copyWithCount(stack.getCount() - 1) : stack;
   }
 
   @Nonnull
@@ -311,30 +312,58 @@ public class MeltingModuleInventory implements IItemHandlerModifiable {
    * Writes this module to Tag
    * @return  Module in Tag
    */
-  public CompoundTag writeToTag() {
+  public CompoundTag writeToTag(HolderLookup.Provider registries) {
     CompoundTag nbt = new CompoundTag();
     ListTag list = new ListTag();
     for (int i = 0; i < modules.length; i++) {
       if (modules[i] != null && !modules[i].getStack().isEmpty()) {
-        CompoundTag moduleTag = modules[i].writeToTag();
-        moduleTag.putByte(TAG_SLOT, (byte)i);
+        CompoundTag moduleTag = modules[i].writeToTag(registries);
+        writeIndex(moduleTag, TAG_SLOT, i);
         list.add(moduleTag);
       }
     }
     if (!list.isEmpty()) {
       nbt.put(TAG_ITEMS, list);
     }
-    nbt.putByte(TAG_SIZE, (byte)modules.length);
+    writeIndex(nbt, TAG_SIZE, modules.length);
     return nbt;
+  }
+
+  /**
+   * Writes a slot index or size. Smelteries easily exceed 255 slots, so large values need an int, but older builds only read a byte.
+   * Writing a byte whenever the value fits keeps smelteries that fit in a byte loading after a downgrade.
+   * @param nbt    Tag compound
+   * @param key    Key to write
+   * @param value  Index or size
+   */
+  private static void writeIndex(CompoundTag nbt, String key, int value) {
+    if (value < 256) {
+      nbt.putByte(key, (byte)value);
+    } else {
+      nbt.putInt(key, value);
+    }
+  }
+
+  /**
+   * Reads a slot index or size, the inverse of {@link #writeIndex(CompoundTag, String, int)}. Bytes must be read unsigned
+   * @param nbt  Tag compound
+   * @param key  Key to read
+   * @return  Index or size
+   */
+  private static int readIndex(CompoundTag nbt, String key) {
+    if (nbt.contains(key, Tag.TAG_BYTE)) {
+      return nbt.getByte(key) & 255;
+    }
+    return nbt.getInt(key);
   }
 
   /**
    * Reads this inventory from Tag
    * @param nbt  Tag compound
    */
-  public void readFromTag(CompoundTag nbt) {
+  public void readFromTag(HolderLookup.Provider registries, CompoundTag nbt) {
     if (!strictSize) {
-      int newSize = nbt.getByte(TAG_SIZE) & 255;
+      int newSize = Math.min(readIndex(nbt, TAG_SIZE), MAX_SIZE);
       if (newSize != modules.length) {
         modules = Arrays.copyOf(modules, newSize);
       }
@@ -349,10 +378,10 @@ public class MeltingModuleInventory implements IItemHandlerModifiable {
     ListTag list = nbt.getList(TAG_ITEMS, Tag.TAG_COMPOUND);
     for (int i = 0; i < list.size(); i++) {
       CompoundTag item = list.getCompound(i);
-      if (item.contains(TAG_SLOT, Tag.TAG_BYTE)) {
-        int slot = item.getByte(TAG_SLOT) & 255;
+      if (item.contains(TAG_SLOT, Tag.TAG_ANY_NUMERIC)) {
+        int slot = readIndex(item, TAG_SLOT);
         if (validSlot(slot)) {
-          getModule(slot).readFromTag(item);
+          getModule(slot).readFromTag(registries, item);
         }
       }
     }

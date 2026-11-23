@@ -1,16 +1,13 @@
 package slimeknights.tconstruct.tables.recipe;
 
-
-import net.minecraft.core.registries.Registries;
 import lombok.RequiredArgsConstructor;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import slimeknights.mantle.recipe.data.AbstractRecipeBuilder;
-
-import java.util.function.Consumer;
 
 /** Builder for tinker station damaging recipes */
 @RequiredArgsConstructor(staticName = "damage")
@@ -20,20 +17,20 @@ public class TinkerStationDamagingRecipeBuilder extends AbstractRecipeBuilder<Ti
   private final int damageAmount;
 
   @Override
-  public void save(RecipeOutput consumer) {
+  public void save(RecipeOutput output) {
     ItemStack[] stacks = ingredient.getItems();
     if (stacks.length == 0) {
       throw new IllegalStateException("Empty ingredient not allowed");
     }
-    save(consumer, BuiltInRegistries.ITEM.getKey(stacks[0].getItem()));
+    save(output, BuiltInRegistries.ITEM.getKey(stacks[0].getItem()));
   }
 
   @Override
-  public void save(RecipeOutput consumer, ResourceLocation id) {
+  public void save(RecipeOutput output, ResourceLocation id) {
     if (ingredient == Ingredient.EMPTY) {
       throw new IllegalStateException("Empty ingredient not allowed");
     }
-    net.minecraft.advancements.AdvancementHolder advancementId = buildOptionalAdvancement(consumer, id, "tinker_station");
-    consumer.accept(id, new TinkerStationDamagingRecipe(id, ingredient, damageAmount), advancementId);
+    AdvancementHolder advancement = buildOptionalAdvancement(id, "tinker_station");
+    output.accept(id, new TinkerStationDamagingRecipe(id, ingredient, damageAmount), advancement);
   }
 }

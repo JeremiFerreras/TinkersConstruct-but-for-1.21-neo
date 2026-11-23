@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.FlowingFluid;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -25,7 +26,7 @@ public class FlexMobEffectLiquidBlock extends FlexLiquidBlock {
   public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
     if (entity.getFluidTypeHeight(getFluid().getFluidType()) > 0 && entity instanceof LivingEntity living) {
       MobEffectInstance effect = this.effect.get();
-      effect.getCures().clear();
+      effect.setCurativeItems(new ArrayList<>());
       living.addEffect(effect);
     }
   }

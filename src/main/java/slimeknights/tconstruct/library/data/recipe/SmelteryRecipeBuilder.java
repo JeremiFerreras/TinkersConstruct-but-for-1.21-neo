@@ -20,7 +20,6 @@ import net.neoforged.neoforge.common.crafting.DifferenceIngredient;
 import net.neoforged.neoforge.common.crafting.IntersectionIngredient;
 import net.neoforged.neoforge.common.conditions.ICondition;
 import net.neoforged.neoforge.common.conditions.ItemExistsCondition;
-import net.neoforged.neoforge.common.conditions.TrueCondition;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.mantle.recipe.condition.TagCombinationCondition;
 import slimeknights.mantle.recipe.condition.TagFilledCondition;
@@ -62,7 +61,7 @@ public class SmelteryRecipeBuilder {
   /** Array to pass into undamagable recipes */
   private static final int[] UNDAMAGABLE = {0};
 
-  /** Consumer for recipe results */
+  /** Recipe output for recipe results */
   private final RecipeOutput consumer;
   /** Resource name, domain is location for results and name is tag root */
   private final ResourceLocation name;
@@ -137,7 +136,9 @@ public class SmelteryRecipeBuilder {
 
   /** Sets all recipes to optional, used for compat */
   public SmelteryRecipeBuilder optional() {
-    return optional(true);
+    // set the field directly as the fluent lombok @Setter generates optional(boolean), which clashes with this no-arg method name
+    this.optional = true;
+    return this;
   }
 
   /** Sets the byproducts for following recipes */
@@ -255,7 +256,7 @@ public class SmelteryRecipeBuilder {
 
   /** Adds a recipe for melting an item by ID. Automatically optional */
   private void itemMelting(float scale, String output, float factor, ResourceLocation itemName, boolean damagable) {
-    MeltingRecipeBuilder builder = MeltingRecipeBuilder.melting(ItemNameIngredient.from(itemName), result((int) (baseUnit * scale)), temperature, factor);
+    MeltingRecipeBuilder builder = MeltingRecipeBuilder.melting(ItemNameIngredient.from(itemName).toVanilla(), result((int) (baseUnit * scale)), temperature, factor);
     if (damagable) {
       builder.setDamagable(damageUnits());
     }
@@ -283,7 +284,10 @@ public class SmelteryRecipeBuilder {
     builder.save(wrapped, location(meltingFolder, output));
   }
 
-  /** Adds recipes to melt an ore item with byproducts */
+  /**
+   * Adds recipes to melt an ore item with byproducts.
+   * TODO(neoport): ConditionalRecipe ordered first-match -> withConditions per-branch; verify only one byproduct condition passes at runtime
+   */
   private void oreMelting(float scale, String tagPrefix, @Nullable TagKey<Item> size, float factor, String output, boolean forceOptional) {
     assert oreRate != null;
     assert baseUnit != 0;
@@ -317,22 +321,24 @@ public class SmelteryRecipeBuilder {
               .setOre(oreRate, oreByproducts[0].getOreRate())
               .save(wrapped, location);
     } else {
-      // Multiple conditional alternatives share one recipe ID through RecipeOutput conditions.
-      boolean alwaysPresent = false;
+      // multiple options, each byproduct branch saves the same location guarded by its own condition.
+      // ConditionalRecipe used ordered first-match; withConditions guards each branch independently, so the byproduct
+      // conditions (presence of an ingot tag) must be mutually exclusive at runtime for the prior behavior to hold.
+      // TODO(neoport): conditional ore byproducts used ConditionalRecipe's ordered first-match (one recipe id, several
+      // condition-guarded variants). 1.21 datagen dedups by id and cannot emit multiple variants under one id, so emit a
+      // single recipe: prefer an always-present byproduct, otherwise no byproduct (the ore still melts). The mod-compat
+      // conditional byproduct preferences are dropped until restored via unique ids + mutually-exclusive conditions.
+      IByproduct always = null;
       for (IByproduct byproduct : oreByproducts) {
-        alwaysPresent = byproduct.isAlwaysPresent();
-        ICondition condition = alwaysPresent ? TrueCondition.INSTANCE : tagCondition("ingots/" + byproduct.getName());
-        supplier.get()
-          .addByproduct(byproduct.getFluid(scale))
-          .setOre(oreRate, byproduct.getOreRate())
-          .save(wrapped.withConditions(condition), location);
-        if (alwaysPresent) {
+        if (byproduct.isAlwaysPresent()) {
+          always = byproduct;
           break;
         }
       }
-      // If no byproduct is guaranteed, add a final no-byproduct fallback.
-      if (!alwaysPresent) {
-        supplier.get().save(wrapped.withConditions(TrueCondition.INSTANCE), location);
+      if (always != null) {
+        supplier.get().addByproduct(always.getFluid(scale)).setOre(oreRate, always.getOreRate()).save(wrapped, location);
+      } else {
+        supplier.get().save(wrapped, location);
       }
     }
   }

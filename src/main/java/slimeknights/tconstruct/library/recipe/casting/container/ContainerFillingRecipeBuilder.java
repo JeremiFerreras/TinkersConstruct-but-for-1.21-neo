@@ -1,8 +1,8 @@
 package slimeknights.tconstruct.library.recipe.casting.container;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-
 import lombok.AllArgsConstructor;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ItemLike;
@@ -11,11 +11,8 @@ import slimeknights.mantle.recipe.data.AbstractRecipeBuilder;
 import slimeknights.mantle.recipe.helper.TypeAwareRecipeSerializer;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 
-import javax.annotation.Nullable;
-import java.util.function.Consumer;
-
 /**
- * Builder for a container filling recipe. Takes an arbitrary fluid for a specific amount to fill a Forge {@link net.minecraftforge.fluids.capability.IFluidHandlerItem}
+ * Builder for a container filling recipe. Takes an arbitrary fluid for a specific amount to fill a Forge {@link net.neoforged.neoforge.fluids.capability.IFluidHandlerItem}
  */
 @AllArgsConstructor(staticName = "castingRecipe")
 @SuppressWarnings({"WeakerAccess", "unused"})
@@ -76,13 +73,13 @@ public class ContainerFillingRecipeBuilder extends AbstractRecipeBuilder<Contain
   }
 
   @Override
-  public void save(RecipeOutput consumer) {
-    this.save(consumer, this.result);
+  public void save(RecipeOutput output) {
+    this.save(output, this.result);
   }
 
   @Override
-  public void save(RecipeOutput consumerIn, ResourceLocation id) {
-    ResourceLocation advancementId = this.buildOptionalAdvancement(id, "casting");
-    saveRecipe(consumerIn, id, new ContainerFillingRecipe(recipeSerializer, id, group, fluidAmount, BuiltInRegistries.ITEM.get(this.result)), advancementId);
+  public void save(RecipeOutput output, ResourceLocation id) {
+    AdvancementHolder advancement = this.buildOptionalAdvancement(id, "casting");
+    output.accept(id, new ContainerFillingRecipe(recipeSerializer, id, group, fluidAmount, BuiltInRegistries.ITEM.get(result)), advancement);
   }
 }

@@ -35,9 +35,8 @@ public class AdvancementIds {
   /** Apply to anything with plating to grant it netherite armor achievements, and to anything with {@link ItemAbilities#HOE_TILL} to grant netherite hoe. */
   public static final ResourceLocation NETHERITE = TConstruct.getResource("netherite");
 
-  @SuppressWarnings("removal")
   private static ResourceLocation id(String key) {
-    return ResourceLocation.fromNamespaceAndPath("minecraft", key);
+    return ResourceLocation.withDefaultNamespace(key);
   }
 
   /** Creates a function ID from the given advancement */

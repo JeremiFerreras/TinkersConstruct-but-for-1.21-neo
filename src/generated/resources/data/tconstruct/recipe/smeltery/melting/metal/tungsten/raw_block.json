@@ -1,66 +1,26 @@
 {
-  "type": "forge:conditional",
-  "conditions": [
+  "neoforge:conditions": [
     {
       "type": "mantle:tag_filled",
-      "tag": "forge:storage_blocks/raw_tungsten"
+      "tag": "c:storage_blocks/raw_tungsten"
     }
   ],
-  "recipes": [
+  "type": "tconstruct:ore_melting",
+  "byproducts": [
     {
-      "conditions": [
-        {
-          "type": "mantle:tag_filled",
-          "tag": "forge:ingots/platinum"
-        }
-      ],
-      "recipe": {
-        "type": "tconstruct:ore_melting",
-        "byproducts": [
-          {
-            "amount": 810,
-            "rate": "metal",
-            "tag": "forge:molten_platinum"
-          }
-        ],
-        "ingredient": {
-          "tag": "forge:storage_blocks/raw_tungsten"
-        },
-        "rate": "metal",
-        "result": {
-          "amount": 810,
-          "tag": "forge:molten_tungsten"
-        },
-        "temperature": 950,
-        "time": 389
-      }
-    },
-    {
-      "conditions": [
-        {
-          "type": "forge:true"
-        }
-      ],
-      "recipe": {
-        "type": "tconstruct:ore_melting",
-        "byproducts": [
-          {
-            "amount": 810,
-            "rate": "metal",
-            "tag": "forge:molten_gold"
-          }
-        ],
-        "ingredient": {
-          "tag": "forge:storage_blocks/raw_tungsten"
-        },
-        "rate": "metal",
-        "result": {
-          "amount": 810,
-          "tag": "forge:molten_tungsten"
-        },
-        "temperature": 950,
-        "time": 389
-      }
+      "amount": 810,
+      "rate": "metal",
+      "tag": "c:molten_gold"
     }
-  ]
+  ],
+  "ingredient": {
+    "tag": "c:storage_blocks/raw_tungsten"
+  },
+  "rate": "metal",
+  "result": {
+    "amount": 810,
+    "tag": "c:molten_tungsten"
+  },
+  "temperature": 950,
+  "time": 389
 }

@@ -1,11 +1,8 @@
 package slimeknights.tconstruct.library.recipe.melting;
 
-import net.minecraft.advancements.AdvancementHolder;
-
-
-import net.minecraft.core.registries.Registries;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
@@ -21,7 +18,6 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static slimeknights.tconstruct.library.recipe.melting.IMeltingRecipe.getTemperature;
 
@@ -178,7 +174,6 @@ public class MeltingRecipeBuilder extends AbstractRecipeBuilder<MeltingRecipeBui
     return addByproduct(FluidOutput.fromStack(fluid));
   }
 
-  @SuppressWarnings("deprecation")
   @Override
   public void save(RecipeOutput consumer) {
     save(consumer, BuiltInRegistries.FLUID.getKey(output.get().getFluid()));
@@ -190,14 +185,14 @@ public class MeltingRecipeBuilder extends AbstractRecipeBuilder<MeltingRecipeBui
       throw new IllegalStateException("Builder cannot be both ore and damagable");
     }
     // only build JSON if needed
-    AdvancementHolder advancementId = this.buildOptionalAdvancement(consumer, id, "melting");
+    AdvancementHolder advancement = this.buildOptionalAdvancement(id, "melting");
     // based on properties, choose which recipe to build
     if (oreRate != null) {
-      consumer.accept(id, new OreMeltingRecipe(id, group, input, output, temperature, time, byproducts, oreRate, byproductRates), advancementId);
+      consumer.accept(id, new OreMeltingRecipe(id, group, input, output, temperature, time, byproducts, oreRate, byproductRates), advancement);
     } else if (unitSizes != null) {
-      consumer.accept(id, new DamageableMeltingRecipe(id, group, input, output, temperature, time, byproducts, unitSizes[0], List.of(Arrays.stream(unitSizes, 1, unitSizes.length).boxed().toArray(Integer[]::new))), advancementId);
+      consumer.accept(id, new DamageableMeltingRecipe(id, group, input, output, temperature, time, byproducts, unitSizes[0], List.of(Arrays.stream(unitSizes, 1, unitSizes.length).boxed().toArray(Integer[]::new))), advancement);
     } else {
-      consumer.accept(id, new MeltingRecipe(id, group, input, output, temperature, time, byproducts), advancementId);
+      consumer.accept(id, new MeltingRecipe(id, group, input, output, temperature, time, byproducts), advancement);
     }
   }
 }

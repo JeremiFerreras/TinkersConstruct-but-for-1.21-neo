@@ -74,11 +74,13 @@ public class CraftingStationTransferInfo implements IRecipeTransferInfo<Crafting
   }
 
   @Override
-  public boolean canHandle(CraftingStationContainerMenu container, RecipeHolder<CraftingRecipe> recipe) {
-    CraftingRecipe value = recipe.value();
-    if (value instanceof ShapedRecipe shaped) {
+  public boolean canHandle(CraftingStationContainerMenu container, RecipeHolder<CraftingRecipe> holder) {
+    // NeoForge 1.21.1 removed IShapedRecipe; vanilla ShapedRecipe exposes width/height directly. Non-shaped
+    // (shapeless / modded) recipes fall through and are accepted if they fit the 3x3 grid by ingredient count.
+    CraftingRecipe recipe = holder.value();
+    if (recipe instanceof ShapedRecipe shaped) {
       return shaped.getWidth() <= 3 && shaped.getHeight() <= 3;
     }
-    return value.getIngredients().size() <= 9;
+    return recipe.getIngredients().size() <= 9;
   }
 }

@@ -54,3 +54,12 @@ jobs:
             build/reports/
             build/test-results/
           if-no-files-found: ignore
+
+      - name: Upload playable mod
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeoTinkers-1.21.1
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+          if-no-files-found: error

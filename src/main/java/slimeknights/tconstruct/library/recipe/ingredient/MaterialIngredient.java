@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.library.recipe.ingredient;
 
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -8,14 +7,15 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
 import net.neoforged.neoforge.common.crafting.IngredientType;
 import slimeknights.mantle.data.loadable.common.IngredientLoadable;
+import slimeknights.mantle.data.loadable.field.LoadableField;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.data.predicate.IJsonPredicate;
 import slimeknights.mantle.recipe.helper.LoadableIngredientSerializer;
-import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.json.predicate.material.MaterialPredicate;
 import slimeknights.tconstruct.library.json.predicate.material.MaterialPredicateField;
 import slimeknights.tconstruct.library.materials.MaterialRegistry;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
+import slimeknights.tconstruct.library.materials.definition.MaterialId;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
 import slimeknights.tconstruct.library.recipe.material.MaterialRecipeCache;
 import slimeknights.tconstruct.library.tools.part.IMaterialItem;
@@ -28,12 +28,16 @@ import java.util.stream.Stream;
  * Extension of the vanilla ingredient to display materials on items and support matching by materials
  */
 public class MaterialIngredient extends NestedIngredient {
-  public static final ResourceLocation ID = TConstruct.getResource("material");
-  public static final RecordLoadable<MaterialIngredient> LOADER = RecordLoadable.create(
+  /** Field for the material predicate */
+  private static final LoadableField<IJsonPredicate<MaterialVariantId>,MaterialIngredient> MATERIAL_FIELD = new MaterialPredicateField<>("material", i -> i.material);
+  /** Loadable for parsing and serializing this ingredient */
+  public static final RecordLoadable<MaterialIngredient> LOADABLE = RecordLoadable.create(
     IngredientLoadable.DISALLOW_EMPTY.requiredField("match", i -> i.nested),
-    new MaterialPredicateField<>("material", i -> i.material),
+    MATERIAL_FIELD,
     MaterialIngredient::new);
-  public static final IngredientType<MaterialIngredient> TYPE = LoadableIngredientSerializer.type(LOADER);
+  /** Ingredient type instance */
+  // TODO(neoport): register this IngredientType on NeoForgeRegistries.Keys.INGREDIENT_TYPES under id tconstruct:material
+  public static final IngredientType<MaterialIngredient> TYPE = new LoadableIngredientSerializer<>(LOADABLE).type();
 
   private final IJsonPredicate<MaterialVariantId> material;
   @Nullable
@@ -65,27 +69,27 @@ public class MaterialIngredient extends NestedIngredient {
   }
 
   /** Creates an ingredient matching the given materials */
-  public static Ingredient of(Ingredient ingredient, IJsonPredicate<MaterialVariantId> material) {
-    return new MaterialIngredient(ingredient, material).toVanilla();
+  public static MaterialIngredient of(Ingredient ingredient, IJsonPredicate<MaterialVariantId> material) {
+    return new MaterialIngredient(ingredient, material);
   }
 
   /** Creates an ingredient matching the given materials */
-  public static Ingredient of(ItemLike item, IJsonPredicate<MaterialVariantId> material) {
+  public static MaterialIngredient of(ItemLike item, IJsonPredicate<MaterialVariantId> material) {
     return of(Ingredient.of(item), material);
   }
 
   /** Creates an ingredient matching a specific material */
-  public static Ingredient of(Ingredient ingredient) {
-    return of(ingredient, MaterialPredicate.ANY);
+  public static MaterialIngredient of(Ingredient ingredient) {
+    return new MaterialIngredient(ingredient, MaterialPredicate.ANY);
   }
 
   /** Creates an ingredient matching a single material */
-  public static Ingredient of(Ingredient ingredient, MaterialVariantId material) {
+  public static MaterialIngredient of(Ingredient ingredient, MaterialVariantId material) {
     return of(ingredient, MaterialPredicate.variant(material));
   }
 
   /** Creates an ingredient matching a material tag */
-  public static Ingredient of(Ingredient ingredient, TagKey<IMaterial> tag) {
+  public static MaterialIngredient of(Ingredient ingredient, TagKey<IMaterial> tag) {
     return of(ingredient, MaterialPredicate.tag(tag));
   }
 
@@ -95,7 +99,7 @@ public class MaterialIngredient extends NestedIngredient {
    * @param material  Material ID
    * @return  Material ingredient instance
    */
-  public static Ingredient of(ItemLike item, MaterialVariantId material) {
+  public static MaterialIngredient of(ItemLike item, MaterialVariantId material) {
     return of(Ingredient.of(item), material);
   }
 
@@ -105,7 +109,7 @@ public class MaterialIngredient extends NestedIngredient {
    * @param tag   Material tag
    * @return  Material ingredient instance
    */
-  public static Ingredient of(ItemLike item, TagKey<IMaterial> tag) {
+  public static MaterialIngredient of(ItemLike item, TagKey<IMaterial> tag) {
     return of(Ingredient.of(item), tag);
   }
 
@@ -114,7 +118,7 @@ public class MaterialIngredient extends NestedIngredient {
    * @param item  Material item
    * @return  Material ingredient instance
    */
-  public static Ingredient of(ItemLike item) {
+  public static MaterialIngredient of(ItemLike item) {
     return of(Ingredient.of(item));
   }
 
@@ -124,7 +128,7 @@ public class MaterialIngredient extends NestedIngredient {
    * @param material  Material value
    * @return  Material with tag
    */
-  public static Ingredient of(TagKey<Item> tag, MaterialVariantId material) {
+  public static MaterialIngredient of(TagKey<Item> tag, MaterialVariantId material) {
     return of(Ingredient.of(tag), material);
   }
 
@@ -133,14 +137,14 @@ public class MaterialIngredient extends NestedIngredient {
    * @param tag       Tag instance
    * @return  Material with tag
    */
-  public static Ingredient of(TagKey<Item> tag) {
+  public static MaterialIngredient of(TagKey<Item> tag) {
     return of(Ingredient.of(tag));
   }
 
   @Override
-  public boolean test(ItemStack stack) {
+  public boolean test(@Nullable ItemStack stack) {
     // check super first, should be faster
-    if (stack.isEmpty() || !super.test(stack)) {
+    if (stack == null || stack.isEmpty() || !super.test(stack)) {
       return false;
     }
     // no need to read material NBT if the material is the any predicate
@@ -152,18 +156,20 @@ public class MaterialIngredient extends NestedIngredient {
 
   @Override
   public Stream<ItemStack> getItems() {
+    // until materials load, just defer to the nested stacks; do not cache as the cache would be incomplete
+    if (!MaterialRegistry.isFullyLoaded()) {
+      return Arrays.stream(nested.getItems());
+    }
     if (materialStacks == null) {
-      if (!MaterialRegistry.isFullyLoaded()) {
-        return super.getItems();
-      }
       // no material? apply all materials for variants
-      Stream<ItemStack> items = Arrays.stream(nested.getItems());
       // find all materials matching the filter; note this only shows craftable material variants
-      items = items.flatMap(stack -> MaterialRecipeCache.getAllVariants().stream()
-        .filter(material::matches)
-        .map(mat -> IMaterialItem.withMaterial(stack, mat))
-        .filter(created -> created.getItem() instanceof IMaterialItem));
-      materialStacks = items.distinct().toArray(ItemStack[]::new);
+      materialStacks = Arrays.stream(nested.getItems())
+        .flatMap(stack -> MaterialRecipeCache.getAllVariants().stream()
+          .filter(material::matches)
+          .map(mat -> IMaterialItem.withMaterial(stack, mat))
+          .filter(matStack -> !IMaterialItem.getMaterialFromStack(matStack).equals(MaterialId.UNKNOWN)))
+        .distinct()
+        .toArray(ItemStack[]::new);
     }
     return Arrays.stream(materialStacks);
   }

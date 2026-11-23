@@ -3,10 +3,10 @@
   "damage": 2,
   "entity": [
     {
-      "tag": "forge:ghasts"
+      "tag": "c:ghasts"
     },
     {
-      "tag": "forge:axolotls"
+      "tag": "c:axolotls"
     }
   ],
   "result": {
@@ -14,6 +14,6 @@
     "nbt": {
       "Potion": "minecraft:regeneration"
     },
-    "tag": "forge:potion"
+    "tag": "c:potion"
   }
 }

@@ -1,13 +1,11 @@
 package slimeknights.tconstruct.world.data;
 
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderOwner;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.RegistrySetBuilder;
 import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.data.worldgen.features.TreeFeatures;
@@ -70,6 +68,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.RuleTest;
 import net.neoforged.neoforge.common.world.BiomeModifier;
 import net.neoforged.neoforge.common.world.BiomeModifiers.AddFeaturesBiomeModifier;
 import net.neoforged.neoforge.common.world.BiomeModifiers.AddSpawnsBiomeModifier;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.registries.holdersets.AndHolderSet;
 import net.neoforged.neoforge.registries.holdersets.NotHolderSet;
 import net.neoforged.neoforge.registries.holdersets.OrHolderSet;
@@ -191,7 +190,7 @@ public class WorldgenProvider {
     // mangrove style
     register(context, enderSlimeTree, Feature.TREE,
              new TreeConfigurationBuilder(BlockStateProvider.simple(TinkerWorld.enderbark.getLog()),
-                                          new UpwardsBranchingTrunkPlacer(2, 1, 4, UniformInt.of(1, 4), 0.5F, UniformInt.of(0, 1), BuiltInRegistries.BLOCK.getOrCreateTag(TinkerTags.Blocks.ENDERBARK_LOGS_CAN_GROW_THROUGH)),
+                                          new UpwardsBranchingTrunkPlacer(2, 1, 4, UniformInt.of(1, 4), 0.5F, UniformInt.of(0, 1), context.lookup(Registries.BLOCK).getOrThrow(TinkerTags.Blocks.ENDERBARK_LOGS_CAN_GROW_THROUGH)),
                                           BlockStateProvider.simple(TinkerWorld.slimeLeaves.get(FoliageType.ENDER)),
                                           new RandomSpreadFoliagePlacer(ConstantInt.of(3), ConstantInt.of(0), ConstantInt.of(2), 70),
                                           ExtraRootVariantPlacer.builder()
@@ -206,7 +205,7 @@ public class WorldgenProvider {
                .build());
     register(context, enderSlimeTreeTall, Feature.TREE,
              new TreeConfigurationBuilder(BlockStateProvider.simple(TinkerWorld.enderbark.getLog()),
-                                          new UpwardsBranchingTrunkPlacer(4, 1, 9, UniformInt.of(1, 6), 0.5F, UniformInt.of(0, 1), BuiltInRegistries.BLOCK.getOrCreateTag(TinkerTags.Blocks.ENDERBARK_LOGS_CAN_GROW_THROUGH)),
+                                          new UpwardsBranchingTrunkPlacer(4, 1, 9, UniformInt.of(1, 6), 0.5F, UniformInt.of(0, 1), context.lookup(Registries.BLOCK).getOrThrow(TinkerTags.Blocks.ENDERBARK_LOGS_CAN_GROW_THROUGH)),
                                           BlockStateProvider.simple(TinkerWorld.slimeLeaves.get(FoliageType.ENDER)),
                                           new RandomSpreadFoliagePlacer(ConstantInt.of(3), ConstantInt.of(0), ConstantInt.of(2), 70),
                                           ExtraRootVariantPlacer.builder()
@@ -310,7 +309,7 @@ public class WorldgenProvider {
       .addTree(configured.getOrThrow(TreeFeatures.SPRUCE), 2)
       .addTree(configured.getOrThrow(TreeFeatures.ACACIA), 1)
       .addTree(configured.getOrThrow(TreeFeatures.JUNGLE_TREE_NO_VINE), 1)
-      .addGrass(Blocks.GRASS, 7)
+      .addGrass(Blocks.SHORT_GRASS, 7)
       .addGrass(Blocks.FERN, 1)
       .build(new StructureSettings(biomes.getOrThrow(TinkerTags.Biomes.CLAY_ISLANDS), monsterOverride(TinkerWorld.terracubeEntity.get(), 2, 4), Decoration.SURFACE_STRUCTURES, TerrainAdjustment.NONE)));
     // blood island

@@ -2,6 +2,7 @@ package slimeknights.tconstruct.library.tools.part.block;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -10,12 +11,11 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType.BlockEntitySupplier;
 import net.minecraft.world.level.block.state.BlockState;
-import slimeknights.tconstruct.library.materials.definition.IMaterial;
+import slimeknights.tconstruct.library.materials.definition.MaterialId;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
 import slimeknights.tconstruct.library.tools.part.IMaterialItem;
 
 import javax.annotation.Nullable;
-import slimeknights.tconstruct.library.utils.StackNBT;
 
 /** Block for {@link MaterialBlockItem} or {@link ToolPartBlockItem}. Uses {@link MaterialBlockEntity} */
 public class MaterialBlock extends Block implements EntityBlock {
@@ -34,14 +34,16 @@ public class MaterialBlock extends Block implements EntityBlock {
 
   @Override
   public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-    if (StackNBT.hasTag(stack)) {
+    // 1.21: ItemStack#hasTag is gone, the material is stored in the CUSTOM_DATA component
+    if (stack.has(DataComponents.CUSTOM_DATA)) {
       MaterialVariantId material = IMaterialItem.getMaterialFromStack(stack);
-      if (material != IMaterial.UNKNOWN_ID && level.getBlockEntity(pos) instanceof MaterialBlockEntity be) {
+      if (material != MaterialId.UNKNOWN && level.getBlockEntity(pos) instanceof MaterialBlockEntity be) {
         be.setMaterial(material);
       }
     }
   }
 
+  @Deprecated
   @Override
   public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
     ItemStack stack = new ItemStack(state.getBlock());

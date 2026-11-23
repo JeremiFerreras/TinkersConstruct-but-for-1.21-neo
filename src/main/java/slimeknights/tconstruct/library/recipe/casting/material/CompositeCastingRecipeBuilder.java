@@ -1,10 +1,9 @@
 package slimeknights.tconstruct.library.recipe.casting.material;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import slimeknights.mantle.data.loadable.Loadables;
@@ -18,7 +17,6 @@ import slimeknights.tconstruct.library.tools.part.IMaterialItem;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 
 import javax.annotation.Nullable;
-import java.util.function.Consumer;
 
 /** Builder for a composite part recipe, should exist for each part */
 @Accessors(fluent = true)
@@ -41,13 +39,13 @@ public class CompositeCastingRecipeBuilder extends AbstractRecipeBuilder<Composi
   }
 
   @Override
-  public void save(RecipeOutput consumer) {
-    save(consumer, BuiltInRegistries.ITEM.getKey(result.asItem()));
+  public void save(RecipeOutput output) {
+    save(output, Loadables.ITEM.getKey(result.asItem()));
   }
 
   @Override
-  public void save(RecipeOutput consumer, ResourceLocation id) {
-    ResourceLocation advancementId = this.buildOptionalAdvancement(id, "casting");
-    saveRecipe(consumer, id, new CompositeCastingRecipe(serializer, id, group, itemCost, result, allowedMaterials, castingStatConflict), advancementId);
+  public void save(RecipeOutput output, ResourceLocation id) {
+    AdvancementHolder advancement = this.buildOptionalAdvancement(id, "casting");
+    output.accept(id, new CompositeCastingRecipe(serializer, id, group, itemCost, result, allowedMaterials, castingStatConflict), advancement);
   }
 }

@@ -1,13 +1,10 @@
 package slimeknights.tconstruct.library.modifiers.fluid.block;
 
-import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.item.alchemy.PotionContents;
-import net.minecraft.world.item.component.CustomData;
+import slimeknights.tconstruct.library.modifiers.fluid.entity.PotionFluidEffect;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import slimeknights.mantle.data.loadable.primitive.FloatLoadable;
@@ -16,11 +13,9 @@ import slimeknights.tconstruct.library.modifiers.fluid.EffectLevel;
 import slimeknights.tconstruct.library.modifiers.fluid.FluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.FluidEffectContext;
 import slimeknights.tconstruct.library.recipe.TagPredicate;
-import slimeknights.tconstruct.library.utils.FluidStackNBT;
 
-import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.StreamSupport;
 
 /** Effect to create a lingering cloud at the hit block */
 public record PotionCloudFluidEffect(float scale, TagPredicate predicate) implements FluidEffect<FluidEffectContext.Block> {
@@ -36,10 +31,10 @@ public record PotionCloudFluidEffect(float scale, TagPredicate predicate) implem
 
   @Override
   public float apply(FluidStack fluid, EffectLevel level, FluidEffectContext.Block context, FluidAction action) {
-    CompoundTag tag = FluidStackNBT.getTag(fluid);
-    if (predicate.test(tag) && context.isOffsetReplaceable()) {
-      PotionContents contents = fluid.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
-      List<MobEffectInstance> effects = StreamSupport.stream(contents.getAllEffects().spliterator(), false).toList();
+    PotionContents contents = fluid.get(DataComponents.POTION_CONTENTS);
+    if (contents != null && PotionFluidEffect.testPredicate(predicate, contents) && context.isOffsetReplaceable()) {
+      List<MobEffectInstance> effects = new ArrayList<>();
+      contents.getAllEffects().forEach(effects::add);
       if (!effects.isEmpty()) {
         float scale = level.value();
         if (action.execute()) {

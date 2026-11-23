@@ -2,13 +2,13 @@
   "type": "tconstruct:entity_melting",
   "damage": 3,
   "entity": {
-    "tag": "forge:turtles"
+    "tag": "c:turtles"
   },
   "result": {
     "amount": 25,
     "nbt": {
       "Potion": "minecraft:turtle_master"
     },
-    "tag": "forge:potion"
+    "tag": "c:potion"
   }
 }

@@ -1,43 +1,40 @@
-# [Tinkers' Construct](https://slimeknights.github.io/projects/#tinkers-construct)
+# Neo Tinkers'
 
-Tinkers' Construct is a mod about putting tools together in a wide variety of ways, then modifying them until they turn into something else. The tools never disappear and can be named and changed to your heart's desire. Once you make them, they're yours forever. Many different materials can be used to make your tools. Tools can be forged in the part builder, or by melting down metals in the multiblock smeltery.
+**Neo Tinkers'** is a faithful 1:1 **Minecraft NeoForge** port of **Tinkers' Construct**. This port is an actively maintained project to keep Tinkers' Construct up-to-date with the latest Minecraft versions!
 
-## Documentation
+Full content credit for the mod goes to SlimeKnights. I take no credit for any of the original work. This project is in no way endorsed by or affiliated with SlimeKnights.
 
-For documentation on writing addons or working with Tinkers' Consrtuct datapacks, see the pages on the SlimeKnight's Github.io pages: https://slimeknights.github.io/docs/.
+**Requires [Neo Mantle](https://github.com/vancevoj/neomantle)**: the port of Mantle, a dependency mod. Install it alongside this one.
 
-For a gameplay overview, see https://slimeknights.github.io/docs/gameplay/tinkers-construct-3/.
+## Download
 
-## Setting up a Workspace/Compiling from Source
+Pick your Minecraft version and download **both jars** (Neo Tinkers' and Neo Mantle). Each link opens the newest release; grab the jar listed for your version (not the `-sources` one). Jars from different versions do not mix.
 
-Note: Git MUST be installed and in the system path to use our scripts.
-* Setup: Import Tinkers' Construct as a Gradle project into IDEA. Let it run setup.
-* Run: Run the `gradlew genIntellijRuns` through IDEA.
-* Build: Run `gradlew build`.
-* If obscure Gradle issues are found try running `gradlew clean` and `gradlew cleanCache`
+### Minecraft 1.21.1
 
-## Issue reporting
-Please include the following:
+Needs NeoForge 21.1 and Java 21.
 
-* Minecraft version
-* Tinkers' Construct version
-* Forge version/build
-* Versions of any mods potentially related to the issue 
-* Any relevant screenshots are greatly appreciated.
-* For crashes:
-	* Steps to reproduce
-	* latest.log (the FML log) from the root folder of the client
+| Mod | Download | Use this jar |
+|---|---|---|
+| **Neo Tinkers'** | [Latest release](https://github.com/vancevoj/neotinkers/releases/latest) | `NeoTinkers-1.21.1-...jar` |
+| **Neo Mantle** (required) | [Latest release](https://github.com/vancevoj/neomantle/releases/latest) | `NeoMantle-1.21.1-...jar` |
 
-## Licenses
-Code, Textures and binaries are licensed under the [MIT License](https://tldrlegal.com/license/mit-license).
+<br>
 
-You are allowed to use the mod in your modpack.
-Any modpack which uses Tinkers' Construct takes **full** responsibility for user support queries. For anyone else, we only support official builds from the main CI server, not custom built jars. We also do not take bug reports for outdated builds of Minecraft.
+### Minecraft 26.3
 
-If you have queries about any license or the above support restrictions, please join [our Discord](https://discord.com/invite/njGrvuh) or reach out via the links on https://slimeknights.github.io/about/.
+Needs NeoForge 26.3.0.103 or newer and Java 25.
 
-Any alternate licenses are noted where appropriate.
+| Mod | Download | Use this jar |
+|---|---|---|
+| **Neo Tinkers'** | [Latest release](https://github.com/vancevoj/neotinkers/releases/latest) | `NeoTinkers-26.3-...jar` |
+| **Neo Mantle** (required) | [Latest release](https://github.com/vancevoj/neomantle/releases/latest) | `NeoMantle-26.3-...jar` |
 
-## Jar Signing
+<br>
 
-Some jars from our build servers may be signed. Under no circumstances does anyone have permission to verify the signatures on those jars from other mods. The signing is for informational purposes only.
+## License
+
+Neo Tinkers' is a port of [Tinkers' Construct](https://github.com/SlimeKnights/TinkersConstruct) by SlimeKnights and is released under the same MIT License as the original. See [LICENSE](LICENSE) for the full text.
+
+Copyright (c) 2022 SlimeKnights\
+Copyright (c) 2026 vancevoj / Neo Tinkers'

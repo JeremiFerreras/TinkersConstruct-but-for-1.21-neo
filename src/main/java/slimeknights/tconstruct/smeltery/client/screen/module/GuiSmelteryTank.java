@@ -75,16 +75,16 @@ public class GuiSmelteryTank implements IScreenWithFluidTank {
    * Renders the smeltery tank
    * @param matrices  Matrix stack instance
    */
-  public void renderFluids(PoseStack matrices) {
+  public void renderFluids(GuiGraphics graphics) {
     // draw liquids
     if (tank.getContained() > 0) {
       int[] heights = calcLiquidHeights(true);
 
-      int bottom = y + width;
+      int bottom = y + height;
       for (int i = 0; i < heights.length; i++) {
         int fluidH = heights[i];
         FluidStack liquid = tank.getFluids().get(i);
-        GuiUtil.renderTiledFluid(matrices, parent, liquid, x, bottom - fluidH, width, fluidH, 100);
+        GuiUtil.renderTiledFluid(graphics, parent, liquid, x, bottom - fluidH, width, fluidH, 100);
         bottom -= fluidH;
       }
     } else if (liquidHeights != null && liquidHeights.length > 0) {

@@ -7,7 +7,7 @@
       "item": "tconstruct:clear_glass"
     },
     "X": {
-      "tag": "forge:dyes/light_gray"
+      "tag": "c:dyes/light_gray"
     }
   },
   "pattern": [
@@ -16,8 +16,7 @@
     "###"
   ],
   "result": {
-    "id": "tconstruct:light_gray_clear_stained_glass",
-    "count": 8
-  },
-  "show_notification": true
+    "count": 8,
+    "id": "tconstruct:light_gray_clear_stained_glass"
+  }
 }

@@ -1,66 +1,26 @@
 {
-  "type": "forge:conditional",
-  "conditions": [
+  "neoforge:conditions": [
     {
       "type": "mantle:tag_filled",
-      "tag": "forge:raw_materials/cadmium"
+      "tag": "c:raw_materials/cadmium"
     }
   ],
-  "recipes": [
+  "type": "tconstruct:ore_melting",
+  "byproducts": [
     {
-      "conditions": [
-        {
-          "type": "mantle:tag_filled",
-          "tag": "forge:ingots/lead"
-        }
-      ],
-      "recipe": {
-        "type": "tconstruct:ore_melting",
-        "byproducts": [
-          {
-            "amount": 90,
-            "rate": "metal",
-            "tag": "forge:molten_lead"
-          }
-        ],
-        "ingredient": {
-          "tag": "forge:raw_materials/cadmium"
-        },
-        "rate": "metal",
-        "result": {
-          "amount": 90,
-          "tag": "forge:molten_cadmium"
-        },
-        "temperature": 294,
-        "time": 63
-      }
-    },
-    {
-      "conditions": [
-        {
-          "type": "forge:true"
-        }
-      ],
-      "recipe": {
-        "type": "tconstruct:ore_melting",
-        "byproducts": [
-          {
-            "amount": 90,
-            "rate": "metal",
-            "tag": "forge:molten_copper"
-          }
-        ],
-        "ingredient": {
-          "tag": "forge:raw_materials/cadmium"
-        },
-        "rate": "metal",
-        "result": {
-          "amount": 90,
-          "tag": "forge:molten_cadmium"
-        },
-        "temperature": 294,
-        "time": 63
-      }
+      "amount": 90,
+      "rate": "metal",
+      "tag": "c:molten_copper"
     }
-  ]
+  ],
+  "ingredient": {
+    "tag": "c:raw_materials/cadmium"
+  },
+  "rate": "metal",
+  "result": {
+    "amount": 90,
+    "tag": "c:molten_cadmium"
+  },
+  "temperature": 294,
+  "time": 63
 }

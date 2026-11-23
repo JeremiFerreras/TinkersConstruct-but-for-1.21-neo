@@ -41,7 +41,7 @@ public record SlotInChargeModule(TinkerDataKey<SlotInCharge> key, @Nullable TagK
     // remove slot in charge if that is us
     EquipmentSlot slot = context.getChangedSlot();
     if (toolValid(tool, slot, context)) {
-      TinkerDataCapability.Holder data = context.getTinkerData();
+      TinkerDataCapability.Holder data = context.getDataHolder();
       if (data != null) {
         SlotInCharge slotInCharge = data.get(key);
         if (slotInCharge != null) {
@@ -55,7 +55,7 @@ public record SlotInChargeModule(TinkerDataKey<SlotInCharge> key, @Nullable TagK
   public void onEquip(IToolStackView tool, ModifierEntry modifier, EquipmentChangeContext context) {
     EquipmentSlot slot = context.getChangedSlot();
     if (toolValid(tool, slot, context)) {
-      TinkerDataCapability.Holder data = context.getTinkerData();
+      TinkerDataCapability.Holder data = context.getDataHolder();
       if (data != null) {
         data.computeIfAbsent(key, CONSTRUCTOR).addSlot(slot, modifier.getLevel());
       }
@@ -87,7 +87,7 @@ public record SlotInChargeModule(TinkerDataKey<SlotInCharge> key, @Nullable TagK
 
   /** Tracker to determine which slot should be in charge */
   public static class SlotInCharge {
-    private final int[] levels = new int[6];
+    private final int[] levels = new int[EquipmentSlot.values().length];
     @Getter
     private int totalLevel = 0;
     @Getter

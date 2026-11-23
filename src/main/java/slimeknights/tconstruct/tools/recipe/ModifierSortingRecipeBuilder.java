@@ -1,30 +1,27 @@
 package slimeknights.tconstruct.tools.recipe;
 
-
-import net.minecraft.core.registries.Registries;
 import lombok.RequiredArgsConstructor;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import slimeknights.tconstruct.library.recipe.worktable.AbstractSizedIngredientRecipeBuilder;
-
-import java.util.function.Consumer;
 
 /** Builder for modifier sorting recipes */
 @RequiredArgsConstructor(staticName = "sorting")
 public class ModifierSortingRecipeBuilder extends AbstractSizedIngredientRecipeBuilder<ModifierSortingRecipeBuilder> {
 
   @Override
-  public void save(RecipeOutput consumer) {
-    save(consumer, BuiltInRegistries.ITEM.getKey((inputs.get(0).getMatchingStacks().get(0).getItem())));
+  public void save(RecipeOutput output) {
+    save(output, BuiltInRegistries.ITEM.getKey((inputs.get(0).getMatchingStacks().get(0).getItem())));
   }
 
   @Override
-  public void save(RecipeOutput consumer, ResourceLocation id) {
+  public void save(RecipeOutput output, ResourceLocation id) {
     if (inputs.isEmpty()) {
       throw new IllegalStateException("Must have at least one ingredient");
     }
-    net.minecraft.advancements.AdvancementHolder advancementId = buildOptionalAdvancement(consumer, id, "modifiers");
-    consumer.accept(id, new ModifierSortingRecipe(id, inputs), advancementId);
+    AdvancementHolder advancement = buildOptionalAdvancement(id, "modifiers");
+    output.accept(id, new ModifierSortingRecipe(id, inputs), advancement);
   }
 }

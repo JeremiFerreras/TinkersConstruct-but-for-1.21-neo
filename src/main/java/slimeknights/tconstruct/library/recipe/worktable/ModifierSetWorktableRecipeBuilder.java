@@ -1,12 +1,11 @@
 package slimeknights.tconstruct.library.recipe.worktable;
 
-import net.minecraft.advancements.AdvancementHolder;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -15,8 +14,6 @@ import net.minecraft.world.item.crafting.Ingredient;
 import slimeknights.mantle.data.predicate.IJsonPredicate;
 import slimeknights.tconstruct.library.json.predicate.modifier.ModifierPredicate;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
-
-import java.util.function.Consumer;
 
 /** Builder for recipes to add or remove a modifier from a set in persistent data */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -69,7 +66,7 @@ public class ModifierSetWorktableRecipeBuilder extends AbstractSizedIngredientRe
     if (tools == Ingredient.EMPTY) {
       throw new IllegalStateException("Tools cannot be empty");
     }
-    AdvancementHolder advancementId = buildOptionalAdvancement(consumer, id, "modifiers");
-    consumer.accept(id, new ModifierSetWorktableRecipe(id, dataKey, inputs, tools, modifierPredicate, addToSet, allowTraits), advancementId);
+    AdvancementHolder advancement = buildOptionalAdvancement(id, "modifiers");
+    consumer.accept(id, new ModifierSetWorktableRecipe(id, dataKey, inputs, tools, modifierPredicate, addToSet, allowTraits), advancement);
   }
 }

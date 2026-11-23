@@ -13,6 +13,11 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
+import slimeknights.mantle.item.ConstantFluidContainerWrapper;
+import slimeknights.tconstruct.fluids.TinkerFluids;
+import slimeknights.tconstruct.library.recipe.FluidValues;
 
 import java.util.List;
 
@@ -25,12 +30,12 @@ public class MagmaBottleItem extends Item {
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flagIn) {
+  public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flagIn) {
     super.appendHoverText(stack, context, tooltip, flagIn);
     tooltip.add(Component.translatable(
       "potion.withDuration",
       Blocks.FIRE.getName(),
-      StringUtil.formatTickDuration(fireTime * 20, context.tickRate())
+      StringUtil.formatTickDuration(fireTime * 20, 20.0f)
     ).withStyle(MobEffectCategory.HARMFUL.getTooltipFormatting()));
   }
 
@@ -40,9 +45,8 @@ public class MagmaBottleItem extends Item {
     return InteractionResultHolder.consume(player.getItemInHand(hand));
   }
 
-  // PORT: getUseDuration gained LivingEntity
   @Override
-  public int getUseDuration(ItemStack pStack, LivingEntity entity) {
+  public int getUseDuration(ItemStack pStack, LivingEntity living) {
     return 32;
   }
 
@@ -71,5 +75,8 @@ public class MagmaBottleItem extends Item {
     return stack;
   }
 
-  // PORT: initCapabilities removed; fluid handler registered in TinkerCapabilityEvents
+  /** Builds the fluid handler for the given stack, for registration in {@code RegisterCapabilitiesEvent}. */
+  public IFluidHandlerItem getFluidHandler(ItemStack stack) {
+    return new ConstantFluidContainerWrapper(new FluidStack(TinkerFluids.magma.get(), FluidValues.BOTTLE), stack);
+  }
 }

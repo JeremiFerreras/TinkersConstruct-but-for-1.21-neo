@@ -20,7 +20,6 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class MeltingFuelLookup {
   /** Dummy fuel instance sine caches don't support caching null */
-  @SuppressWarnings("removal")
   private static final MeltingFuel EMPTY = new MeltingFuel(ResourceLocation.parse("missingno"), FluidIngredient.EMPTY, 0, 0, 0);
   /** Temperature for solid fuels in the heater */
   private static MeltingFuel SOLID = EMPTY;
@@ -47,8 +46,8 @@ public class MeltingFuelLookup {
    * @param fuel   Fuel
    */
   public static void addFuel(MeltingFuel fuel) {
-    // skip empty fuel
-    if (fuel.getRate() == 0) {
+    // skip empty fuel, and the integrated client copy
+    if (fuel.getRate() == 0 || RecipeCacheInvalidator.skipRegistration()) {
       return;
     }
     LISTENER.checkClear();

@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.common.data.model;
 
-import net.neoforged.neoforge.registries.DeferredItem;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
@@ -173,7 +172,7 @@ public class TinkerItemModelProvider extends ItemModelProvider {
 
   /** Creates a part model with the given texture */
   private MaterialModelBuilder<ItemModelBuilder> part(ResourceLocation part, String texture) {
-    return withExistingParent(part.getPath(), "forge:item/default")
+    return withExistingParent(part.getPath(), "neoforge:item/default")
       .texture("texture", getResource("item/tool/" + texture))
       .customLoader(MaterialModelBuilder::new);
   }
@@ -184,12 +183,12 @@ public class TinkerItemModelProvider extends ItemModelProvider {
   }
 
   /** Creates a part model with the given texture */
-  private MaterialModelBuilder<ItemModelBuilder> part(DeferredItem<? extends MaterialItem> part, String texture) {
+  private MaterialModelBuilder<ItemModelBuilder> part(ItemObject<? extends MaterialItem> part, String texture) {
     return part(part.getId(), texture);
   }
 
   /** Creates a part model in the parts folder */
-  private void part(DeferredItem<? extends MaterialItem> part) {
+  private void part(ItemObject<? extends MaterialItem> part) {
     part(part, "parts/" + part.getId().getPath());
   }
 

@@ -1,11 +1,14 @@
 package slimeknights.tconstruct.library.modifiers.fluid.entity;
 
 import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.effect.MobEffect;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
@@ -15,10 +18,9 @@ import slimeknights.tconstruct.library.modifiers.fluid.EffectLevel;
 import slimeknights.tconstruct.library.modifiers.fluid.FluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.FluidEffectContext;
 import slimeknights.tconstruct.library.recipe.TagPredicate;
-import slimeknights.tconstruct.library.utils.FluidStackNBT;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.StreamSupport;
 
 /** Spilling effect that pulls the potion from a NBT potion fluid and applies it */
 public record PotionFluidEffect(float scale, TagPredicate predicate) implements FluidEffect<FluidEffectContext.Entity> {
@@ -32,13 +34,34 @@ public record PotionFluidEffect(float scale, TagPredicate predicate) implements 
     return LOADER;
   }
 
+  /**
+   * Rebuilds the legacy potion fluid tag ({@code {Potion:"<id>"}}, matching {@code PotionFluidType.potionTag}) so the
+   * {@link TagPredicate} keeps working against component-backed fluids. The {@link TagPredicate#ANY} default matches a
+   * null tag, so this preserves the 1.20 behavior for the in-mod potion fluid.
+   */
+  public static boolean testPredicate(TagPredicate predicate, PotionContents contents) {
+    if (predicate == TagPredicate.ANY) {
+      return true;
+    }
+    CompoundTag tag = null;
+    Holder<Potion> potion = contents.potion().orElse(null);
+    if (potion != null) {
+      ResourceKey<Potion> key = potion.unwrapKey().orElse(null);
+      if (key != null) {
+        tag = new CompoundTag();
+        tag.putString("Potion", key.location().toString());
+      }
+    }
+    return predicate.test(tag);
+  }
+
   @Override
   public float apply(FluidStack fluid, EffectLevel level, FluidEffectContext.Entity context, FluidAction action) {
     LivingEntity target = context.getLivingTarget();
-    // must match the tag predicate
-    if (target != null && predicate.test(FluidStackNBT.getTag(fluid))) {
-      PotionContents contents = fluid.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
-      List<MobEffectInstance> effects = StreamSupport.stream(contents.getAllEffects().spliterator(), false).toList();
+    PotionContents contents = fluid.get(DataComponents.POTION_CONTENTS);
+    if (target != null && contents != null && testPredicate(predicate, contents)) {
+      List<MobEffectInstance> effects = new ArrayList<>();
+      contents.getAllEffects().forEach(effects::add);
       if (!effects.isEmpty()) {
         LivingEntity attacker = context.getEntity();
         Entity directSource = context.getDirectSource();

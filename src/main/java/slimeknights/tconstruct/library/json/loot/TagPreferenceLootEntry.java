@@ -12,7 +12,6 @@ import net.minecraft.world.level.storage.loot.entries.LootPoolSingletonContainer
 import net.minecraft.world.level.storage.loot.functions.LootItemFunction;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import slimeknights.mantle.recipe.helper.TagPreference;
-import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.shared.TinkerCommons;
 
 import java.util.List;
@@ -21,15 +20,16 @@ import java.util.function.Consumer;
 /** @deprecated use {@link slimeknights.mantle.loot.entry.TagPreferenceLootEntry} */
 @Deprecated(forRemoval = true)
 public class TagPreferenceLootEntry extends LootPoolSingletonContainer {
-  public static final MapCodec<TagPreferenceLootEntry> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-    TagKey.codec(Registries.ITEM).fieldOf("tag").forGetter(entry -> entry.tag)
-  ).and(singletonFields(instance)).apply(instance, TagPreferenceLootEntry::new));
+  /** Codec for this entry */
+  public static final MapCodec<TagPreferenceLootEntry> CODEC = RecordCodecBuilder.mapCodec(inst ->
+    inst.group(TagKey.codec(Registries.ITEM).fieldOf("tag").forGetter(e -> e.tag))
+        .and(singletonFields(inst))
+        .apply(inst, TagPreferenceLootEntry::new));
 
   private final TagKey<Item> tag;
   protected TagPreferenceLootEntry(TagKey<Item> tag, int weight, int quality, List<LootItemCondition> conditions, List<LootItemFunction> functions) {
     super(weight, quality, conditions, functions);
     this.tag = tag;
-    TConstruct.LOG.warn("Using deprecated tag preference loot entry 'tconstruct:tag_preference', use 'mantle:tag_preference' instead");
   }
 
   @SuppressWarnings("removal")
@@ -48,5 +48,4 @@ public class TagPreferenceLootEntry extends LootPoolSingletonContainer {
   public static LootPoolSingletonContainer.Builder<?> tagPreference(TagKey<Item> tag) {
     return slimeknights.mantle.loot.entry.TagPreferenceLootEntry.tagPreference(tag);
   }
-
 }

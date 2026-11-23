@@ -1,6 +1,7 @@
 package slimeknights.tconstruct.library.events;
 
 import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -11,7 +12,6 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.bus.api.Event;
 import slimeknights.tconstruct.library.modifiers.hook.interaction.InteractionSource;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
@@ -23,7 +23,12 @@ import javax.annotation.Nullable;
 public abstract class TinkerToolEvent extends Event {
   private final ItemStack stack;
   private final IToolStackView tool;
-  private TriState result = TriState.DEFAULT;
+  /**
+   * Result of the event, replacing the removed NeoForge event result.
+   * ALLOW means a listener handled the action, DENY means the action cannot be performed, DEFAULT means pass to vanilla logic.
+   */
+  @Setter
+  private Result result = Result.DEFAULT;
   public TinkerToolEvent(ItemStack stack, IToolStackView tool) {
     this.stack = stack;
     this.tool = tool;
@@ -34,7 +39,15 @@ public abstract class TinkerToolEvent extends Event {
   }
 
   /**
-   * Event fired when a kama tries to harvest a crop. Set the result true if handled, or false if harvesting is denied.
+   * Result of a tinker tool event.
+   * ALLOW means a listener handled the action, DENY means the action cannot be performed, DEFAULT means pass to vanilla logic.
+   */
+  public enum Result {
+    ALLOW, DEFAULT, DENY
+  }
+
+  /**
+   * Event fired when a kama tries to harvest a crop. Set result to {@link Result#ALLOW} if you handled the harvest yourself. Set the result to {@link Result#DENY} if the block cannot be harvested.
    */
   @Getter
   public static class ToolHarvestEvent extends TinkerToolEvent {
@@ -78,7 +91,7 @@ public abstract class TinkerToolEvent extends Event {
     }
 
     /** Fires this event and posts the result */
-    public TriState fire() {
+    public Result fire() {
       NeoForge.EVENT_BUS.post(this);
       return this.getResult();
     }
@@ -102,17 +115,9 @@ public abstract class TinkerToolEvent extends Event {
     }
 
     /** Fires this event and posts the result */
-    public TriState fire() {
+    public Result fire() {
       NeoForge.EVENT_BUS.post(this);
       return this.getResult();
     }
-  }
-
-  public void setResult(TriState result) {
-    this.result = result;
-  }
-
-  public TriState getResult() {
-    return result;
   }
 }

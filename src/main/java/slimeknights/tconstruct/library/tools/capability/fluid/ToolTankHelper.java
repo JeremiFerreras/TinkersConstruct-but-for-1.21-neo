@@ -14,6 +14,7 @@ import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.stat.CapacityStat;
 import slimeknights.tconstruct.library.tools.stat.INumericToolStat;
 import slimeknights.tconstruct.library.tools.stat.ToolStatId;
+import slimeknights.tconstruct.library.utils.TagUtil;
 import slimeknights.tconstruct.tools.TinkerModifiers;
 
 import java.util.function.BiFunction;
@@ -24,7 +25,7 @@ import java.util.function.BiFunction;
 @RequiredArgsConstructor
 public class ToolTankHelper {
   /** Helper function to parse a fluid from NBT */
-  public static final BiFunction<CompoundTag, String, FluidStack> PARSE_FLUID = (nbt, key) -> FluidStack.loadFluidStackFromNBT(nbt.getCompound(key));
+  public static final BiFunction<CompoundTag, String, FluidStack> PARSE_FLUID = (nbt, key) -> FluidStack.parseOptional(TagUtil.registryAccess(), nbt.getCompound(key));
 
   /** Format key for the stat */
   public static final String MB_FORMAT = Mantle.makeDescriptionId("gui", "fluid.millibucket");
@@ -63,12 +64,15 @@ public class ToolTankHelper {
       return FluidStack.EMPTY;
     }
     int capacity = getCapacity(tool);
-    // we always copy before saving to ensure the NBT on the fluid gets copied, since those being the same compound is possible
+    // we always copy before saving to ensure the components on the fluid get copied, since sharing the same instance is possible
     fluid = fluid.copy();
     if (fluid.getAmount() > capacity) {
       fluid.setAmount(capacity);
     }
-    tool.getPersistentData().put(fluidKey, fluid.writeToNBT(new CompoundTag()));
+    // 1.21: FluidStack.save RETURNS the encoded tag and must be used; discarding it lost the tool tank
+    // fluid on save (tank modifier emptied on reload).
+    CompoundTag saved = (CompoundTag) fluid.save(TagUtil.registryAccess(), new CompoundTag());
+    tool.getPersistentData().put(fluidKey, saved);
     return fluid;
   }
 }

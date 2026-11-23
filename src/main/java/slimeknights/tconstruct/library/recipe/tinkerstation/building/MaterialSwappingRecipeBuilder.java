@@ -21,7 +21,6 @@ import slimeknights.tconstruct.library.tools.part.IToolPart;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
-import java.util.function.Consumer;
 
 /** Builder for {@link FixedMaterialSwappingRecipe}, {@link PartSwappingOverrideRecipe}, and {@link MaterialValueSwappingRecipe} */
 @Accessors(fluent = true)
@@ -117,11 +116,11 @@ public class MaterialSwappingRecipeBuilder extends AbstractRecipeBuilder<Materia
       if (ingredient != SizedIngredient.EMPTY) {
         throw new IllegalStateException("Cannot set both part and ingredient");
       }
-      saveRecipe(consumer, id, new PartSwappingOverrideRecipe(id, tools, maxStackSize, part, indices, extraRequirements), null);
+      consumer.accept(id, new PartSwappingOverrideRecipe(id, tools, maxStackSize, part, indices, extraRequirements), null);
     } else if (material != MaterialId.UNKNOWN) {
-      saveRecipe(consumer, id, new FixedMaterialSwappingRecipe(id, tools, maxStackSize, ingredient, material, indices, repairValue, extraRequirements), null);
+      consumer.accept(id, new FixedMaterialSwappingRecipe(id, tools, maxStackSize, ingredient, material, indices, repairValue, extraRequirements), null);
     } else if (repairValue > 0) {
-      saveRecipe(consumer, id, new MaterialValueSwappingRecipe(id, tools, maxStackSize, materials, repairValue, indices, extraRequirements), null);
+      consumer.accept(id, new MaterialValueSwappingRecipe(id, tools, maxStackSize, materials, repairValue, indices, extraRequirements), null);
     }
   }
 }

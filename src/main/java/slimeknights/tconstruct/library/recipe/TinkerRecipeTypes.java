@@ -61,7 +61,7 @@ public class TinkerRecipeTypes {
    * @return  Registered recipe type
    */
   static <T extends Recipe<?>> DeferredHolder<RecipeType<?>, RecipeType<T>> register(String name) {
-    return TYPES.register(name, () -> new RecipeType<>() {
+    return TYPES.register(name, () -> new RecipeType<T>() {
       @Override
       public String toString() {
         return TConstruct.MOD_ID + ":" + name;

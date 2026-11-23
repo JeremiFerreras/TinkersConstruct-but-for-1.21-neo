@@ -1,9 +1,9 @@
 {
   "values": [
     "#minecraft:mineable/hoe",
-    "#forge:mineable/sword",
-    "#forge:glass",
-    "#forge:glass_panes",
+    "#c:mineable/sword",
+    "#c:glass_blocks",
+    "#c:glass_panes",
     "minecraft:glowstone",
     "minecraft:redstone_lamp",
     "minecraft:sea_lantern",

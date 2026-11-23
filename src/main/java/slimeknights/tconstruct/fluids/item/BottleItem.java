@@ -44,7 +44,6 @@ public class BottleItem extends Item {
         level.playSound(player, player.getX(), player.getY(), player.getZ(), SoundEvents.BOTTLE_FILL, SoundSource.NEUTRAL, 1.0F, 1.0F);
         level.gameEvent(player, GameEvent.FLUID_PICKUP, pos);
         player.awardStat(Stats.ITEM_USED.get(this));
-        // PORT: PotionUtils#setPotion is now PotionContents#createItemStack
         return InteractionResultHolder.sidedSuccess(ItemUtils.createFilledResult(current, player, PotionContents.createItemStack(potion.asItem(), Potions.WATER)), level.isClientSide());
       }
     }

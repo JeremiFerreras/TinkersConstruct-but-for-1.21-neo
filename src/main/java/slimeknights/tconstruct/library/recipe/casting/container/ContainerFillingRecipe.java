@@ -1,9 +1,10 @@
 package slimeknights.tconstruct.library.recipe.casting.container;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
@@ -11,10 +12,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.material.Fluid;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
+import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
@@ -55,12 +57,22 @@ public class ContainerFillingRecipe implements ICastingRecipe, IMultiRecipe<IDis
     return serializer.getType();
   }
 
+  /** Gets the fluid to fill into the container. 1.21: copies the full stack so data components (e.g. potion contents) are kept, the 1.20 equivalent of the fluid tag */
+  private FluidStack getFillFluid(ICastingContainer inv) {
+    FluidStack fluid = inv.getFluidStack();
+    if (fluid.isEmpty()) {
+      return new FluidStack(inv.getFluid(), this.fluidAmount);
+    }
+    return fluid.copyWithAmount(this.fluidAmount);
+  }
+
   @Override
   public int getFluidAmount(ICastingContainer inv) {
-    Fluid fluid = inv.getFluid();
-    return FluidUtil.getFluidHandler(inv.getStack())
-              .map(handler -> handler.fill(new FluidStack(fluid, this.fluidAmount), FluidAction.SIMULATE))
-              .orElse(0);
+    IFluidHandlerItem handler = inv.getStack().getCapability(Capabilities.FluidHandler.ITEM);
+    if (handler == null) {
+      return 0;
+    }
+    return handler.fill(getFillFluid(inv), FluidAction.SIMULATE);
   }
 
   @Override
@@ -81,27 +93,29 @@ public class ContainerFillingRecipe implements ICastingRecipe, IMultiRecipe<IDis
   @Override
   public boolean matches(ICastingContainer inv, Level worldIn) {
     ItemStack stack = inv.getStack();
-    Fluid fluid = inv.getFluid();
-    return stack.getItem() == this.container.asItem()
-           && FluidUtil.getFluidHandler(stack)
-                   .filter(handler -> handler.fill(new FluidStack(fluid, this.fluidAmount), FluidAction.SIMULATE) > 0)
-                   .isPresent();
+    if (stack.getItem() != this.container.asItem()) {
+      return false;
+    }
+    IFluidHandlerItem handler = stack.getCapability(Capabilities.FluidHandler.ITEM);
+    return handler != null && handler.fill(getFillFluid(inv), FluidAction.SIMULATE) > 0;
   }
 
-  /** @deprecated use {@link ICastingRecipe#assemble(Container, RegistryAccess)} */
+  /** @deprecated use {@link ICastingRecipe#assemble(Container, HolderLookup.Provider)} */
   @Override
   @Deprecated
-  public ItemStack getResultItem(RegistryAccess access) {
+  public ItemStack getResultItem(HolderLookup.Provider access) {
     return new ItemStack(this.container);
   }
 
   @Override
-  public ItemStack assemble(ICastingContainer inv, RegistryAccess access) {
+  public ItemStack assemble(ICastingContainer inv, HolderLookup.Provider access) {
     ItemStack stack = inv.getStack().copy();
-    return FluidUtil.getFluidHandler(stack).map(handler -> {
-      handler.fill(new FluidStack(inv.getFluid(), this.fluidAmount, inv.getFluidTag()), FluidAction.EXECUTE);
-      return handler.getContainer();
-    }).orElse(stack);
+    IFluidHandlerItem handler = stack.getCapability(Capabilities.FluidHandler.ITEM);
+    if (handler == null) {
+      return stack;
+    }
+    handler.fill(getFillFluid(inv), FluidAction.EXECUTE);
+    return handler.getContainer();
   }
 
   /* Display */

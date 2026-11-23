@@ -1,7 +1,5 @@
 package slimeknights.tconstruct.tools.entity;
 
-import slimeknights.tconstruct.library.utils.CapLookup;
-
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.core.BlockPos;
@@ -34,7 +32,6 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import slimeknights.mantle.inventory.EmptyItemHandler;
 import slimeknights.tconstruct.fluids.TinkerFluids;
 import slimeknights.tconstruct.library.modifiers.entity.ProjectileWithKnockback;
 import slimeknights.tconstruct.library.modifiers.entity.ProjectileWithPower;
@@ -144,8 +141,7 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
   private IItemHandlerModifiable getCannonInventory() {
     Level level = level();
     if (this.cannon != null && level.isLoaded(this.cannon)) {
-      BlockEntity cannonBE = level.getBlockEntity(this.cannon);
-      if (cannonBE != null && CapLookup.item(cannonBE, null) instanceof IItemHandlerModifiable modifiable) {
+      if (level.getCapability(Capabilities.ItemHandler.BLOCK, this.cannon, null) instanceof IItemHandlerModifiable modifiable) {
         return modifiable;
       }
     }
@@ -357,7 +353,11 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
     this.power = nbt.getFloat(KEY_POWER);
     this.knockback = nbt.getFloat(KEY_KNOCKBACK);
     this.entityData.set(WATER_INERTIA, nbt.getFloat(KEY_WATER_INERTIA));
-    this.cannon = NbtUtils.readBlockPos(nbt, KEY_CANNON).orElse(null);
-    setFluid(nbt.contains(KEY_FLUID) ? FluidStack.parseOptional(this.registryAccess(), nbt.getCompound(KEY_FLUID)) : FluidStack.EMPTY);
+    if (nbt.contains(KEY_CANNON)) {
+      this.cannon = NbtUtils.readBlockPos(nbt, KEY_CANNON).orElse(null);
+    } else {
+      this.cannon = null;
+    }
+    setFluid(FluidStack.parseOptional(this.registryAccess(), nbt.getCompound(KEY_FLUID)));
   }
 }

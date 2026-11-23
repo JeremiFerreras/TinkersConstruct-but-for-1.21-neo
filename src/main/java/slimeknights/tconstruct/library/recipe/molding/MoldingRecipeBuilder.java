@@ -1,8 +1,7 @@
 package slimeknights.tconstruct.library.recipe.molding;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-
 import lombok.RequiredArgsConstructor;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -14,9 +13,6 @@ import slimeknights.mantle.recipe.data.AbstractRecipeBuilder;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 import slimeknights.mantle.recipe.helper.TypeAwareRecipeSerializer;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
-
-import javax.annotation.Nullable;
-import java.util.function.Consumer;
 
 @SuppressWarnings("unused")
 @RequiredArgsConstructor(staticName = "molding")
@@ -84,16 +80,16 @@ public class MoldingRecipeBuilder extends AbstractRecipeBuilder<MoldingRecipeBui
   /* Building */
 
   @Override
-  public void save(RecipeOutput consumer) {
-    save(consumer, BuiltInRegistries.ITEM.getKey(output.get().getItem()));
+  public void save(RecipeOutput output) {
+    save(output, Loadables.ITEM.getKey(this.output.get().getItem()));
   }
 
   @Override
-  public void save(RecipeOutput consumer, ResourceLocation id) {
+  public void save(RecipeOutput recipeOutput, ResourceLocation id) {
     if (material == Ingredient.EMPTY) {
       throw new IllegalStateException("Missing material for molding recipe");
     }
-    ResourceLocation advancementId = buildOptionalAdvancement(id, "molding");
-    saveRecipe(consumer, id, new MoldingRecipe(serializer, id, material, pattern, patternConsumed, output), advancementId);
+    AdvancementHolder advancement = buildOptionalAdvancement(id, "molding");
+    recipeOutput.accept(id, new MoldingRecipe(serializer, id, material, pattern, patternConsumed, output), advancement);
   }
 }

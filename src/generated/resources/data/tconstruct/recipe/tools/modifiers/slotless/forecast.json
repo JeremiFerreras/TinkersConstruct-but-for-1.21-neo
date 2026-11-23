@@ -5,13 +5,13 @@
     {
       "ingredient": [
         {
-          "tag": "forge:ores/diamond"
+          "tag": "c:ores/diamond"
         },
         {
-          "tag": "forge:ores/emerald"
+          "tag": "c:ores/emerald"
         },
         {
-          "tag": "forge:ores/cobalt"
+          "tag": "c:ores/cobalt"
         }
       ]
     }

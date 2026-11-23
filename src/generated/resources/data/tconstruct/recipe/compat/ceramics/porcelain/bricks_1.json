@@ -1,13 +1,16 @@
 {
-  "type": "tconstruct:melting",
-  "conditions": [
+  "neoforge:conditions": [
     {
-      "type": "forge:mod_loaded",
+      "type": "neoforge:mod_loaded",
       "modid": "ceramics"
     }
   ],
+  "type": "tconstruct:melting",
   "ingredient": {
-    "item": "ceramics:porcelain_brick"
+    "type": "mantle:item_name",
+    "items": [
+      "ceramics:porcelain_brick"
+    ]
   },
   "result": {
     "amount": 250,

@@ -1,15 +1,13 @@
 package slimeknights.tconstruct.library.recipe.casting;
 
 import lombok.Getter;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponentPatch;
-import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.Potion;
@@ -34,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Recipe for casting a fluid onto an item, copying the fluid NBT to the item.
+ * Recipe for casting a fluid onto an item, copying the fluid potion data to the item.
  * TODO 1.21: move to {@link slimeknights.tconstruct.library.recipe.casting.potion}
  */
 public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<IDisplayableCastingRecipe> {
@@ -48,8 +46,12 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<IDispla
     COOLING_TIME_FIELD,
     PotionCastingRecipe::new);
 
+  /** Tag key written by the molten potion fluid, see {@code PotionFluidType}. TODO(neoport): migrate potion fluid storage to the {@code PotionContents} data component. */
+  protected static final String TAG_POTION = "Potion";
+
   @Getter
   protected final TypeAwareRecipeSerializer<?> serializer;
+  /** Recipe ID, retained for JEI display purposes (vanilla 1.21 recipes no longer expose their own ID). */
   @Getter
   protected final ResourceLocation id;
   @Getter
@@ -58,7 +60,7 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<IDispla
   protected final Ingredient bottle;
   /** Potion ingredient, typically just the potion tag */
   protected final FluidIngredient fluid;
-  /** Potion item result, will be given the proper NBT */
+  /** Potion item result, will be given the proper potion contents */
   protected final Item result;
   /** Cooling time for this recipe, used for tipped arrows */
   protected final int coolingTime;
@@ -107,7 +109,11 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<IDispla
   @Override
   public ItemStack assemble(ICastingContainer inv, HolderLookup.Provider access) {
     ItemStack result = new ItemStack(this.result);
-    result.applyComponents(inv.getFluidData());
+    // copy the full contents, not just the potion, so custom effects and colors carry over as the fluid NBT did on 1.20
+    PotionContents contents = inv.getFluidStack().get(DataComponents.POTION_CONTENTS);
+    if (contents != null) {
+      result.set(DataComponents.POTION_CONTENTS, contents);
+    }
     return result;
   }
 
@@ -119,22 +125,28 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<IDispla
   @Override
   public List<IDisplayableCastingRecipe> getRecipes(RegistryAccess access) {
     if (displayRecipes == null) {
-      // Build each potion variant using 1.21.1 data components, preserving the original fluid/potion ordering.
-      List<Holder<Potion>> potions = BuiltInRegistries.POTION.holders()
-        .filter(holder -> !holder.is(Potions.EMPTY_ID))
-        .toList();
-      List<ItemStack> results = potions.stream().map(potion -> PotionContents.createItemStack(this.result, potion)).toList();
+      List<Holder.Reference<Potion>> potions = getPotions();
+      List<ItemStack> results = new ArrayList<>(potions.size());
+      // first, make all the potion items
+      for (Holder<Potion> potion : potions) {
+        ItemStack result = new ItemStack(this.result);
+        result.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));
+        results.add(result);
+      }
+      // next, it's time to do the fluids
+      // we want an order of Mod 1 Potion 1, Mod 1 Potion 2, ..., Mod 2 Potion 1, ...
+      // this is potentially displaying multiple fluids from the fluid tag
       List<FluidStack> potionFluids = this.fluid.getFluids();
       int totalSize = results.size() * potionFluids.size();
       List<ItemStack> displayResults = new ArrayList<>(totalSize);
       List<FluidStack> displayFluids = new ArrayList<>(totalSize);
       for (FluidStack fluid : potionFluids) {
         displayResults.addAll(results);
+        // 1.21: potion data lives on the fluid's POTION_CONTENTS component rather than fluid NBT
         for (Holder<Potion> potion : potions) {
-          DataComponentPatch potionData = DataComponentPatch.builder()
-            .set(DataComponents.POTION_CONTENTS, new PotionContents(potion))
-            .build();
-          displayFluids.add(new FluidStack(fluid.getFluidHolder(), fluid.getAmount(), potionData));
+          FluidStack copy = fluid.copy();
+          copy.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));
+          displayFluids.add(copy);
         }
       }
       this.displayRecipes = List.of(DisplayCastingRecipe.from(this)
@@ -155,8 +167,6 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<IDispla
     return NonNullList.of(Ingredient.EMPTY, bottle);
   }
 
-  /** @deprecated use {@link #assemble(Container, HolderLookup.Provider)} */
-  @Deprecated
   @Override
   public ItemStack getResultItem(HolderLookup.Provider access) {
     return new ItemStack(this.result);
@@ -165,11 +175,16 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<IDispla
 
   /* JEI helpers */
 
-  /** Gets a list of all potion IDs ready for usage in building NBT */
-  @SuppressWarnings("deprecation")
-  public static List<String> getPotionIds() {
+  /** Gets a list of all potions to display. 1.21 has no empty potion, so water is skipped as the default potion instead. */
+  public static List<Holder.Reference<Potion>> getPotions() {
     return BuiltInRegistries.POTION.holders()
-      .filter(holder -> !holder.is(Potions.EMPTY_ID))
+      .filter(holder -> !holder.is(Potions.WATER))
+      .toList();
+  }
+
+  /** Gets a list of all potion IDs ready for usage in building tool persistent data */
+  public static List<String> getPotionIds() {
+    return getPotions().stream()
       .map(holder -> holder.key().location().toString())
       .toList();
   }

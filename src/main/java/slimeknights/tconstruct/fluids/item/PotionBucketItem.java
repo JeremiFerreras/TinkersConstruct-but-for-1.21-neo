@@ -1,17 +1,18 @@
 package slimeknights.tconstruct.fluids.item;
 
 import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.PotionItem;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
@@ -20,17 +21,15 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidType;
+import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
 import net.neoforged.neoforge.fluids.capability.wrappers.FluidBucketWrapper;
 import slimeknights.tconstruct.library.utils.Util;
 
 import javax.annotation.Nonnull;
-import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
-/**
- * Implements filling a bucket with a potion fluid.
- * PORT: potions live in the {@link DataComponents#POTION_CONTENTS} component on both the item and the fluid stack.
- */
+/** Implements filling a bucket with an NBT fluid */
 public class PotionBucketItem extends PotionItem {
   private final Supplier<? extends Fluid> supplier;
   public PotionBucketItem(Supplier<? extends Fluid> supplier, Properties builder) {
@@ -42,9 +41,10 @@ public class PotionBucketItem extends PotionItem {
     return supplier.get();
   }
 
-  /** Gets the potion contents of the given stack, empty if unset */
+  /** Gets the potion contents stored on the stack */
   private static PotionContents getContents(ItemStack stack) {
-    return stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
+    PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+    return contents != null ? contents : PotionContents.EMPTY;
   }
 
   @Override
@@ -58,13 +58,13 @@ public class PotionBucketItem extends PotionItem {
 
   @Override
   public Component getName(ItemStack stack) {
-    PotionContents contents = getContents(stack);
-    String bucketKey = Potion.getName(contents.potion(), getDescriptionId() + ".effect.");
+    Optional<Holder<Potion>> potion = getContents(stack).potion();
+    String bucketKey = Potion.getName(potion, getDescriptionId() + ".effect.");
     if (Util.canTranslate(bucketKey)) {
       return Component.translatable(bucketKey);
     }
     // default to filling with the contents
-    return Component.translatable(getDescriptionId() + ".contents", Component.translatable(Potion.getName(contents.potion(), "item.minecraft.potion.effect.")));
+    return Component.translatable(getDescriptionId() + ".contents", Component.translatable(Potion.getName(potion, "item.minecraft.potion.effect.")));
   }
 
   @Override
@@ -82,11 +82,13 @@ public class PotionBucketItem extends PotionItem {
     // effects are 2x duration
     if (!level.isClientSide) {
       for (MobEffectInstance effect : getContents(stack).getAllEffects()) {
-        if (effect.getEffect().value().isInstantenous()) {
-          effect.getEffect().value().applyInstantenousEffect(player, player, living, effect.getAmplifier(), 2.5D);
+        Holder<MobEffect> mobEffect = effect.getEffect();
+        if (mobEffect.value().isInstantenous()) {
+          mobEffect.value().applyInstantenousEffect(player, player, living, effect.getAmplifier(), 2.5D);
         } else {
-          // PORT: MobEffectInstance#duration is private now, so build a new instance with the boosted duration
-          living.addEffect(new MobEffectInstance(effect.getEffect(), effect.getDuration() * 5 / 2, effect.getAmplifier(), effect.isAmbient(), effect.isVisible(), effect.showIcon()));
+          MobEffectInstance newEffect = new MobEffectInstance(effect);
+          newEffect.duration = newEffect.duration * 5 / 2;
+          living.addEffect(newEffect);
         }
       }
     }
@@ -111,19 +113,14 @@ public class PotionBucketItem extends PotionItem {
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-    PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
-    if (contents != null) {
-      contents.addPotionTooltip(tooltip::add, 2.5f, context.tickRate());
-    }
-  }
-
-  @Override
-  public int getUseDuration(ItemStack stack, LivingEntity entity) {
+  public int getUseDuration(ItemStack pStack, LivingEntity living) {
     return 96; // 3x duration of potion bottles
   }
 
-  // PORT: Item#initCapabilities is gone, the fluid handler is registered in TinkerCapabilityEvents
+  /** Builds the fluid handler for the given stack, for registration in {@code RegisterCapabilitiesEvent}. */
+  public IFluidHandlerItem getFluidHandler(ItemStack stack) {
+    return new PotionBucketWrapper(stack);
+  }
 
   public static class PotionBucketWrapper extends FluidBucketWrapper {
     public PotionBucketWrapper(ItemStack container) {
@@ -133,12 +130,12 @@ public class PotionBucketItem extends PotionItem {
     @Nonnull
     @Override
     public FluidStack getFluid() {
-      FluidStack stack = new FluidStack(((PotionBucketItem)container.getItem()).getFluid(), FluidType.BUCKET_VOLUME);
+      FluidStack fluid = new FluidStack(((PotionBucketItem)container.getItem()).getFluid(), FluidType.BUCKET_VOLUME);
       PotionContents contents = container.get(DataComponents.POTION_CONTENTS);
       if (contents != null) {
-        stack.set(DataComponents.POTION_CONTENTS, contents);
+        fluid.set(DataComponents.POTION_CONTENTS, contents);
       }
-      return stack;
+      return fluid;
     }
   }
 }

@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.world.worldgen.trees;
 
-
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;

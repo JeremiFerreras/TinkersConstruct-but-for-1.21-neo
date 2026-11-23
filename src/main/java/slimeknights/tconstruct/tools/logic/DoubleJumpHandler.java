@@ -11,7 +11,6 @@ import net.neoforged.neoforge.event.entity.living.LivingEvent.LivingJumpEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.EventBusSubscriber.Bus;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.Sounds;
 import slimeknights.tconstruct.library.tools.capability.PersistentDataCapability;
@@ -19,7 +18,7 @@ import slimeknights.tconstruct.library.tools.nbt.ModDataNBT;
 import slimeknights.tconstruct.shared.TinkerAttributes;
 
 /** Logic to run the double jump attribute */
-@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Bus.GAME)
+@EventBusSubscriber(modid = TConstruct.MOD_ID)
 public class DoubleJumpHandler {
   private static final ResourceLocation JUMPS = TConstruct.getResource("jumps");
 
@@ -30,14 +29,14 @@ public class DoubleJumpHandler {
   static void onJump(LivingJumpEvent event) {
     LivingEntity living = event.getEntity();
     if (living.onGround() || (living.verticalCollision && !living.verticalCollisionBelow && living.getAttributeValue(Attributes.GRAVITY) < 0)) {
-      PersistentDataCapability.getOrEmpty(living).remove(JUMPS);
+      PersistentDataCapability.getData(living).remove(JUMPS);
     }
   }
 
   /** Event handler to reset the number of times we have jumped in mid air */
   @SubscribeEvent
   static void onLand(LivingFallEvent event) {
-    PersistentDataCapability.getOrEmpty(event.getEntity()).remove(JUMPS);
+    PersistentDataCapability.getData(event.getEntity()).remove(JUMPS);
   }
 
   /**

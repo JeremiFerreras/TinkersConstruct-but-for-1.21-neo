@@ -7,12 +7,13 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
+import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.client.ResourceColorManager;
 import slimeknights.mantle.data.listener.ISafeManagerReloadListener;
 import slimeknights.tconstruct.TConstruct;
 
-import java.util.IdentityHashMap;
-import java.util.List;
+import javax.annotation.Nullable;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -21,50 +22,90 @@ import java.util.Map;
 public class HarvestTiers {
   private HarvestTiers() {}
 
-  /**
-   * NeoForge 1.21 removed the tier sorting registry. Tinkers only serializes the
-   * vanilla tiers, so keep their stable IDs and the ordering Forge previously
-   * supplied locally.
-   */
-  private static final List<Tier> SORTED_TIERS = List.of(
-    Tiers.WOOD, Tiers.GOLD, Tiers.STONE, Tiers.IRON, Tiers.DIAMOND, Tiers.NETHERITE);
-  private static final Map<Tier,ResourceLocation> TIER_IDS = new IdentityHashMap<>();
-  private static final Map<ResourceLocation,Tier> TIERS_BY_ID = Maps.newHashMap();
-  static {
-    register(Tiers.WOOD, "wood");
-    register(Tiers.STONE, "stone");
-    register(Tiers.IRON, "iron");
-    register(Tiers.DIAMOND, "diamond");
-    register(Tiers.GOLD, "gold");
-    register(Tiers.NETHERITE, "netherite");
-  }
-
-  private static void register(Tier tier, String name) {
-    ResourceLocation id = ResourceLocation.withDefaultNamespace(name);
-    TIER_IDS.put(tier, id);
-    TIERS_BY_ID.put(id, tier);
-  }
-
-  public static ResourceLocation getId(Tier tier) {
-    return TIER_IDS.get(tier);
-  }
-
-  public static Tier byId(ResourceLocation id) {
-    return TIERS_BY_ID.get(id);
-  }
-
-  public static boolean isCorrectTierForDrops(Tier tier, net.minecraft.world.level.block.state.BlockState state) {
-    return !state.is(tier.getIncorrectBlocksForDrops());
-  }
-
   /** Cache of name for each tier */
   private static final Map<Tier, Component> harvestLevelNames = Maps.newHashMap();
   /** Listener to clear name cache so we get new colors */
   public static final ISafeManagerReloadListener RELOAD_LISTENER = manager -> harvestLevelNames.clear();
 
+  /**
+   * Gets a name for the given tier.
+   * <p>
+   * TODO(neoport): TierSortingRegistry was removed in 1.21 along with its name registry. Vanilla tiers are mapped to a
+   * minecraft namespaced ID by their enum name; any other tier falls back to a generic ID so a translation key still resolves.
+   */
+  private static ResourceLocation tierId(Tier tier) {
+    if (tier instanceof Tiers vanilla) {
+      return ResourceLocation.fromNamespaceAndPath("minecraft", vanilla.name().toLowerCase(Locale.ROOT));
+    }
+    return TConstruct.getResource("unknown");
+  }
+
+  /**
+   * Gets the ID for the given tier, replacement for {@code TierSortingRegistry.getName}.
+   * <p>
+   * TODO(neoport): TierSortingRegistry removed in 1.21; only vanilla tiers have a stable ID. Returns null for unknown tiers.
+   */
+  @Nullable
+  public static ResourceLocation getId(Tier tier) {
+    if (tier instanceof Tiers vanilla) {
+      return ResourceLocation.fromNamespaceAndPath("minecraft", vanilla.name().toLowerCase(Locale.ROOT));
+    }
+    return null;
+  }
+
+  /**
+   * Gets the tier for the given ID, replacement for {@code TierSortingRegistry.byName}.
+   * <p>
+   * TODO(neoport): TierSortingRegistry removed in 1.21; only vanilla tiers are resolvable by ID. Returns null otherwise.
+   */
+  @Nullable
+  public static Tier byName(ResourceLocation id) {
+    if ("minecraft".equals(id.getNamespace())) {
+      for (Tiers vanilla : Tiers.values()) {
+        if (vanilla.name().toLowerCase(Locale.ROOT).equals(id.getPath())) {
+          return vanilla;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Checks if the given tier can harvest the given block for drops, replacement for {@code TierSortingRegistry.isCorrectTierForDrops}.
+   * <p>
+   * TODO(neoport): TierSortingRegistry removed in 1.21; cross mod tier ordering is gone. We use the vanilla incorrect-blocks tag.
+   */
+  public static boolean isCorrectTierForDrops(Tier tier, BlockState state) {
+    return !state.is(tier.getIncorrectBlocksForDrops());
+  }
+
+  /**
+   * Gets a numeric sort key for a tier so the larger and smaller helpers keep working without a sorting registry.
+   * <p>
+   * Mirrors the order of {@code TierSortingRegistry.getSortedTiers()} from 1.20.1: wood, gold, stone, iron, diamond,
+   * netherite. Note this is not the order the vanilla enum declares, as {@link Tiers} declares gold between diamond and
+   * netherite despite gold having wood's harvest level, so {@code ordinal()} would sort gold above diamond.
+   * <p>
+   * TODO(neoport): TierSortingRegistry removed in 1.21, true cross mod tier ordering is no longer available. Unknown
+   * tiers sort below all vanilla tiers.
+   */
+  private static int sortKey(Tier tier) {
+    if (tier instanceof Tiers vanilla) {
+      return switch (vanilla) {
+        case WOOD -> 0;
+        case GOLD -> 1;
+        case STONE -> 2;
+        case IRON -> 3;
+        case DIAMOND -> 4;
+        case NETHERITE -> 5;
+      };
+    }
+    return -1;
+  }
+
   /** Makes a translation key for the given name */
   private static MutableComponent makeLevelKey(Tier tier) {
-    String key = Util.makeTranslationKey("harvest_tier", getId(tier));
+    String key = Util.makeTranslationKey("harvest_tier", tierId(tier));
     TextColor color = ResourceColorManager.getTextColor(key);
     return TConstruct.makeTranslation("stat", key).withStyle(style -> style.withColor(color));
   }
@@ -80,9 +121,8 @@ public class HarvestTiers {
 
   /** Gets the larger of two tiers */
   public static Tier max(Tier a, Tier b) {
-    List<Tier> sorted = SORTED_TIERS;
-    // note indexOf returns -1 if the tier is missing, so the larger of an unsorted tier and a sorted one is the sorted one
-    if (sorted.indexOf(b) > sorted.indexOf(a)) {
+    // note an unknown tier sorts below vanilla tiers, so the larger of an unknown tier and a vanilla one is the vanilla one
+    if (sortKey(b) > sortKey(a)) {
       return b;
     }
     return a;
@@ -90,21 +130,16 @@ public class HarvestTiers {
 
   /** Gets the smaller of two tiers */
   public static Tier min(Tier a, Tier b) {
-    List<Tier> sorted = SORTED_TIERS;
-    // note indexOf returns -1 if the tier is missing, so the smaller of an unsorted tier and a sorted one is the unsorted one
-    if (sorted.indexOf(b) < sorted.indexOf(a)) {
+    // note an unknown tier sorts below vanilla tiers, so the smaller of an unknown tier and a vanilla one is the unknown one
+    if (sortKey(b) < sortKey(a)) {
       return b;
     }
     return a;
   }
 
-  /** Gets the smallest tier in the sorting registry */
+  /** Gets the smallest tier */
   public static Tier minTier() {
-    List<Tier> sortedTiers = SORTED_TIERS;
-    if (sortedTiers.isEmpty()) {
-      TConstruct.LOG.error("No sorted tiers exist, this should not happen");
-      return Tiers.WOOD;
-    }
-    return sortedTiers.get(0);
+    // TODO(neoport): TierSortingRegistry removed in 1.21, the registry sorted list is gone so we default to the lowest vanilla tier
+    return Tiers.WOOD;
   }
 }

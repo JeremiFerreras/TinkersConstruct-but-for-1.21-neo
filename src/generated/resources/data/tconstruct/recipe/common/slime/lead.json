@@ -1,15 +1,15 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "conditions": [
+  "neoforge:conditions": [
     {
       "type": "tconstruct:config",
       "prop": "slime_recipe_fix"
     }
   ],
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
   "key": {
     "O": {
-      "tag": "forge:slimeballs"
+      "tag": "c:slimeballs"
     },
     "~": {
       "item": "minecraft:string"
@@ -21,8 +21,7 @@
     "  ~"
   ],
   "result": {
-    "id": "minecraft:lead",
-    "count": 2
-  },
-  "show_notification": true
+    "count": 2,
+    "id": "minecraft:lead"
+  }
 }

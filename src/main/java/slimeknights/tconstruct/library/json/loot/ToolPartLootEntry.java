@@ -13,6 +13,7 @@ import net.minecraft.world.level.storage.loot.entries.LootPoolEntryType;
 import net.minecraft.world.level.storage.loot.entries.LootPoolSingletonContainer;
 import net.minecraft.world.level.storage.loot.functions.LootItemFunction;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
+import slimeknights.mantle.data.loadable.LoadableCodec;
 import slimeknights.mantle.util.RegistryHelper;
 import slimeknights.tconstruct.library.materials.RandomMaterial;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
@@ -25,10 +26,13 @@ import java.util.stream.Stream;
 
 /** Entry for a random tool part from a list with a random material */
 public class ToolPartLootEntry extends LootPoolSingletonContainer {
-  public static final MapCodec<ToolPartLootEntry> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-    TagKey.codec(Registries.ITEM).fieldOf("tag").forGetter(entry -> entry.tag),
-    RandomMaterial.LOADER.codec().fieldOf("material").forGetter(entry -> entry.material)
-  ).and(singletonFields(instance)).apply(instance, ToolPartLootEntry::new));
+  /** Codec for this entry */
+  public static final MapCodec<ToolPartLootEntry> CODEC = RecordCodecBuilder.mapCodec(inst ->
+    inst.group(
+        TagKey.codec(Registries.ITEM).fieldOf("tag").forGetter(e -> e.tag),
+        new LoadableCodec<>(RandomMaterial.LOADER).fieldOf("material").forGetter(e -> e.material))
+      .and(singletonFields(inst))
+      .apply(inst, ToolPartLootEntry::new));
 
   private final TagKey<Item> tag;
   private final RandomMaterial material;
@@ -44,6 +48,7 @@ public class ToolPartLootEntry extends LootPoolSingletonContainer {
     return TinkerToolParts.toolPartLootEntry.get();
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   protected void createItemStack(Consumer<ItemStack> consumer, LootContext context) {
     List<IToolPart> options = RegistryHelper.getTagValueStream(BuiltInRegistries.ITEM, tag)

@@ -6,7 +6,7 @@
       "item": "minecraft:flint"
     },
     {
-      "tag": "forge:ingots/netherite_scrap"
+      "tag": "c:ingots/netherite_scrap"
     },
     {
       "item": "minecraft:flint"
@@ -24,7 +24,7 @@
     "abilities": 1
   },
   "tools": {
-    "type": "forge:intersection",
+    "type": "neoforge:intersection",
     "children": [
       {
         "tag": "tconstruct:modifiable/armor/boots"

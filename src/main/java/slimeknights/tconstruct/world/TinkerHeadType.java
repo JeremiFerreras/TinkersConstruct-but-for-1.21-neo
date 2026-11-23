@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.world;
 
-import lombok.RequiredArgsConstructor;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.SkullBlock.Type;
@@ -10,7 +9,6 @@ import java.util.Locale;
 import java.util.function.Supplier;
 
 /** Enum representing all heads provided by Tinkers */
-@RequiredArgsConstructor
 public enum TinkerHeadType implements Type, StringRepresentable {
   BLAZE(() -> EntityType.BLAZE),
   ENDERMAN(() -> EntityType.ENDERMAN),
@@ -26,6 +24,10 @@ public enum TinkerHeadType implements Type, StringRepresentable {
   ZOMBIFIED_PIGLIN(() -> EntityType.ZOMBIFIED_PIGLIN);
 
   private final Supplier<EntityType<?>> type;
+
+  TinkerHeadType(Supplier<EntityType<?>> type) {
+    this.type = type;
+  }
 
   /** Gets the associated entity type */
   public EntityType<?> getType() {

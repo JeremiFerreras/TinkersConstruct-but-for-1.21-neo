@@ -1,13 +1,13 @@
 package slimeknights.tconstruct.smeltery.block.entity.module;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.common.CommonHooks;
+import net.neoforged.neoforge.capabilities.BlockCapabilityCache;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.fluids.capability.templates.EmptyFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.EmptyFluidHandler;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
@@ -23,10 +23,43 @@ import javax.annotation.Nullable;
 public class SolidFuelModule extends FuelModule {
   /** Location of the fuel tank */
   private final BlockPos fuelPos;
+  /**
+   * Server-side cache of the item handler at the fuel position. {@link BlockCapabilityCache} auto-tracks invalidation
+   * and refetches, so it self-heals across neighbor changes and world reloads. Null until first resolved; only valid
+   * on a {@link ServerLevel}.
+   */
+  @Nullable
+  private BlockCapabilityCache<IItemHandler,?> itemHandlerCache;
+
   public SolidFuelModule(MantleBlockEntity parent, BlockPos fuelPos) {
     super(parent);
     this.fuelPos = fuelPos;
   }
+
+
+  /* Capability resolution */
+
+  /** Resolves the fluid handler at the fuel position, self-healing on the server and re-querying on the client */
+  @Nullable
+  private IFluidHandler getFluidHandler() {
+    fluidHandler = getHandlerAt(fuelPos);
+    return fluidHandler;
+  }
+
+  /** Resolves the item handler at the fuel position, self-healing on the server and re-querying on the client */
+  @Nullable
+  private IItemHandler getItemHandler() {
+    Level level = getLevel();
+    if (level instanceof ServerLevel serverLevel) {
+      if (itemHandlerCache == null) {
+        itemHandlerCache = BlockCapabilityCache.create(Capabilities.ItemHandler.BLOCK, serverLevel, fuelPos, null);
+      }
+      return itemHandlerCache.getCapability();
+    }
+    // client: always re-query so a transiently-missing capability recovers after reload
+    return level.getCapability(Capabilities.ItemHandler.BLOCK, fuelPos, null);
+  }
+
 
   /* Fuel updating */
 
@@ -38,7 +71,7 @@ public class SolidFuelModule extends FuelModule {
   private int trySolidFuel(IItemHandler handler, boolean consume) {
     for (int i = 0; i < handler.getSlots(); i++) {
       ItemStack stack = handler.getStackInSlot(i);
-      int time = CommonHooks.getBurnTime(stack, TinkerRecipeTypes.FUEL.get()) / 4;
+      int time = stack.getBurnTime(TinkerRecipeTypes.FUEL.get()) / 4;
       if (time > 0) {
         MeltingFuel solid = MeltingFuelLookup.getSolid();
         if (consume) {
@@ -74,25 +107,22 @@ public class SolidFuelModule extends FuelModule {
     return 0;
   }
 
-  @Nullable
-  private IFluidHandler getFluidFuelHandler() {
-    return getLevel().getCapability(Capabilities.FluidHandler.BLOCK, fuelPos, null);
-  }
-
-  @Nullable
-  private IItemHandler getItemFuelHandler() {
-    return getLevel().getCapability(Capabilities.ItemHandler.BLOCK, fuelPos, null);
-  }
-
   @Override
   public int findFuel(boolean consume) {
-    IFluidHandler fluid = getFluidFuelHandler();
-    fluidHandler = fluid;
-    int temperature = fluid == null ? 0 : tryLiquidFuel(fluid, consume);
-    if (temperature == 0) {
-      IItemHandler items = getItemFuelHandler();
-      if (items != null) temperature = trySolidFuel(items, consume);
+    // prioritize liquid fuel - it usually goes hotter
+    int temperature = 0;
+    IFluidHandler fluidHandler = getFluidHandler();
+    if (fluidHandler != null) {
+      temperature = tryLiquidFuel(fluidHandler, consume);
     }
+    // next, try solid fuel
+    if (temperature == 0) {
+      IItemHandler itemHandler = getItemHandler();
+      if (itemHandler != null) {
+        temperature = trySolidFuel(itemHandler, consume);
+      }
+    }
+    // no handler found, tell client of the lack of fuel
     if (temperature == 0 && consume) {
       this.temperature = 0;
       this.rate = 0;
@@ -105,9 +135,14 @@ public class SolidFuelModule extends FuelModule {
 
   @Override
   public FuelInfo getFuelInfo() {
-    fluidHandler = getFluidFuelHandler();
+    // resolve the fluid handler so the base implementation has it available (re-queried each call so it survives reload)
+    getFluidHandler();
+
     FuelInfo info = super.getFuelInfo();
-    return info.isEmpty() && getItemFuelHandler() != null ? FuelInfo.ITEM : info;
+    if (info.isEmpty() && getItemHandler() != null) {
+      return FuelInfo.ITEM;
+    }
+    return info;
   }
 
 
@@ -115,8 +150,10 @@ public class SolidFuelModule extends FuelModule {
 
   /** Gets the fluid handler for proxy */
   public IFluidHandler getTank() {
-    IFluidHandler handler = getFluidFuelHandler();
-    fluidHandler = handler;
-    return handler == null ? EmptyFluidHandler.INSTANCE : handler;
+    IFluidHandler fluidHandler = getFluidHandler();
+    if (fluidHandler != null) {
+      return fluidHandler;
+    }
+    return EmptyFluidHandler.INSTANCE;
   }
 }

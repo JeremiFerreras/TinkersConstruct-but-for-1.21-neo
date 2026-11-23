@@ -3,13 +3,13 @@ package slimeknights.tconstruct.tools.logic;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.stats.Stats;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,21 +17,21 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.EventHooks;
+import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.living.LivingShieldBlockEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action;
-import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.EventBusSubscriber.Bus;
 import slimeknights.mantle.client.TooltipKey;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerTags;
@@ -61,7 +61,7 @@ import java.util.function.Function;
 /**
  * This class handles interaction based event hooks
  */
-@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Bus.GAME)
+@EventBusSubscriber(modid = TConstruct.MOD_ID)
 public class InteractionHandler {
   public static final EquipmentSlot[] HAND_SLOTS = {EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND};
 
@@ -148,7 +148,7 @@ public class InteractionHandler {
     Player player = context.getPlayer();
     Level world = context.getLevel();
     BlockInWorld info = new BlockInWorld(world, context.getClickedPos(), false);
-    if (player != null && !player.getAbilities().mayBuild && !stack.hasAdventureModePlaceTagForBlock(BuiltInRegistries.BLOCK, info)) {
+    if (player != null && !player.getAbilities().mayBuild && !stack.canPlaceOnBlockInAdventureMode(info)) {
       return InteractionResult.PASS;
     }
 
@@ -184,7 +184,7 @@ public class InteractionHandler {
         UseOnContext context = new UseOnContext(player, hand, trace);
 
         // first, before block use (in forge, onItemUseFirst)
-        if (!event.getUseItem().isFalse()) {
+        if (event.getUseItem() != TriState.FALSE) {
           InteractionResult result = onBlockUse(context, tool, chestplate, entry -> entry.getHook(ModifierHooks.BLOCK_INTERACT).beforeBlockUse(tool, entry, context, InteractionSource.ARMOR));
           if (result.consumesAction()) {
             event.setCanceled(true);
@@ -198,9 +198,20 @@ public class InteractionHandler {
         BlockPos pos = event.getPos();
         TriState useBlock = event.getUseBlock();
         Level level = player.level();
-        if (useBlock.isTrue() || (!useBlock.isFalse()
+        if (useBlock == TriState.TRUE || (useBlock != TriState.FALSE
                                          && (!player.isSecondaryUseActive() || player.getItemInHand(Util.getOpposite(hand)).doesSneakBypassUse(level, pos, player)))) {
-          InteractionResult result = level.getBlockState(pos).useWithoutItem(level, player, trace);
+          // 1.21 split block use into a held-item interaction (useItemOn) and an item-less one (useWithoutItem); vanilla
+          // runs the item one first and only falls back to the other. The empty interacting hand still needs useItemOn,
+          // or blocks that keep their right-click logic there (Farmer's Delight cutting board, Etched table) never respond
+          // and we cancel the event over them, so nothing happens (#27).
+          BlockState state = level.getBlockState(pos);
+          ItemInteractionResult itemResult = state.useItemOn(event.getItemStack(), level, player, hand, trace);
+          InteractionResult result;
+          if (itemResult == ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION) {
+            result = state.useWithoutItem(level, player, trace);
+          } else {
+            result = itemResult.result();
+          }
           if (result.consumesAction()) {
             if (player instanceof ServerPlayer serverPlayer) {
               CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, ItemStack.EMPTY);
@@ -214,7 +225,7 @@ public class InteractionHandler {
         // regular item interaction: must not be deny, and either be allow or not have a cooldown
         TriState useItem = event.getUseItem();
         event.setCancellationResult(InteractionResult.PASS);
-        if (!useItem.isFalse() && (useItem.isTrue() || !player.getCooldowns().isOnCooldown(chestplate.getItem()))) {
+        if (useItem != TriState.FALSE && (useItem == TriState.TRUE || !player.getCooldowns().isOnCooldown(chestplate.getItem()))) {
           // finally, after block use (in forge, onItemUse)
           InteractionResult result = onBlockUse(context, tool, chestplate, entry -> entry.getHook(ModifierHooks.BLOCK_INTERACT).afterBlockUse(tool, entry, context, InteractionSource.ARMOR));
           if (result.consumesAction()) {
@@ -362,13 +373,13 @@ public class InteractionHandler {
   }
 
   /** Sets the event result and swings the hand */
-  private static void setLeftClickEventResult(PlayerInteractEvent event, InteractionResult result) {
+  private static void setLeftClickEventResult(LeftClickBlock event, InteractionResult result) {
     if (result.consumesAction()) {
       // success means swing hand
       if (result == InteractionResult.SUCCESS) {
         event.getEntity().swing(event.getHand());
       }
-      event.setCancellationResult(result);
+      // 1.21 dropped PlayerInteractEvent#setCancellationResult; the consumed result is conveyed by canceling the event
       // don't cancel the result in survival as it does not actually prevent breaking the block, just causes really weird desyncs
       // leaving uncanceled lets us still do blocky stuff but if you hold click it digs
       if (event.getEntity().getAbilities().instabuild) {
@@ -404,7 +415,8 @@ public class InteractionHandler {
     }
     // ensure we have not fired this tick
     Player player = event.getEntity();
-    if (TinkerDataCapability.getOptional(player).filter(data -> data.computeIfAbsent(LAST_TICK).update(player)).isEmpty()) {
+    TinkerDataCapability.Holder data = TinkerDataCapability.getData(player);
+    if (data == null || !data.computeIfAbsent(LAST_TICK).update(player)) {
       return;
     }
     // must support interaction
@@ -492,6 +504,7 @@ public class InteractionHandler {
 
         // handle damaging the shield ourselves to fix a couple of shield related bugs
         if (entity instanceof Player player) {
+          // setShieldTakesDamage(false) -> setShieldDamage(0); we damage the shield ourselves below
           event.setShieldDamage(0);
           // this code is based on code from Player#hurtCurrentlyUsedShield
           if (!entity.level().isClientSide) {
@@ -509,7 +522,8 @@ public class InteractionHandler {
           }
         }
       } else {
-        event.setCanceled(true);
+        // block angle check failed: cancel the block entirely (setCanceled -> setBlocked(false))
+        event.setBlocked(false);
       }
     }
   }

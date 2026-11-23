@@ -2,10 +2,10 @@
   "type": "tconstruct:entity_melting",
   "damage": 2,
   "entity": {
-    "tag": "forge:bees"
+    "tag": "c:bees"
   },
   "result": {
     "amount": 25,
-    "tag": "forge:honey"
+    "tag": "c:honey"
   }
 }

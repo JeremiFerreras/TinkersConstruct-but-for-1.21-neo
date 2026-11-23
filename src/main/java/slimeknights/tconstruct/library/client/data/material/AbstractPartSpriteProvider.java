@@ -66,7 +66,6 @@ public abstract class AbstractPartSpriteProvider {
   }
 
   /** Adds a given sprite to the list to generate, for the local namespace */
-  @SuppressWarnings("removal")
   protected PartSpriteInfo.Builder addTexture(String name, MaterialStatsId... requiredStats) {
     return addTexture(ResourceLocation.fromNamespaceAndPath(modID, name), requiredStats);
   }
@@ -114,7 +113,6 @@ public abstract class AbstractPartSpriteProvider {
   }
 
   /** Create a builder for tool sprites relative to the default mod ID */
-  @SuppressWarnings("removal")
   protected ToolSpriteBuilder buildTool(String name) {
     return buildTool(ResourceLocation.fromNamespaceAndPath(modID, name));
   }

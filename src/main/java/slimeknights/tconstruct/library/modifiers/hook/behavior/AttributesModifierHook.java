@@ -2,15 +2,15 @@ package slimeknights.tconstruct.library.modifiers.hook.behavior;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.EquipmentSlot.Type;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.TConstruct;
+import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.modifiers.ModifierHooks;
 import slimeknights.tconstruct.library.modifiers.hook.build.ToolStatsModifierHook;
@@ -26,8 +26,8 @@ import java.util.function.BiConsumer;
  * Modifier hook for adding attributes to a tool when in the correct slot.
  */
 public interface AttributesModifierHook {
-  /** Stable IDs for armor attributes on held tools */
-  ResourceLocation[] HELD_ARMOR_IDS = new ResourceLocation[]{TConstruct.getResource("held.mainhand"), TConstruct.getResource("held.offhand")};
+  /** IDs for armor attributes on held tools, indexed by hand slot */
+  ResourceLocation[] HELD_ARMOR_ID = new ResourceLocation[]{TConstruct.getResource("held_armor.main_hand"), TConstruct.getResource("held_armor.off_hand")};
 
   /**
    * Adds attributes from this modifier's effect. Called whenever the item stack refreshes attributes, typically on equipping and unequipping.
@@ -64,18 +64,18 @@ public interface AttributesModifierHook {
       if (slot.getType() == Type.HAND) {
         // shields and slimestaffs can get armor
         if (tool.hasTag(TinkerTags.Items.ARMOR)) {
-          ResourceLocation id = HELD_ARMOR_IDS[slot.getIndex()];
+          ResourceLocation id = HELD_ARMOR_ID[slot.getIndex()];
           double value = statsNBT.get(ToolStats.ARMOR);
           if (value != 0) {
-            builder.put(Attributes.ARMOR.value(), new AttributeModifier(id, value, AttributeModifier.Operation.ADD_VALUE));
+            builder.put(Attributes.ARMOR.value(), new AttributeModifier(id.withSuffix(".armor"), value, AttributeModifier.Operation.ADD_VALUE));
           }
           value = statsNBT.get(ToolStats.ARMOR_TOUGHNESS);
           if (value != 0) {
-            builder.put(Attributes.ARMOR_TOUGHNESS.value(), new AttributeModifier(id, value, AttributeModifier.Operation.ADD_VALUE));
+            builder.put(Attributes.ARMOR_TOUGHNESS.value(), new AttributeModifier(id.withSuffix(".toughness"), value, AttributeModifier.Operation.ADD_VALUE));
           }
           value = statsNBT.get(ToolStats.KNOCKBACK_RESISTANCE);
           if (value != 0) {
-            builder.put(Attributes.KNOCKBACK_RESISTANCE.value(), new AttributeModifier(id, value, AttributeModifier.Operation.ADD_VALUE));
+            builder.put(Attributes.KNOCKBACK_RESISTANCE.value(), new AttributeModifier(id.withSuffix(".knockback_resistance"), value, AttributeModifier.Operation.ADD_VALUE));
           }
         }
 

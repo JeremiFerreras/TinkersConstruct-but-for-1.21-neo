@@ -3,6 +3,7 @@ package slimeknights.tconstruct.library.recipe.partbuilder.recycle;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -17,7 +18,6 @@ import slimeknights.tconstruct.library.recipe.partbuilder.Pattern;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Builder for custom part builder tool recycling recipes for general damageable items.
@@ -62,7 +62,7 @@ public class PartBuilderRecycleBuilder extends AbstractRecipeBuilder<PartBuilder
 
   @Override
   public void save(RecipeOutput consumer, ResourceLocation id) {
-    ResourceLocation advancementId = buildOptionalAdvancement(id, "parts");
-    saveRecipe(consumer, id, new PartBuilderRecycle(id, tool, pattern, results), advancementId);
+    AdvancementHolder advancementId = buildOptionalAdvancement(id, "parts");
+    consumer.accept(id, new PartBuilderRecycle(id, tool, pattern, results), advancementId);
   }
 }

@@ -8,24 +8,25 @@ import net.minecraft.data.PackOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Items;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.registries.RegisterEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.data.DatapackBuiltinEntriesProvider;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.common.NeoForgeMod;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.neoforge.registries.RegisterEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import slimeknights.tconstruct.common.TinkerModule;
-import slimeknights.tconstruct.library.recipe.ingredient.TinkerIngredients;
-import slimeknights.tconstruct.common.TinkerCapabilityEvents;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.common.data.AdvancementsProvider;
@@ -50,12 +51,14 @@ import slimeknights.tconstruct.common.data.tags.PotionTagProvider;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.fluids.TinkerFluids;
 import slimeknights.tconstruct.gadgets.TinkerGadgets;
+import slimeknights.tconstruct.library.TinkerItemDisplays;
 import slimeknights.tconstruct.library.materials.MaterialRegistry;
 import slimeknights.tconstruct.library.tools.capability.EntityModifierCapability;
 import slimeknights.tconstruct.library.tools.capability.PersistentDataCapability;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.ComputableDataKey;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.TinkerDataKey;
+import slimeknights.tconstruct.library.tools.nbt.ToolDataComponents;
 import slimeknights.tconstruct.library.tools.definition.ToolDefinitionLoader;
 import slimeknights.tconstruct.library.tools.layout.StationSlotLayoutLoader;
 import slimeknights.tconstruct.library.utils.Util;
@@ -65,7 +68,6 @@ import slimeknights.tconstruct.shared.TinkerCommons;
 import slimeknights.tconstruct.shared.TinkerEffects;
 import slimeknights.tconstruct.shared.TinkerMaterials;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
-import slimeknights.tconstruct.smeltery.item.CopperCanItem;
 import slimeknights.tconstruct.tables.TinkerTables;
 import slimeknights.tconstruct.tools.TinkerModifiers;
 import slimeknights.tconstruct.tools.TinkerToolParts;
@@ -88,7 +90,7 @@ import java.util.function.Supplier;
  */
 
 @Mod(TConstruct.MOD_ID)
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public class TConstruct {
 
   public static final String MOD_ID = "tconstruct";
@@ -99,52 +101,46 @@ public class TConstruct {
   public static TConstruct instance;
 
   public TConstruct(IEventBus bus, ModContainer container) {
-    NeoForgeMod.enableMilkFluid();
     instance = this;
 
     Config.init(container);
+    TinkerItemDisplays.init(bus);
     MaterialRegistry.init();
 
-    // NeoForge 1.21 data attachments must be registered on the mod bus before registries freeze.
+    // NeoForge 1.21: register the tool data component + entity data attachments on the mod bus
+    ToolDataComponents.init(bus);
     TinkerDataCapability.register(bus);
     PersistentDataCapability.register(bus);
     EntityModifierCapability.register(bus);
-    // NeoForge 1.21 requires item capability providers to be registered during RegisterCapabilitiesEvent.
-    bus.addListener(TinkerCapabilityEvents::onRegisterCapabilities);
 
     // initialize modules, done this way rather than with annotations to give us control over the order
-    bus.addListener(TConstruct::registerAliases);
     // base
     bus.register(new TinkerCommons());
     bus.register(new TinkerMaterials());
-    bus.register(new TinkerEffects(bus));
+    new TinkerEffects(); // self-registers POTIONS on the mod bus + brewing on the game bus; no @SubscribeEvent methods to register
     bus.register(new TinkerGadgets(bus));
-    bus.register(new TinkerAttributes(bus));
+    bus.register(new TinkerAttributes());
     // world
     bus.register(new TinkerWorld());
-    bus.register(new TinkerStructures(bus));
+    bus.register(new TinkerStructures());
     // tools
     bus.register(new TinkerTables());
     bus.register(new TinkerModifiers());
-    bus.register(new TinkerToolParts());
+    new TinkerToolParts(); // pure registration (shared DeferredRegisters via initRegisters); no @SubscribeEvent methods
     bus.register(new TinkerTools());
     // smeltery
     bus.register(new TinkerSmeltery());
-    CopperCanItem.register(bus, TinkerSmeltery.copperCan);
     bus.register(new TinkerFluids());
 
     // init deferred registers
     TinkerModule.initRegisters(bus);
-    TinkerIngredients.init(bus);
+    TinkerNetwork.setup();
     bus.addListener(TinkerNetwork::registerPackets);
     TinkerTags.init();
-    // init client logic
+    // init client logic (lazy class-load: TinkerClient only loaded on the client branch)
     if (FMLEnvironment.dist == Dist.CLIENT) {
       TinkerClient.onConstruct();
     }
-
-    // Optional compat integrations are disabled in this port until their
-    // matching NeoForge 1.21.1 compile APIs have been migrated.
   }
 
   @SubscribeEvent
@@ -186,30 +182,60 @@ public class TConstruct {
 
     // other datagen
     generator.addProvider(server, new TConstructLootTableProvider(packOutput));
-    generator.addProvider(server, new AdvancementsProvider(packOutput, lookupProvider));
+    // tool advancements (ItemSubPredicate.Type registered by TinkerTools, see SmelteryCapabilities/ToolStackItemPredicate)
+    generator.addProvider(server, new AdvancementsProvider(packOutput, datapackRegistryProvider.getRegistryProvider()));
     generator.addProvider(server, new GlobalLootModifiersProvider(packOutput));
     generator.addProvider(server, new LootTableInjectionProvider(packOutput));
     generator.addProvider(server, new ConfigurationDataProvider(packOutput));
     generator.addProvider(server, new FunctionProvider(packOutput));
   }
 
-  /** Handles missing mappings of all types */
-  private static void registerAliases(RegisterEvent event) {
-    if (event.getRegistryKey() == Registries.BLOCK) {
-      var blocks = event.getRegistry(Registries.BLOCK);
-      blocks.addAlias(getResource("silky_jewel_block"), ResourceLocation.withDefaultNamespace("emerald_block"));
-      blocks.addAlias(getResource("piglin_head"), ResourceLocation.withDefaultNamespace("piglin_head"));
-      blocks.addAlias(getResource("piglin_wall_head"), ResourceLocation.withDefaultNamespace("piglin_wall_head"));
-    } else if (event.getRegistryKey() == Registries.ITEM) {
-      var items = event.getRegistry(Registries.ITEM);
-      items.addAlias(getResource("silky_jewel"), ResourceLocation.withDefaultNamespace("emerald"));
-      items.addAlias(getResource("silky_jewel_block"), ResourceLocation.withDefaultNamespace("emerald_block"));
-      items.addAlias(getResource("piglin_head"), ResourceLocation.withDefaultNamespace("piglin_head"));
-      items.addAlias(getResource("round_plate"), getResource("adze_head"));
-      items.addAlias(getResource("round_plate_cast"), getResource("adze_head_cast"));
-      items.addAlias(getResource("round_plate_sand_cast"), getResource("adze_head_sand_cast"));
-      items.addAlias(getResource("round_plate_red_sand_cast"), getResource("adze_head_red_sand_cast"));
-      items.addAlias(getResource("slime_chestplate"), getResource("slime_wings"));
+  /**
+   * Handles legacy id remapping for worlds saved on 1.20.1 (Forge).
+   * <p>
+   * NeoForge removed Forge's {@code MissingMappingsEvent}; the 1.21 equivalent is registry aliasing via
+   * {@link net.neoforged.neoforge.registries.IRegistryExtension#addAlias(ResourceLocation, ResourceLocation)}
+   * (implemented by every {@link net.minecraft.core.Registry}). When an old, now-removed id is looked up and is
+   * absent, the registry resolves it through the alias chain to the target id. We register the aliases during
+   * {@link RegisterEvent}, after the target entries have been added but before the registry freezes.
+   * <p>
+   * This ports the old {@code TConstruct.missingMappings} handler, plus aliases for the composite slimeskull heads that upstream removed without a remap.
+   */
+  @SubscribeEvent
+  static void registerAliases(final RegisterEvent event) {
+    if (event.getRegistryKey().equals(Registries.BLOCK)) {
+      net.minecraft.core.Registry<net.minecraft.world.level.block.Block> registry = event.getRegistry(Registries.BLOCK);
+      // silky jewel removal
+      registry.addAlias(getResource("silky_jewel_block"), BuiltInRegistries.BLOCK.getKey(Blocks.EMERALD_BLOCK));
+      // piglin heads are vanilla
+      registry.addAlias(getResource("piglin_head"), BuiltInRegistries.BLOCK.getKey(Blocks.PIGLIN_HEAD));
+      registry.addAlias(getResource("piglin_wall_head"), BuiltInRegistries.BLOCK.getKey(Blocks.PIGLIN_WALL_HEAD));
+      // composite slimeskull heads were removed upstream without a remap, fall back to the vanilla skull of the same mob
+      // the placed heads used the vanilla skull block entity, so it carries over to the vanilla block
+      registry.addAlias(getResource("venombone_head"), BuiltInRegistries.BLOCK.getKey(Blocks.SKELETON_SKULL));
+      registry.addAlias(getResource("venombone_wall_head"), BuiltInRegistries.BLOCK.getKey(Blocks.SKELETON_WALL_SKULL));
+      registry.addAlias(getResource("blazing_bone_head"), BuiltInRegistries.BLOCK.getKey(Blocks.WITHER_SKELETON_SKULL));
+      registry.addAlias(getResource("blazing_bone_wall_head"), BuiltInRegistries.BLOCK.getKey(Blocks.WITHER_SKELETON_WALL_SKULL));
+      registry.addAlias(getResource("necronium_head"), BuiltInRegistries.BLOCK.getKey(Blocks.WITHER_SKELETON_SKULL));
+      registry.addAlias(getResource("necronium_wall_head"), BuiltInRegistries.BLOCK.getKey(Blocks.WITHER_SKELETON_WALL_SKULL));
+    } else if (event.getRegistryKey().equals(Registries.ITEM)) {
+      net.minecraft.core.Registry<net.minecraft.world.item.Item> registry = event.getRegistry(Registries.ITEM);
+      // silky jewel removal
+      registry.addAlias(getResource("silky_jewel"), BuiltInRegistries.ITEM.getKey(Items.EMERALD));
+      registry.addAlias(getResource("silky_jewel_block"), BuiltInRegistries.ITEM.getKey(Items.EMERALD_BLOCK));
+      // piglin heads are vanilla
+      registry.addAlias(getResource("piglin_head"), BuiltInRegistries.ITEM.getKey(Items.PIGLIN_HEAD));
+      // composite slimeskull heads are vanilla skulls
+      registry.addAlias(getResource("venombone_head"), BuiltInRegistries.ITEM.getKey(Items.SKELETON_SKULL));
+      registry.addAlias(getResource("blazing_bone_head"), BuiltInRegistries.ITEM.getKey(Items.WITHER_SKELETON_SKULL));
+      registry.addAlias(getResource("necronium_head"), BuiltInRegistries.ITEM.getKey(Items.WITHER_SKELETON_SKULL));
+      // round plate rename -> adze head
+      registry.addAlias(getResource("round_plate"), BuiltInRegistries.ITEM.getKey(TinkerToolParts.adzeHead.get()));
+      registry.addAlias(getResource("round_plate_cast"), BuiltInRegistries.ITEM.getKey(TinkerSmeltery.adzeHeadCast.get()));
+      registry.addAlias(getResource("round_plate_sand_cast"), BuiltInRegistries.ITEM.getKey(TinkerSmeltery.adzeHeadCast.getSand()));
+      registry.addAlias(getResource("round_plate_red_sand_cast"), BuiltInRegistries.ITEM.getKey(TinkerSmeltery.adzeHeadCast.getRedSand()));
+      // slimesuit rework
+      registry.addAlias(getResource("slime_chestplate"), BuiltInRegistries.ITEM.getKey(TinkerTools.slimeWings.get()));
     }
   }
 

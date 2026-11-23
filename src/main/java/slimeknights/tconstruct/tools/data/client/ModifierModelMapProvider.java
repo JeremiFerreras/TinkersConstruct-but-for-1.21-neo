@@ -372,7 +372,7 @@ public class ModifierModelMapProvider extends AbstractModifierModelMapProvider {
       .luminosity(2, ModifierIds.unbreakable);
 
     // shared armor
-    for (ArmorItem.Type type : ArmorItem.Type.values()) {
+    for (ArmorItem.Type type : new ArmorItem.Type[]{ArmorItem.Type.HELMET, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.LEGGINGS, ArmorItem.Type.BOOTS}) { // 1.21 BODY type unused by Tinkers armor
       String name = type.getName();
       tool("armor/" + name).smallFolder("armor/modifiers/" + name + '/').basic(
           ModifierIds.emerald, ModifierIds.thorns)
@@ -397,7 +397,7 @@ public class ModifierModelMapProvider extends AbstractModifierModelMapProvider {
       .basic(ModifierIds.featherFall, "tconstruct_feather_falling");
 
     // plate armor
-    for (ArmorItem.Type type : ArmorItem.Type.values()) {
+    for (ArmorItem.Type type : new ArmorItem.Type[]{ArmorItem.Type.HELMET, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.LEGGINGS, ArmorItem.Type.BOOTS}) { // 1.21 BODY type unused by Tinkers armor
       String item = "plate/" + type.getName();
       String root = "armor/" + item + "/maille";
       tool(item).armor()
@@ -438,7 +438,7 @@ public class ModifierModelMapProvider extends AbstractModifierModelMapProvider {
     tool("travelers/shield").banner("armor/travelers/shield/banner/", null);
 
     // slimesuit
-    for (ArmorItem.Type type : ArmorItem.Type.values()) {
+    for (ArmorItem.Type type : new ArmorItem.Type[]{ArmorItem.Type.HELMET, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.LEGGINGS, ArmorItem.Type.BOOTS}) { // 1.21 BODY type unused by Tinkers armor
       tool("slime/" + type.getName());
     }
     tool("slime/wings")
@@ -516,7 +516,7 @@ public class ModifierModelMapProvider extends AbstractModifierModelMapProvider {
 
   @Override
   public String getName() {
-    return "Tinkers' Construct Modifier Model Map Provider";
+    return "Neo Tinkers Modifier Model Map Provider";
   }
 
   /** Adds dyed textures for travelers gear */

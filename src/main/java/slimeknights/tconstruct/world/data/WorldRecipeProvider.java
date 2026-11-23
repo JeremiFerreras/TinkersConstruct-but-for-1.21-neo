@@ -1,12 +1,17 @@
 package slimeknights.tconstruct.world.data;
 
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeCategory;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.data.recipes.ShapelessRecipeBuilder;
+import net.minecraft.advancements.Criterion;
+import net.minecraft.advancements.critereon.InventoryChangeTrigger;
+import net.minecraft.advancements.critereon.ItemPredicate;
 import net.minecraft.data.recipes.SimpleCookingRecipeBuilder;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
@@ -20,8 +25,6 @@ import slimeknights.tconstruct.shared.TinkerCommons;
 import slimeknights.tconstruct.shared.block.SlimeType;
 import slimeknights.tconstruct.world.TinkerWorld;
 
-import java.util.function.Consumer;
-
 public class WorldRecipeProvider extends BaseRecipeProvider implements ICommonRecipeHelper {
   public WorldRecipeProvider(PackOutput packOutput) {
     super(packOutput);
@@ -29,7 +32,7 @@ public class WorldRecipeProvider extends BaseRecipeProvider implements ICommonRe
 
   @Override
   public String getName() {
-    return "Tinkers' Construct World Recipes";
+    return "Neo Tinkers World Recipes";
   }
 
   @Override

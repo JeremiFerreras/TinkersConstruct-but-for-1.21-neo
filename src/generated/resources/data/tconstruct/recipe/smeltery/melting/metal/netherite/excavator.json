@@ -1,4 +1,10 @@
 {
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "tools_complement:netherite_excavator"
+    }
+  ],
   "type": "tconstruct:damagable_melting",
   "byproducts": [
     {
@@ -7,18 +13,15 @@
       "unit_size": 25
     }
   ],
-  "conditions": [
-    {
-      "type": "forge:item_exists",
-      "item": "tools_complement:netherite_excavator"
-    }
-  ],
   "ingredient": {
-    "item": "tools_complement:netherite_excavator"
+    "type": "mantle:item_name",
+    "items": [
+      "tools_complement:netherite_excavator"
+    ]
   },
   "result": {
     "amount": 90,
-    "tag": "forge:molten_netherite",
+    "tag": "c:molten_netherite",
     "unit_size": 10
   },
   "temperature": 1250,

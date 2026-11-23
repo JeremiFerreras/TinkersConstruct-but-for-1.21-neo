@@ -1,9 +1,6 @@
 package slimeknights.tconstruct.tools.modules.interaction;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -11,7 +8,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.BrushItem;
@@ -24,8 +20,7 @@ import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.common.NeoForgeMod;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.data.loadable.record.SingletonLoader;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
@@ -100,57 +95,12 @@ public enum BrushModule implements ModifierModule, GeneralInteractionModifierHoo
 
     // spawn particles
     // shouldn't be needed to do the instance of, but might as well be safe
-    // PORT: BrushItem.spawnDustParticles is private; inlined from BrushItem
-    if (Items.BRUSH instanceof BrushItem) {
-      spawnBrushDustParticles(level, blockHit, state, player.getViewVector(0.0F), arm);
+    if (Items.BRUSH instanceof BrushItem brush) {
+      brush.spawnDustParticles(level, blockHit, state, player.getViewVector(0.0F), arm);
     }
 
     // play sound
     level.playSound(player, blockHit.getBlockPos(), sound, SoundSource.BLOCKS);
-  }
-
-  /** Inlined from {@link BrushItem#spawnDustParticles} (private in 1.21.1). */
-  private static void spawnBrushDustParticles(Level level, BlockHitResult hit, BlockState state, Vec3 view, HumanoidArm arm) {
-    int sign = arm == HumanoidArm.RIGHT ? 1 : -1;
-    int count = level.getRandom().nextInt(7, 12);
-    BlockParticleOption option = new BlockParticleOption(ParticleTypes.BLOCK, state);
-    Direction direction = hit.getDirection();
-    Vec3 loc = hit.getLocation();
-    double xd;
-    double zd;
-    switch (direction) {
-      case DOWN, UP -> {
-        xd = view.z();
-        zd = -view.x();
-      }
-      case NORTH -> {
-        xd = 1.0;
-        zd = -0.1;
-      }
-      case SOUTH -> {
-        xd = -1.0;
-        zd = 0.1;
-      }
-      case WEST -> {
-        xd = -0.1;
-        zd = -1.0;
-      }
-      default -> {
-        xd = 0.1;
-        zd = 1.0;
-      }
-    }
-    for (int k = 0; k < count; k++) {
-      level.addParticle(
-        option,
-        loc.x - (direction == Direction.WEST ? 1.0E-6F : 0.0F),
-        loc.y,
-        loc.z - (direction == Direction.NORTH ? 1.0E-6F : 0.0F),
-        xd * sign * 3.0 * level.getRandom().nextDouble(),
-        0.0,
-        zd * sign * 3.0 * level.getRandom().nextDouble()
-      );
-    }
   }
 
   /** Brushes a single block */

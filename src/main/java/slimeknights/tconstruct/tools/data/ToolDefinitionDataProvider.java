@@ -744,6 +744,8 @@ public class ToolDefinitionDataProvider extends AbstractToolDefinitionDataProvid
           .add(MaterialIds.glass, MaterialIds.gunpowder)
           .add(MaterialIds.venombone, MaterialIds.ice)
           .add(MaterialIds.blazingBone, MaterialIds.blaze)
+          // not remapped upstream, but necronium skulls were removed along with the other composite skulls
+          .add(MaterialIds.necronium, MaterialIds.necroticBone)
         .end().build())
       // chestplate - slime
       .module(ArmorItem.Type.CHESTPLATE, MaterialStatsModule.stats().stat(RepairStats.RIBCAGE.getId()).stat(SlimeStats.ID, 1.6f).primaryPart(1).build())
@@ -919,6 +921,6 @@ public class ToolDefinitionDataProvider extends AbstractToolDefinitionDataProvid
 
   @Override
   public String getName() {
-    return "Tinkers' Construct Tool Definition Data Generator";
+    return "Neo Tinkers Tool Definition Data Generator";
   }
 }

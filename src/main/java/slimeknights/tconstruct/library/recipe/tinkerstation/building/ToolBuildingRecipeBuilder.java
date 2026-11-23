@@ -3,6 +3,7 @@ package slimeknights.tconstruct.library.recipe.tinkerstation.building;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -18,7 +19,6 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Builder for a recipe that builds a tool
@@ -78,7 +78,7 @@ public class ToolBuildingRecipeBuilder extends AbstractRecipeBuilder<ToolBuildin
 
   @Override
   public void save(RecipeOutput consumerIn, ResourceLocation id) {
-    ResourceLocation advancementId = this.buildOptionalAdvancement(id, "parts");
+    AdvancementHolder advancementId = this.buildOptionalAdvancement(id, "parts");
     if (tippedModifier != null) {
       if (extraMaterials.isEmpty()) {
         throw new IllegalArgumentException("Must have at least 1 material for modifier transform");
@@ -86,9 +86,9 @@ public class ToolBuildingRecipeBuilder extends AbstractRecipeBuilder<ToolBuildin
       if (extraRequirements.size() != 1) {
         throw new IllegalArgumentException("Must have exactly one ingredient for modifier transform");
       }
-      saveRecipe(consumerIn, id, new TippedToolTransformRecipe(id, group, output, layoutSlot, extraRequirements.get(0), extraMaterials, tippedModifier), advancementId);
+      consumerIn.accept(id, new TippedToolTransformRecipe(id, group, output, layoutSlot, extraRequirements.get(0), extraMaterials, tippedModifier), advancementId);
     } else {
-      saveRecipe(consumerIn, id, new ToolBuildingRecipe(id, group, output, outputSize, layoutSlot, extraRequirements, partsOverride, extraMaterials), advancementId);
+      consumerIn.accept(id, new ToolBuildingRecipe(id, group, output, outputSize, layoutSlot, extraRequirements, partsOverride, extraMaterials), advancementId);
     }
   }
 }

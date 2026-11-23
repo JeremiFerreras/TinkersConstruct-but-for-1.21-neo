@@ -1,77 +1,66 @@
 package slimeknights.tconstruct.library.recipe.ingredient;
 
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Instrument;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ItemLike;
 import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.neoforged.neoforge.common.crafting.IngredientType;
+import slimeknights.mantle.data.loadable.Loadables;
+import slimeknights.mantle.data.loadable.record.RecordLoadable;
+import slimeknights.mantle.recipe.helper.LoadableIngredientSerializer;
+import slimeknights.tconstruct.TConstruct;
+import slimeknights.tconstruct.library.json.TinkerLoadables;
 
-import java.util.Optional;
+import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.stream.Stream;
 
-/** Ingredient matching an instrument-bearing item with a particular instrument or excluding a tag. */
+/** Ingredient matching an {@link net.minecraft.world.item.InstrumentItem} with a particular instrument. */
 public class InstrumentIngredient implements ICustomIngredient {
   public static final ResourceLocation ID = TConstruct.getResource("instrument");
-  public static final MapCodec<InstrumentIngredient> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-    BuiltInRegistries.ITEM.byNameCodec().fieldOf("item").forGetter(ingredient -> ingredient.item),
-    ResourceLocation.CODEC.optionalFieldOf("instrument").forGetter(ingredient -> Optional.ofNullable(ingredient.instrument).map(ResourceKey::location)),
-    ResourceLocation.CODEC.optionalFieldOf("ignore").forGetter(ingredient -> Optional.ofNullable(ingredient.ignore).map(TagKey::location))
-  ).apply(instance, (item, instrument, ignore) -> new InstrumentIngredient(
-    item,
-    instrument.map(id -> ResourceKey.create(Registries.INSTRUMENT, id)).orElse(null),
-    ignore.map(id -> TagKey.create(Registries.INSTRUMENT, id)).orElse(null)
-  )));
-  public static final IngredientType<InstrumentIngredient> TYPE = new IngredientType<>(CODEC);
+  /** Loadable for parsing and serializing this ingredient */
+  public static final RecordLoadable<InstrumentIngredient> LOADABLE = RecordLoadable.create(
+    Loadables.ITEM.requiredField("item", i -> i.item),
+    Loadables.resourceKey(Registries.INSTRUMENT).nullableField("instrument", i -> i.instrument),
+    TinkerLoadables.INSTRUMENT_TAGS.nullableField("ignore", i -> i.ignore),
+    InstrumentIngredient::new
+  ).validate((ingredient, error) -> {
+    if (ingredient.instrument == null && ingredient.ignore == null) {
+      throw error.create("Invalid InstrumentIngredient: must set either 'instrument' or 'ignore'");
+    }
+    return ingredient;
+  });
+  /** Ingredient type instance, registered under {@link #ID} */
+  public static final IngredientType<InstrumentIngredient> TYPE = new LoadableIngredientSerializer<>(LOADABLE).type();
 
   private final Item item;
+  @Nullable
   private final ResourceKey<Instrument> instrument;
+  @Nullable
   private final TagKey<Instrument> ignore;
-
-  private InstrumentIngredient(Item item, ResourceKey<Instrument> instrument, TagKey<Instrument> ignore) {
-    if ((instrument == null) == (ignore == null)) {
-      throw new IllegalArgumentException("Instrument ingredient must define exactly one of 'instrument' or 'ignore'");
-    }
-    this.item = item;
+  protected InstrumentIngredient(Item item, @Nullable ResourceKey<Instrument> instrument, @Nullable TagKey<Instrument> ignore) {
+    this.item = item.asItem();
     this.instrument = instrument;
-    this.ignore = ignore;
+    // instrument takes precedence over ignore, matching the old JSON parsing
+    this.ignore = instrument == null ? ignore : null;
   }
 
-  public static InstrumentIngredient of(Item item, ResourceKey<Instrument> instrument) {
-    return new InstrumentIngredient(item, instrument, null);
+  /** Creates a new instance matching the given instrument */
+  public static InstrumentIngredient of(ItemLike item, ResourceKey<Instrument> instrument) {
+    return new InstrumentIngredient(item.asItem(), instrument, null);
   }
 
-  public static InstrumentIngredient of(Item item, TagKey<Instrument> ignore) {
-    return new InstrumentIngredient(item, null, ignore);
-  }
-
-  @Override
-  public boolean test(ItemStack stack) {
-    if (stack.isEmpty() || !stack.is(item)) {
-      return false;
-    }
-    Holder<Instrument> held = stack.get(DataComponents.INSTRUMENT);
-    if (held != null) {
-      return instrument != null ? held.is(instrument) : !held.is(ignore);
-    }
-    return instrument == null;
-  }
-
-  @Override
-  public Stream<ItemStack> getItems() {
-    ItemStack stack = new ItemStack(item);
-    if (instrument != null) {
-      BuiltInRegistries.INSTRUMENT.getHolder(instrument).ifPresent(holder -> stack.set(DataComponents.INSTRUMENT, holder));
-    }
-    return Stream.of(stack);
+  /** Creates a new instance ignoring the given tag */
+  public static InstrumentIngredient of(ItemLike item, TagKey<Instrument> ignore) {
+    return new InstrumentIngredient(item.asItem(), null, ignore);
   }
 
   @Override
@@ -80,7 +69,51 @@ public class InstrumentIngredient implements ICustomIngredient {
   }
 
   @Override
+  public boolean test(@Nullable ItemStack stack) {
+    if (stack == null || !stack.is(item)) {
+      return false;
+    }
+    // 1.21: instrument lives on the instrument data component rather than a string NBT tag
+    Holder<Instrument> instrument = stack.get(DataComponents.INSTRUMENT);
+    if (instrument != null) {
+      // if we just want the instrument to match, can just compare by key
+      if (this.instrument != null) {
+        return instrument.is(this.instrument);
+      }
+      assert this.ignore != null;
+      // must be registered (not an inline instrument) and not in the tag
+      return instrument.unwrapKey().isPresent() && !instrument.is(ignore);
+    }
+    // if no instrument, its fine as long as we don't have a specific instrument
+    return this.instrument == null;
+  }
+
+  @Override
+  public Stream<ItemStack> getItems() {
+    ItemStack stack = new ItemStack(item);
+    // set the instrument on the stack
+    if (instrument != null) {
+      BuiltInRegistries.INSTRUMENT.getHolder(instrument).ifPresent(holder -> stack.set(DataComponents.INSTRUMENT, holder));
+    }
+    return Stream.of(stack);
+  }
+
+  @Override
   public IngredientType<?> getType() {
     return TYPE;
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) {
+      return true;
+    }
+    return other instanceof InstrumentIngredient ingredient && this.item == ingredient.item
+      && Objects.equals(this.instrument, ingredient.instrument) && Objects.equals(this.ignore, ingredient.ignore);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(item, instrument, ignore);
   }
 }

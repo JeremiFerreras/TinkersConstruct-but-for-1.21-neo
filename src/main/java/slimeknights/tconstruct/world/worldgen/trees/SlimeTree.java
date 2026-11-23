@@ -6,25 +6,27 @@ import slimeknights.tconstruct.world.block.FoliageType;
 
 import java.util.Optional;
 
-/** PORT: TreeGrower is now the final TreeGrower, constructed from configured-feature keys. */
+/**
+ * Factory producing the vanilla {@link TreeGrower} for each slime foliage type.
+ * In 1.21 {@link TreeGrower} is final and codec backed, so we build instances instead of subclassing the old grower.
+ */
 public final class SlimeTree {
   private SlimeTree() {}
 
-  public static TreeGrower forType(FoliageType foliageType) {
+  /** Tree grower for each foliage type, keyed by name so the vanilla codec can resolve it */
+  public static final TreeGrower EARTH = new TreeGrower("tconstruct:earth_slime", Optional.empty(), Optional.of(TinkerStructures.earthSlimeTree), Optional.empty());
+  public static final TreeGrower SKY = new TreeGrower("tconstruct:sky_slime", Optional.empty(), Optional.of(TinkerStructures.skySlimeTree), Optional.empty());
+  // ender picks the tall variant 85% of the time, modeled with the secondary tree chance
+  public static final TreeGrower ENDER = new TreeGrower("tconstruct:ender_slime", 0.85f, Optional.empty(), Optional.empty(), Optional.of(TinkerStructures.enderSlimeTree), Optional.of(TinkerStructures.enderSlimeTreeTall), Optional.empty(), Optional.empty());
+
+  /** Gets the tree grower for the given foliage type */
+  public static TreeGrower create(FoliageType foliageType) {
     return switch (foliageType) {
-      case EARTH -> new TreeGrower("tconstruct_earth_slime", Optional.empty(), Optional.of(TinkerStructures.earthSlimeTree), Optional.empty());
-      case SKY -> new TreeGrower("tconstruct_sky_slime", Optional.empty(), Optional.of(TinkerStructures.skySlimeTree), Optional.empty());
-      case ENDER -> new TreeGrower(
-          "tconstruct_ender_slime",
-          0.85F,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.of(TinkerStructures.enderSlimeTree),
-          Optional.of(TinkerStructures.enderSlimeTreeTall),
-          Optional.empty(),
-          Optional.empty());
-      case BLOOD -> new TreeGrower("tconstruct_blood_slime", Optional.empty(), Optional.of(TinkerStructures.bloodSlimeFungus), Optional.empty());
-      case ICHOR -> new TreeGrower("tconstruct_ichor_slime", Optional.empty(), Optional.of(TinkerStructures.ichorSlimeFungus), Optional.empty());
+      case EARTH -> EARTH;
+      case SKY -> SKY;
+      case ENDER -> ENDER;
+      // nether types grow via SlimeFungusBlock, not a sapling grower, but keep a fallback
+      case BLOOD, ICHOR -> EARTH;
     };
   }
 }

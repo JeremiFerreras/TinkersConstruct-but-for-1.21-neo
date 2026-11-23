@@ -7,10 +7,12 @@ import net.minecraft.advancements.critereon.ContextAwarePredicate;
 import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.shared.TinkerCommons;
 
 import javax.annotation.Nullable;
@@ -18,6 +20,14 @@ import java.util.Optional;
 
 /** Criteria that triggers when a container is opened */
 public class BlockContainerOpenedTrigger extends SimpleCriterionTrigger<BlockContainerOpenedTrigger.Instance> {
+  private static final ResourceLocation ID = TConstruct.getResource("block_container_opened");
+
+  /** Gets the registry ID for this trigger, used during registration */
+  public ResourceLocation getId() {
+    return ID;
+  }
+
+  @SuppressWarnings("removal")
   @Override
   public Codec<Instance> codec() {
     return Instance.CODEC;
@@ -30,6 +40,7 @@ public class BlockContainerOpenedTrigger extends SimpleCriterionTrigger<BlockCon
     }
   }
 
+  /** Instance of this trigger */
   public record Instance(Optional<ContextAwarePredicate> player, BlockEntityType<?> type) implements SimpleCriterionTrigger.SimpleInstance {
     public static final Codec<Instance> CODEC = RecordCodecBuilder.create(inst -> inst.group(
       EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),

@@ -131,6 +131,6 @@ public class EntityTypeTagProvider extends EntityTypeTagsProvider {
 
   @Override
   public String getName() {
-    return "Tinkers Construct Entity Type TinkerTags";
+    return "Neo Tinkers Entity Type TinkerTags";
   }
 }

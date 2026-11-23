@@ -18,5 +18,8 @@ public class NoMilkEffect extends TinkerEffect {
 
   @Override
   public void fillEffectCures(Set<EffectCure> cures, MobEffectInstance effectInstance) {
+    // 1.21: cures are data-driven via this hook. Clear them so this effect (and subclasses) cannot be cured
+    // by milk or anything else, restoring the original NoMilkEffect behavior.
+    cures.clear();
   }
 }

@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.gadgets.entity;
 
+import lombok.RequiredArgsConstructor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.dispenser.BlockSource;
@@ -15,12 +16,9 @@ import slimeknights.tconstruct.gadgets.entity.FancyArmorStandEntity.StandType;
 import java.util.function.Consumer;
 
 /** Dispenser behavior for fancy armor stand. Based on vanilla armor stand dispenser behavior */
+@RequiredArgsConstructor
 public class DispenseFancyArmorStand extends DefaultDispenseItemBehavior {
   private final StandType type;
-
-  public DispenseFancyArmorStand(StandType type) {
-    this.type = type;
-  }
 
   @Override
   protected ItemStack execute(BlockSource source, ItemStack stack) {

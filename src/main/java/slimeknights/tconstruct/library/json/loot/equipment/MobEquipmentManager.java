@@ -10,6 +10,7 @@ import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.neoforged.neoforge.common.NeoForge;
@@ -71,21 +72,9 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener {
       try {
         JsonObject json = GsonHelper.convertToJsonObject(entry.getValue(), key.toString());
         // skip if conditions fail
-        if (!json.has("conditions") && !json.has(net.neoforged.neoforge.common.conditions.ConditionalOps.DEFAULT_CONDITIONS_KEY)) {
-          // no conditions
-        } else {
-          com.google.gson.JsonElement conditionsElement = json.has(net.neoforged.neoforge.common.conditions.ConditionalOps.DEFAULT_CONDITIONS_KEY)
-            ? json.get(net.neoforged.neoforge.common.conditions.ConditionalOps.DEFAULT_CONDITIONS_KEY) : json.get("conditions");
-          // PORT: CraftingHelper.processConditions is gone
-          java.util.List<ICondition> conditions = ICondition.LIST_CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, conditionsElement).getOrThrow(JsonSyntaxException::new);
-          boolean ok = true;
-          for (ICondition condition : conditions) {
-            if (!condition.test(context)) {
-              ok = false;
-              break;
-            }
-          }
-          if (!ok) {
+        if (json.has("conditions")) {
+          List<ICondition> conditions = ICondition.LIST_CODEC.parse(JsonOps.INSTANCE, json.get("conditions")).getOrThrow(JsonSyntaxException::new);
+          if (!conditions.stream().allMatch(condition -> condition.test(context))) {
             continue;
           }
         }
@@ -149,6 +138,8 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener {
     Mob mob = event.getEntity();
     List<MobEquipment> equipment = get(mob.getType());
     if (!equipment.isEmpty() && MobEquipment.apply(equipment, mob, event)) {
+      // cancel only vanilla's finalizeSpawn (MobEquipment.apply already ran ours and set the tool); NeoForge keeps the
+      // mob. setSpawnCancelled would instead delete the fully equipped mob, so it never spawns (issue #24).
       event.setCanceled(true);
     }
   }

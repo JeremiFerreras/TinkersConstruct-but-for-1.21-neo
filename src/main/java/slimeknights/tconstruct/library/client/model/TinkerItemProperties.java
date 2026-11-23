@@ -3,6 +3,7 @@ package slimeknights.tconstruct.library.client.model;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.client.renderer.item.ItemPropertyFunction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -16,6 +17,7 @@ import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
 import slimeknights.tconstruct.library.tools.helper.ToolDamageUtil;
 import slimeknights.tconstruct.library.tools.item.ranged.ModifiableCrossbowItem;
 import slimeknights.tconstruct.library.tools.item.ranged.ModifiableLauncherItem;
+import slimeknights.tconstruct.library.tools.nbt.ToolDataComponents;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 
 /** Properties for tinker tools */
@@ -34,15 +36,15 @@ public class TinkerItemProperties {
   private static final String FIREWORKS_ID = "minecraft:firework_rocket";
   /** Int declaring ammo type */
   private static final ItemPropertyFunction AMMO = (stack, level, entity, seed) -> {
-    CompoundTag nbt = stack.getTag();
-    if (nbt != null) {
+    // tools store their NBT in the tconstruct:tool_data component, NOT minecraft:custom_data; reading the latter
+    // always came back empty so the loaded crossbow model never rendered (issue #13). Mirror ModifierUtil.
+    CompoundTag nbt = ToolDataComponents.getTag(stack);
+    if (nbt != null && nbt.contains(ToolStack.TAG_PERSISTENT_MOD_DATA, Tag.TAG_COMPOUND)) {
       CompoundTag persistentData = nbt.getCompound(ToolStack.TAG_PERSISTENT_MOD_DATA);
-      if (!persistentData.isEmpty()) {
-        CompoundTag ammo = persistentData.getCompound(ModifiableCrossbowItem.KEY_CROSSBOW_AMMO.toString());
-        if (!ammo.isEmpty()) {
-          // no sense having two keys for ammo, just set 1 for arrow, 2 for fireworks
-          return FIREWORKS_ID.equals(ammo.getString("id")) ? 2 : 1;
-        }
+      CompoundTag ammo = persistentData.getCompound(ModifiableCrossbowItem.KEY_CROSSBOW_AMMO.toString());
+      if (!ammo.isEmpty()) {
+        // no sense having two keys for ammo, just set 1 for arrow, 2 for fireworks
+        return FIREWORKS_ID.equals(ammo.getString("id")) ? 2 : 1;
       }
     }
     return 0;
@@ -76,7 +78,7 @@ public class TinkerItemProperties {
       return 0.0F;
     }
     int drawtime = ModifierUtil.getPersistentInt(stack, GeneralInteractionModifierHook.KEY_DRAWTIME, -1);
-    return drawtime == -1 ? 0 : (float)(stack.getUseDuration() - holder.getUseItemRemainingTicks()) / drawtime;
+    return drawtime == -1 ? 0 : (float)(stack.getUseDuration(holder) - holder.getUseItemRemainingTicks()) / drawtime;
   };
   /** ID for the cast fishing rods */
   private static final ResourceLocation CAST_ID = TConstruct.getResource("cast");

@@ -1,14 +1,16 @@
 package slimeknights.tconstruct.tools.network;
 
-import net.minecraft.network.codec.StreamCodec;
-import slimeknights.tconstruct.TConstruct;
 import lombok.RequiredArgsConstructor;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import slimeknights.mantle.client.TooltipKey;
 import slimeknights.mantle.network.packet.ISimplePacket;
+import slimeknights.mantle.network.packet.IThreadsafePacket;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.shared.TinkerEffects;
 import slimeknights.tconstruct.tools.logic.DoubleJumpHandler;
 import slimeknights.tconstruct.tools.logic.InteractionHandler;
@@ -17,7 +19,7 @@ import slimeknights.tconstruct.tools.logic.InteractionHandler;
  * Generic packet for various controls the client may send to the server
  */
 @RequiredArgsConstructor
-public enum TinkerControlPacket implements ISimplePacket {
+public enum TinkerControlPacket implements IThreadsafePacket {
   DOUBLE_JUMP,
   ANTIGRAVITY_JUMP,
   // helmet
@@ -32,6 +34,9 @@ public enum TinkerControlPacket implements ISimplePacket {
   START_LEGGINGS_INTERACT_CONTROL(TooltipKey.CONTROL),
   START_LEGGINGS_INTERACT_ALT(TooltipKey.ALT),
   STOP_LEGGINGS_INTERACT;
+
+  public static final Type<TinkerControlPacket> TYPE = new Type<>(TConstruct.getResource("tinker_control"));
+  public static final StreamCodec<RegistryFriendlyByteBuf,TinkerControlPacket> STREAM_CODEC = ISimplePacket.codec(TinkerControlPacket::read);
 
   private final TooltipKey modifier;
 
@@ -59,18 +64,23 @@ public enum TinkerControlPacket implements ISimplePacket {
     };
   }
 
-  public static TinkerControlPacket read(RegistryFriendlyByteBuf buffer) {
+  public static TinkerControlPacket read(FriendlyByteBuf buffer) {
     return buffer.readEnum(TinkerControlPacket.class);
   }
 
-  public void encode(RegistryFriendlyByteBuf packetBuffer) {
+  @Override
+  public void encode(FriendlyByteBuf packetBuffer) {
     packetBuffer.writeEnum(this);
   }
 
   @Override
-  public void handle(IPayloadContext context) {
-    ServerPlayer player = (ServerPlayer) context.player();
-    if (player != null) {
+  public Type<TinkerControlPacket> type() {
+    return TYPE;
+  }
+
+  @Override
+  public void handleThreadsafe(IPayloadContext context) {
+    if (context.player() instanceof ServerPlayer player) {
       switch (this) {
         case DOUBLE_JUMP -> DoubleJumpHandler.extraJump(player);
         case ANTIGRAVITY_JUMP -> TinkerEffects.antigravity.get().antigravityJump(player);
@@ -82,13 +92,5 @@ public enum TinkerControlPacket implements ISimplePacket {
         case STOP_LEGGINGS_INTERACT -> InteractionHandler.stopArmorInteract(player, EquipmentSlot.LEGS);
       }
     }
-  }
-  public static final Type<TinkerControlPacket> TYPE = new Type<>(TConstruct.getResource("tinker_control"));
-  public static final StreamCodec<RegistryFriendlyByteBuf, TinkerControlPacket> CODEC =
-    StreamCodec.ofMember(TinkerControlPacket::encode, TinkerControlPacket::read);
-
-  @Override
-  public Type<TinkerControlPacket> type() {
-    return TYPE;
   }
 }

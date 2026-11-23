@@ -1,11 +1,10 @@
 package slimeknights.tconstruct.library.json.condition;
 
-
-import net.minecraft.core.registries.Registries;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -16,18 +15,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-/** @deprecated use {@link slimeknights.mantle.recipe.condition.TagCombinationCondition#intersection(TagKey[])} */
+/**
+ * Condition that checks that the intersection of a set of tags is non-empty.
+ * @deprecated use {@link slimeknights.mantle.recipe.condition.TagCombinationCondition#intersection(TagKey[])}
+ */
 @Deprecated(forRemoval = true)
 public class TagIntersectionPresentCondition<T> implements ICondition {
   public static final ResourceLocation NAME = TConstruct.getResource("tag_intersection_present");
-  /** // PORT: conditions are codec based in 1.21.1, register this to {@code NeoForgeRegistries.Keys.CONDITION_CODECS} */
-  public static final MapCodec<TagIntersectionPresentCondition<?>> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
-    ResourceLocation.CODEC.fieldOf("registry").forGetter(c -> c.names.get(0).registry().location()),
-    ResourceLocation.CODEC.listOf().fieldOf("tags").forGetter(c -> c.names.stream().map(TagKey::location).toList())
-  ).apply(inst, TagIntersectionPresentCondition::readGeneric));
-  /** @deprecated use {@link #CODEC} */
-  @Deprecated(forRemoval = true)
-  public static final MapCodec<TagIntersectionPresentCondition<?>> SERIALIZER = CODEC;
 
   private final List<TagKey<T>> names;
 
@@ -49,10 +43,18 @@ public class TagIntersectionPresentCondition<T> implements ICondition {
     return new TagIntersectionPresentCondition<>(Arrays.stream(names).map(name -> TagKey.create(registry, name)).toList());
   }
 
-  /** Reads with generics happy */
-  private static <T> TagIntersectionPresentCondition<T> readGeneric(ResourceLocation registryName, List<ResourceLocation> tags) {
-    ResourceKey<Registry<T>> registry = ResourceKey.createRegistryKey(registryName);
-    return new TagIntersectionPresentCondition<>(tags.stream().map(name -> TagKey.<T>create(registry, name)).toList());
+  /** Codec for this condition */
+  public static final MapCodec<TagIntersectionPresentCondition<?>> CODEC = RecordCodecBuilder.mapCodec(builder -> builder
+    .group(
+      // save some space in JSON by not setting registry if item (most common)
+      ResourceLocation.CODEC.optionalFieldOf("registry", Registries.ITEM.location()).forGetter(c -> c.names.get(0).registry().location()),
+      ResourceLocation.CODEC.listOf().fieldOf("tags").forGetter(c -> c.names.stream().map(TagKey::location).toList()))
+    .apply(builder, TagIntersectionPresentCondition::create));
+
+  /** Builds a condition from the codec primitives */
+  private static TagIntersectionPresentCondition<?> create(ResourceLocation registryName, List<ResourceLocation> names) {
+    ResourceKey<Registry<Object>> registry = ResourceKey.createRegistryKey(registryName);
+    return new TagIntersectionPresentCondition<>(names.stream().map(name -> TagKey.create(registry, name)).toList());
   }
 
   @Override
@@ -89,10 +91,5 @@ public class TagIntersectionPresentCondition<T> implements ICondition {
     }
     // no item in all tags
     return false;
-  }
-
-  @Override
-  public String toString() {
-    return "TagIntersectionPresentCondition(" + names + ")";
   }
 }

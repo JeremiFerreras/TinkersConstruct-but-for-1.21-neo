@@ -1,8 +1,6 @@
 package slimeknights.tconstruct.common.config;
 
 import com.google.common.collect.ImmutableList;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.enchantment.Enchantments;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec.BooleanValue;
 import net.neoforged.neoforge.common.ModConfigSpec.ConfigValue;
@@ -72,12 +70,15 @@ public class Config {
         .define("shouldSpawnWithTinkersBook", true);
 
       ImmutableList.Builder<ConfigurableAction> actions = ImmutableList.builder();
+      // TODO(neoport): enchantment slots are data-driven in 1.21 (Enchantments.X is a ResourceKey<Enchantment>, slots come from JSON
+      //  and are immutable at runtime). The former runtime mutation of fire/blast protection slots is no longer possible; the option
+      //  is kept for config compatibility but extending the slots must now be done via a datapack override.
       actions.add(new ConfigurableAction(builder, "extendFireProtectionSlots", true,
                                          "If true, extends the applicable slots for the fire protection enchantment to work better with shields. Will not impact gameplay with the vanilla enchantment.\nIf false, fire protection on a shield will not reduce fire tick time.",
-                                         () -> Enchantments.FIRE_PROTECTION.slots = EquipmentSlot.values()));
+                                         () -> {}));
       actions.add(new ConfigurableAction(builder, "extendBlastProtectionSlots", true,
                                          "If true, extends the applicable slots for the blast protection enchantment to work better with shields. Will not impact gameplay with the vanilla enchantment.\nIf false, blast protection on a shield will not reduce explosion knockback.",
-                                         () -> Enchantments.BLAST_PROTECTION.slots = EquipmentSlot.values()));
+                                         () -> {}));
       toolTweaks = actions.build();
 
       this.syncKnockbackResistance = builder
@@ -417,7 +418,11 @@ public class Config {
     COMMON = specPair.getLeft();
   }
 
-  /** Registers any relevant listeners for config */
+  /**
+   * Registers any relevant listeners for config
+   * @param container  Mod container, injected into the {@code @Mod} constructor in NeoForge 1.21 (replaces the removed
+   *                   {@code ModLoadingContext.get().registerConfig})
+   */
   public static void init(ModContainer container) {
     container.registerConfig(ModConfig.Type.COMMON, Config.commonSpec);
     container.registerConfig(ModConfig.Type.CLIENT, Config.clientSpec);

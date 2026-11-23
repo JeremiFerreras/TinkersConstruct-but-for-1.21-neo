@@ -12,21 +12,26 @@ import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.recipe.helper.LoadableIngredientSerializer;
 import slimeknights.tconstruct.TConstruct;
 
+import javax.annotation.Nullable;
+
 /** Ingredient matching an item with no container item, used to ensure NBT fluid items are empty */
 public class NoContainerIngredient extends NestedIngredient {
   public static final ResourceLocation ID = TConstruct.getResource("no_container");
-  public static final RecordLoadable<NoContainerIngredient> LOADER = RecordLoadable.create(
+  /** Loadable for parsing and serializing this ingredient */
+  public static final RecordLoadable<NoContainerIngredient> LOADABLE = RecordLoadable.create(
     IngredientLoadable.DISALLOW_EMPTY.requiredField("match", i -> i.nested),
     NoContainerIngredient::new);
-  public static final IngredientType<NoContainerIngredient> TYPE = LoadableIngredientSerializer.type(LOADER);
+  /** Ingredient type instance */
+  // TODO(neoport): register this IngredientType on NeoForgeRegistries.Keys.INGREDIENT_TYPES under id tconstruct:no_container
+  public static final IngredientType<NoContainerIngredient> TYPE = new LoadableIngredientSerializer<>(LOADABLE).type();
 
   protected NoContainerIngredient(Ingredient nested) {
     super(nested);
   }
 
   @Override
-  public boolean test(ItemStack stack) {
-    return super.test(stack) && !stack.hasCraftingRemainingItem();
+  public boolean test(@Nullable ItemStack stack) {
+    return stack != null && super.test(stack) && !stack.hasCraftingRemainingItem();
   }
 
   @Override
@@ -43,22 +48,22 @@ public class NoContainerIngredient extends NestedIngredient {
   /* Static constructors */
 
   /** Creates an instance from the given nested ingredient */
-  public static Ingredient of(Ingredient ingredient) {
-    return new NoContainerIngredient(ingredient).toVanilla();
+  public static NoContainerIngredient of(Ingredient ingredient) {
+    return new NoContainerIngredient(ingredient);
   }
 
   /** Creates an instance from the given items */
-  public static Ingredient of(ItemLike... items) {
+  public static NoContainerIngredient of(ItemLike... items) {
     return of(Ingredient.of(items));
   }
 
   /** Creates an instance from the given stacks */
-  public static Ingredient of(ItemStack... stacks) {
+  public static NoContainerIngredient of(ItemStack... stacks) {
     return of(Ingredient.of(stacks));
   }
 
   /** Creates an instance from the given tag */
-  public static Ingredient of(TagKey<Item> tag) {
+  public static NoContainerIngredient of(TagKey<Item> tag) {
     return of(Ingredient.of(tag));
   }
 }
