@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.library.events;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -20,16 +19,14 @@ import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 
 import javax.annotation.Nullable;
 
-@AllArgsConstructor
 @Getter
 public abstract class TinkerToolEvent extends Event {
   private final ItemStack stack;
   private final IToolStackView tool;
   private TriState result = TriState.DEFAULT;
-
-  /** Overrides the default behavior for this tool event. */
-  public void setResult(TriState result) {
-    this.result = result;
+  public TinkerToolEvent(ItemStack stack, IToolStackView tool) {
+    this.stack = stack;
+    this.tool = tool;
   }
   public TinkerToolEvent(ItemStack stack) {
     this.stack = stack;
@@ -37,7 +34,7 @@ public abstract class TinkerToolEvent extends Event {
   }
 
   /**
-   * Event fired when a kama tries to harvest a crop. Set result to {@link TriState#TRUE} if you handled the harvest yourself. Set the result to {@link TriState#FALSE} if the block cannot be harvested.
+   * Event fired when a kama tries to harvest a crop. Set the result true if handled, or false if harvesting is denied.
    */
   @Getter
   public static class ToolHarvestEvent extends TinkerToolEvent {
@@ -90,7 +87,6 @@ public abstract class TinkerToolEvent extends Event {
   /**
    * Event fired when a kama or scythe tries to shear an entity
    */
-  @HasResult
   @Getter
   public static class ToolShearEvent extends TinkerToolEvent {
     private final Level world;
@@ -106,9 +102,17 @@ public abstract class TinkerToolEvent extends Event {
     }
 
     /** Fires this event and posts the result */
-    public Result fire() {
+    public TriState fire() {
       NeoForge.EVENT_BUS.post(this);
       return this.getResult();
     }
+  }
+
+  public void setResult(TriState result) {
+    this.result = result;
+  }
+
+  public TriState getResult() {
+    return result;
   }
 }
