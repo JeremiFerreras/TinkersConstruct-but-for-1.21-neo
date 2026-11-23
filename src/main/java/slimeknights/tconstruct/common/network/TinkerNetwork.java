@@ -2,16 +2,16 @@ package slimeknights.tconstruct.common.network;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
-import slimeknights.mantle.network.ISimplePacket;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import slimeknights.mantle.network.NetworkWrapper;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.materials.definition.UpdateMaterialsPacket;
 import slimeknights.tconstruct.library.materials.stats.UpdateMaterialStatsPacket;
 import slimeknights.tconstruct.library.materials.traits.UpdateMaterialTraitsPacket;
@@ -47,58 +47,88 @@ import javax.annotation.Nullable;
  * <p>
  * In general, if you need to send packets you should use your own network class
  */
-public final class TinkerNetwork {
-  private static final TinkerNetwork INSTANCE = new TinkerNetwork();
+public class TinkerNetwork extends NetworkWrapper {
+  private static TinkerNetwork instance = null;
 
-  private TinkerNetwork() {}
-
-  public static TinkerNetwork getInstance() {
-    return INSTANCE;
+  /*
+   * Network versions:
+   * 1: 3.10.1 and before
+   * 2: 3.10.2 - new material stat type; item removal
+   * 3: 3.11.2+ - lost track of how much changed but its a lot
+   * 4: 3.12.0 - many internal changes with slimesuit and alike
+   * 5: 3.12.1 - new recipe formats
+   */
+  private TinkerNetwork() {
+    super(TConstruct.getResource("network"), "5");
   }
 
+  /** Gets the instance of the network */
+  public static TinkerNetwork getInstance() {
+    if (instance == null) {
+      throw new IllegalStateException("Attempt to call network getInstance before network is setup");
+    }
+    return instance;
+  }
+
+  /**
+   * Called during mod construction to setup the network. Registers the payload handler listener on the mod event bus.
+   */
+  public static void setup() {
+    if (instance == null) {
+      instance = new TinkerNetwork();
+    }
+  }
+
+  /**
+   * Registers all TConstruct packets on the payload registrar. Invoked from {@link RegisterPayloadHandlersEvent} on the
+   * mod bus; the orchestrator ({@code TConstruct}) wires this method as the event listener.
+   * @param event  Payload registration event
+   */
   public static void registerPackets(RegisterPayloadHandlersEvent event) {
-    var registrar = event.registrar("6");
+    setup();
+    PayloadRegistrar registrar = instance.getRegistrar(event);
+
     // shared
-    registrar.playToClient(InventorySlotSyncPacket.TYPE, InventorySlotSyncPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateNeighborsPacket.TYPE, UpdateNeighborsPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(GeneratePartTexturesPacket.TYPE, GeneratePartTexturesPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(SyncPersistentDataPacket.TYPE, SyncPersistentDataPacket.CODEC, ISimplePacket.handle());
+    instance.registerToClient(registrar, InventorySlotSyncPacket.TYPE, InventorySlotSyncPacket::new);
+    instance.registerToClient(registrar, UpdateNeighborsPacket.TYPE, UpdateNeighborsPacket::new);
+    instance.registerToClient(registrar, GeneratePartTexturesPacket.TYPE, GeneratePartTexturesPacket::new);
+    instance.registerToClient(registrar, SyncPersistentDataPacket.TYPE, SyncPersistentDataPacket::new);
 
     // gadgets
-    registrar.playToClient(EntityMovementChangePacket.TYPE, EntityMovementChangePacket.CODEC, ISimplePacket.handle());
+    instance.registerToClient(registrar, EntityMovementChangePacket.TYPE, EntityMovementChangePacket::new);
 
     // tables
-    registrar.playToServer(StationTabPacket.TYPE, StationTabPacket.CODEC, ISimplePacket.handle());
-    registrar.playToServer(TinkerStationRenamePacket.TYPE, TinkerStationRenamePacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateCraftingRecipePacket.TYPE, UpdateCraftingRecipePacket.CODEC, ISimplePacket.handle());
-    registrar.playToServer(TinkerStationSelectionPacket.TYPE, TinkerStationSelectionPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateTinkerSlotLayoutsPacket.TYPE, UpdateTinkerSlotLayoutsPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateStationScreenPacket.TYPE, UpdateStationScreenPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateTinkerStationRecipePacket.TYPE, UpdateTinkerStationRecipePacket.CODEC, ISimplePacket.handle());
+    instance.registerToServer(registrar, StationTabPacket.TYPE, StationTabPacket::new);
+    instance.registerToServer(registrar, TinkerStationRenamePacket.TYPE, TinkerStationRenamePacket::new);
+    instance.registerToClient(registrar, UpdateCraftingRecipePacket.TYPE, UpdateCraftingRecipePacket::new);
+    instance.registerToServer(registrar, TinkerStationSelectionPacket.TYPE, TinkerStationSelectionPacket::new);
+    instance.registerToClient(registrar, UpdateTinkerSlotLayoutsPacket.TYPE, UpdateTinkerSlotLayoutsPacket::new);
+    instance.registerToClient(registrar, UpdateStationScreenPacket.TYPE, buf -> UpdateStationScreenPacket.INSTANCE);
+    instance.registerToClient(registrar, UpdateTinkerStationRecipePacket.TYPE, UpdateTinkerStationRecipePacket::new);
 
     // tools
-    registrar.playToClient(UpdateMaterialsPacket.TYPE, UpdateMaterialsPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateMaterialStatsPacket.TYPE, UpdateMaterialStatsPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateMaterialTraitsPacket.TYPE, UpdateMaterialTraitsPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateToolDefinitionDataPacket.TYPE, UpdateToolDefinitionDataPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(ToolContainerFluidUpdatePacket.TYPE, ToolContainerFluidUpdatePacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(SyncProjectileModifiersPacket.TYPE, SyncProjectileModifiersPacket.CODEC, ISimplePacket.handle());
+    instance.registerToClient(registrar, UpdateMaterialsPacket.TYPE, UpdateMaterialsPacket::new);
+    instance.registerToClient(registrar, UpdateMaterialStatsPacket.TYPE, UpdateMaterialStatsPacket::new);
+    instance.registerToClient(registrar, UpdateMaterialTraitsPacket.TYPE, UpdateMaterialTraitsPacket::new);
+    instance.registerToClient(registrar, UpdateToolDefinitionDataPacket.TYPE, UpdateToolDefinitionDataPacket::new);
+    instance.registerToClient(registrar, ToolContainerFluidUpdatePacket.TYPE, ToolContainerFluidUpdatePacket::new);
+    instance.registerToClient(registrar, SyncProjectileModifiersPacket.TYPE, SyncProjectileModifiersPacket::new);
 
     // modifiers
-    registrar.playToServer(TinkerControlPacket.TYPE, TinkerControlPacket.CODEC, ISimplePacket.handle());
-    registrar.playToServer(InteractWithAirPacket.TYPE, InteractWithAirPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateModifiersPacket.TYPE, UpdateModifiersPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(UpdateFluidEffectsPacket.TYPE, UpdateFluidEffectsPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(PushBlockRowPacket.TYPE, PushBlockRowPacket.CODEC, ISimplePacket.handle());
+    instance.registerToServer(registrar, TinkerControlPacket.TYPE, TinkerControlPacket::read);
+    instance.registerToServer(registrar, InteractWithAirPacket.TYPE, InteractWithAirPacket::read);
+    instance.registerToClient(registrar, UpdateModifiersPacket.TYPE, UpdateModifiersPacket::new);
+    instance.registerToClient(registrar, UpdateFluidEffectsPacket.TYPE, UpdateFluidEffectsPacket::decode);
+    instance.registerToClient(registrar, PushBlockRowPacket.TYPE, PushBlockRowPacket::new);
 
     // smeltery
-    registrar.playToClient(FluidUpdatePacket.TYPE, FluidUpdatePacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(FaucetActivationPacket.TYPE, FaucetActivationPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(ChannelFlowPacket.TYPE, ChannelFlowPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(SmelteryTankUpdatePacket.TYPE, SmelteryTankUpdatePacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(StructureUpdatePacket.TYPE, StructureUpdatePacket.CODEC, ISimplePacket.handle());
-    registrar.playToServer(SmelteryFluidClickedPacket.TYPE, SmelteryFluidClickedPacket.CODEC, ISimplePacket.handle());
-    registrar.playToClient(StructureErrorPositionPacket.TYPE, StructureErrorPositionPacket.CODEC, ISimplePacket.handle());
+    instance.registerToClient(registrar, FluidUpdatePacket.TYPE, FluidUpdatePacket::new);
+    instance.registerToClient(registrar, FaucetActivationPacket.TYPE, FaucetActivationPacket::new);
+    instance.registerToClient(registrar, ChannelFlowPacket.TYPE, ChannelFlowPacket::new);
+    instance.registerToClient(registrar, SmelteryTankUpdatePacket.TYPE, SmelteryTankUpdatePacket::new);
+    instance.registerToClient(registrar, StructureUpdatePacket.TYPE, StructureUpdatePacket::new);
+    instance.registerToServer(registrar, SmelteryFluidClickedPacket.TYPE, SmelteryFluidClickedPacket::new);
+    instance.registerToClient(registrar, StructureErrorPositionPacket.TYPE, StructureErrorPositionPacket::new);
   }
 
   /**
@@ -113,33 +143,15 @@ public final class TinkerNetwork {
   }
 
   /**
-   * Same as {@link #sendToClientsAround(Object, ServerLevel, BlockPos)}, but checks that the world is a serverworld
+   * Same as {@link NetworkWrapper#sendToClientsAround(CustomPacketPayload, ServerLevel, BlockPos)}, but checks that the world is a server world
    * @param msg       Packet to send
    * @param world     World instance
    * @param position  Target position
    */
   public void sendToClientsAround(CustomPacketPayload msg, @Nullable LevelAccessor world, BlockPos position) {
     if (world instanceof ServerLevel server) {
-      PacketDistributor.sendToPlayersTrackingChunk(server, new ChunkPos(position), msg);
+      sendToClientsAround(msg, server, position);
     }
-  }
-
-  /**
-   * Sends a packet to all entities tracking the given entity
-   * @param msg     Packet
-   * @param entity  Entity to check
-   */
-  public void sendToTrackingAndSelf(CustomPacketPayload msg, Entity entity) {
-    PacketDistributor.sendToPlayersTrackingEntityAndSelf(entity, msg);
-  }
-
-  /**
-   * Sends a packet to all entities tracking the given entity
-   * @param msg     Packet
-   * @param entity  Entity to check
-   */
-  public void sendToTracking(CustomPacketPayload msg, Entity entity) {
-    PacketDistributor.sendToPlayersTrackingEntity(entity, msg);
   }
 
   /**
@@ -156,14 +168,5 @@ public final class TinkerNetwork {
         sendTo(msg, player);
       }
     }
-  }
-  public void sendTo(CustomPacketPayload msg, Entity player) {
-    if (player instanceof ServerPlayer serverPlayer) {
-      PacketDistributor.sendToPlayer(serverPlayer, msg);
-    }
-  }
-
-  public void sendToServer(CustomPacketPayload msg) {
-    PacketDistributor.sendToServer(msg);
   }
 }
