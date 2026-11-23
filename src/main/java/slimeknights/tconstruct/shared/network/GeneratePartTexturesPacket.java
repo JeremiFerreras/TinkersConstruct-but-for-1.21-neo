@@ -5,7 +5,7 @@ import slimeknights.tconstruct.TConstruct;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import slimeknights.mantle.network.ISimplePacket;
+import slimeknights.mantle.network.packet.ISimplePacket;
 import slimeknights.tconstruct.shared.client.ClientGeneratePartTexturesCommand;
 
 /** Packet to tell the client to generate tool textures */
