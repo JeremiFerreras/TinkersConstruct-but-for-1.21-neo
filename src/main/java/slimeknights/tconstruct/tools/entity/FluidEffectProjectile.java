@@ -1,5 +1,7 @@
 package slimeknights.tconstruct.tools.entity;
 
+import slimeknights.tconstruct.library.utils.CapLookup;
+
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.core.BlockPos;
@@ -26,7 +28,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
@@ -143,7 +145,7 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
     Level level = level();
     if (this.cannon != null && level.isLoaded(this.cannon)) {
       BlockEntity cannonBE = level.getBlockEntity(this.cannon);
-      if (cannonBE != null && cannonBE.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(EmptyItemHandler.INSTANCE) instanceof IItemHandlerModifiable modifiable) {
+      if (cannonBE != null && CapLookup.item(cannonBE, null) instanceof IItemHandlerModifiable modifiable) {
         return modifiable;
       }
     }
@@ -194,9 +196,9 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
         EntityDimensions dimensions = getType().getDimensions();
         float factor = 0.01f;
         if (((BlockHitResult)hitResult).getDirection().getAxis() == Axis.Y) {
-          factor += dimensions.height;
+          factor += dimensions.height();
         } else {
-          factor += dimensions.width / 2;
+          factor += dimensions.width() / 2;
         }
         newLocation = hitResult.getLocation().add(velocity.normalize().scale(factor));
       } else {
@@ -315,9 +317,9 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
   private static final String KEY_WATER_INERTIA = "water_inertia";
 
   @Override
-  protected void defineSynchedData() {
-    this.entityData.define(FLUID, FluidStack.EMPTY);
-    this.entityData.define(WATER_INERTIA, 0.6f);
+  protected void defineSynchedData(SynchedEntityData.Builder builder) {
+    builder.define(FLUID, FluidStack.EMPTY);
+    builder.define(WATER_INERTIA, 0.6f);
   }
 
   @Override
@@ -345,7 +347,7 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
     }
     FluidStack fluid = getFluid();
     if (!fluid.isEmpty()) {
-      nbt.put(KEY_FLUID, fluid.writeToNBT(new CompoundTag()));
+      nbt.put(KEY_FLUID, fluid.save(this.registryAccess()));
     }
   }
 
@@ -355,11 +357,7 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
     this.power = nbt.getFloat(KEY_POWER);
     this.knockback = nbt.getFloat(KEY_KNOCKBACK);
     this.entityData.set(WATER_INERTIA, nbt.getFloat(KEY_WATER_INERTIA));
-    if (nbt.contains(KEY_CANNON)) {
-      this.cannon = NbtUtils.readBlockPos(nbt.getCompound(KEY_CANNON));
-    } else {
-      this.cannon = null;
-    }
-    setFluid(FluidStack.loadFluidStackFromNBT(nbt.getCompound(KEY_FLUID)));
+    this.cannon = NbtUtils.readBlockPos(nbt, KEY_CANNON).orElse(null);
+    setFluid(nbt.contains(KEY_FLUID) ? FluidStack.parseOptional(this.registryAccess(), nbt.getCompound(KEY_FLUID)) : FluidStack.EMPTY);
   }
 }

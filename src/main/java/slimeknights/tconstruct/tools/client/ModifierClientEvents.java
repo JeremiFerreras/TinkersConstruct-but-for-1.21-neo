@@ -3,11 +3,13 @@ package slimeknights.tconstruct.tools.client;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -19,14 +21,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut;
 import net.neoforged.neoforge.client.event.ComputeFovModifierEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientMobEffectExtensions;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -60,7 +63,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Modifier event hooks that run client side */
-@EventBusSubscriber(modid = TConstruct.MOD_ID, value = Dist.CLIENT, bus = Bus.FORGE)
+@EventBusSubscriber(modid = TConstruct.MOD_ID, value = Dist.CLIENT, bus = Bus.GAME)
 public class ModifierClientEvents {
   @SubscribeEvent
   static void onTooltipEvent(ItemTooltipEvent event) {
@@ -123,7 +126,7 @@ public class ModifierClientEvents {
   /** Handles the zoom modifier zooming */
   @SubscribeEvent
   static void handleZoom(ComputeFovModifierEvent event) {
-    event.getPlayer().getCapability(TinkerDataCapability.CAPABILITY).ifPresent(data -> {
+    TinkerDataCapability.getOptional(event.getPlayer()).ifPresent(data -> {
       float newFov = event.getNewFovModifier();
 
       // scaled effects only apply if we have FOV scaling, nothing to do if 0
@@ -229,7 +232,7 @@ public class ModifierClientEvents {
     boolean hasBeneficial = false;
     for (MobEffectInstance instance : player.getActiveEffects()) {
       if (instance.showIcon() && IClientMobEffectExtensions.of(instance).isVisibleInGui(instance)) {
-        if (instance.getEffect().isBeneficial()) {
+        if (instance.getEffect().value().isBeneficial()) {
           hasBeneficial = true;
         } else {
           // negative effects means offset two rows
@@ -241,12 +244,36 @@ public class ModifierClientEvents {
     return hasBeneficial ? 26 : 0;
   }
 
+  /**
+   * Renders a hotbar slot, copy of the now private {@code Gui#renderSlot}.
+   * PORT: Gui.renderSlot is private on 1.21 and the access transformer for it was dropped, so it is inlined here.
+   */
+  private static void renderSlot(GuiGraphics graphics, int x, int y, DeltaTracker deltaTracker, Player player, ItemStack stack, int seed) {
+    if (!stack.isEmpty()) {
+      Minecraft mc = Minecraft.getInstance();
+      float popTime = stack.getPopTime() - deltaTracker.getGameTimeDeltaPartialTick(false);
+      if (popTime > 0.0F) {
+        float scale = 1.0F + popTime / 5.0F;
+        graphics.pose().pushPose();
+        graphics.pose().translate(x + 8, y + 12, 0.0F);
+        graphics.pose().scale(1.0F / scale, (scale + 1.0F) / 2.0F, 1.0F);
+        graphics.pose().translate(-(x + 8), -(y + 12), 0.0F);
+      }
+      graphics.renderItem(player, stack, x, y, seed);
+      if (popTime > 0.0F) {
+        graphics.pose().popPose();
+      }
+      graphics.renderItemDecorations(mc.font, stack, x, y);
+    }
+  }
+
   /** Render the item in the first shield slot */
   @SubscribeEvent
-  public static void renderHotbar(RenderGuiOverlayEvent.Post event) {
+  public static void renderHotbar(RenderGuiLayerEvent.Post event) {
     Minecraft mc = Minecraft.getInstance();
     Player player = mc.player;
-    if (mc.options.hideGui || event.getOverlay() != VanillaGuiOverlay.HOTBAR.type() || player == null || player != mc.getCameraEntity()) {
+    // PORT: RenderGuiOverlayEvent -> RenderGuiLayerEvent, VanillaGuiOverlay -> VanillaGuiLayers (a ResourceLocation)
+    if (mc.options.hideGui || !event.getName().equals(VanillaGuiLayers.HOTBAR) || player == null || player != mc.getCameraEntity()) {
       return;
     }
     boolean renderShield = Config.CLIENT.renderShieldSlotItem.get() && !nextOffhand.isEmpty();
@@ -272,7 +299,7 @@ public class ModifierClientEvents {
       int scaledWidth = mc.getWindow().getGuiScaledWidth();
       int scaledHeight = mc.getWindow().getGuiScaledHeight();
       GuiGraphics graphics = event.getGuiGraphics();
-      float partialTicks = event.getPartialTick();
+      DeltaTracker partialTicks = event.getPartialTick();
 
       // want just above the normal offhand item
       boolean emptyOffhand = player.getOffhandItem().isEmpty();
@@ -281,14 +308,14 @@ public class ModifierClientEvents {
         int x = scaledWidth / 2 + (rightHanded ? -117 : 101);
         int y = scaledHeight - 38;
         graphics.blit(Icons.ICONS, x - 3, y - 3, emptyOffhand ? 211 : 189, 0, SLOT_BACKGROUND_SIZE, SLOT_BACKGROUND_SIZE, 256, 256);
-        mc.gui.renderSlot(graphics, x, y, partialTicks, player, nextOffhand, 11);
+        renderSlot(graphics, x, y, partialTicks, player, nextOffhand, 11);
       }
       // want to the side above the normal offhand item
       if (renderSleeves) {
         int x = scaledWidth / 2 + (rightHanded ? -136 : 120);
         int y = scaledHeight - 19;
         graphics.blit(Icons.ICONS, x - 3, y - 3, emptyOffhand ? 211 : rightHanded ? 145 : 123, 0, SLOT_BACKGROUND_SIZE, SLOT_BACKGROUND_SIZE, 256, 256);
-        mc.gui.renderSlot(graphics, x, y, partialTicks, player, currentSleeve, 11);
+        renderSlot(graphics, x, y, partialTicks, player, currentSleeve, 11);
       }
 
       // TODO: cannot remember why this was needed before. Reconfirm if bug still exists.
@@ -302,7 +329,8 @@ public class ModifierClientEvents {
       int mapOffset = 0;
       if (!map.isEmpty() && mc.level != null) {
         MapItemSavedData data = MapItem.getSavedData(map, mc.level);
-        Integer index = MapItem.getMapId(map);
+        // PORT: MapItem.getMapId is gone, the map id is the MAP_ID data component
+        MapId index = map.get(DataComponents.MAP_ID);
 
         // determine placement of the map
         mapLocation = Config.CLIENT.mapLocation.get();
@@ -331,10 +359,11 @@ public class ModifierClientEvents {
         MultiBufferSource buffer = graphics.bufferSource();
         VertexConsumer consumer = buffer.getBuffer(data == null ? ItemInHandRenderer.MAP_BACKGROUND : ItemInHandRenderer.MAP_BACKGROUND_CHECKERBOARD);
         Matrix4f matrix = poseStack.last().pose();
-        consumer.vertex(matrix,  -7, 135, 0).color(255, 255, 255, 255).uv(0, 1).uv2(light).endVertex();
-        consumer.vertex(matrix, 135, 135, 0).color(255, 255, 255, 255).uv(1, 1).uv2(light).endVertex();
-        consumer.vertex(matrix, 135,  -7, 0).color(255, 255, 255, 255).uv(1, 0).uv2(light).endVertex();
-        consumer.vertex(matrix,  -7,  -7, 0).color(255, 255, 255, 255).uv(0, 0).uv2(light).endVertex();
+        // PORT: VertexConsumer builder methods renamed, endVertex is gone
+        consumer.addVertex(matrix,  -7, 135, 0).setColor(255, 255, 255, 255).setUv(0, 1).setLight(light);
+        consumer.addVertex(matrix, 135, 135, 0).setColor(255, 255, 255, 255).setUv(1, 1).setLight(light);
+        consumer.addVertex(matrix, 135,  -7, 0).setColor(255, 255, 255, 255).setUv(1, 0).setLight(light);
+        consumer.addVertex(matrix,  -7,  -7, 0).setColor(255, 255, 255, 255).setUv(0, 0).setLight(light);
 
         // draw map if present
         if (data != null && index != null) {
@@ -395,13 +424,13 @@ public class ModifierClientEvents {
         xStart += 3; yStart += 3; // offset from item start instead of frame start
         for (int r = 0; r < lastRow; r++) {
           for (int c = 0; c < columns; c++) {
-            mc.gui.renderSlot(graphics, xStart + c * SLOT_BACKGROUND_SIZE, yStart + r * SLOT_BACKGROUND_SIZE, partialTicks, player, itemFrames.get(i), i);
+            renderSlot(graphics, xStart + c * SLOT_BACKGROUND_SIZE, yStart + r * SLOT_BACKGROUND_SIZE, partialTicks, player, itemFrames.get(i), i);
             i++;
           }
         }
         // align last row
         for (int c = 0; c < inLastRow; c++) {
-          mc.gui.renderSlot(graphics, xStart + c * SLOT_BACKGROUND_SIZE + lastRowOffset, yStart + lastRow * SLOT_BACKGROUND_SIZE, partialTicks, player, itemFrames.get(i), i);
+          renderSlot(graphics, xStart + c * SLOT_BACKGROUND_SIZE + lastRowOffset, yStart + lastRow * SLOT_BACKGROUND_SIZE, partialTicks, player, itemFrames.get(i), i);
           i++;
         }
       }

@@ -1,5 +1,7 @@
 package slimeknights.tconstruct.tools.modules.interaction;
 
+import slimeknights.tconstruct.library.utils.CapLookup;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvent;
@@ -9,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
@@ -62,7 +64,7 @@ public record TankInteractionModule(@Nullable InteractionSource source) implemen
       return InteractionResult.PASS;
     }
     Direction face = context.getClickedFace();
-    IFluidHandler cap = LogicHelper.orElseNull(te.getCapability(ForgeCapabilities.FLUID_HANDLER, face));
+    IFluidHandler cap = CapLookup.fluid(te, face);
     if (cap == null) {
       return InteractionResult.PASS;
     }
@@ -93,7 +95,7 @@ public record TankInteractionModule(@Nullable InteractionSource source) implemen
         }
       } else {
         // filter drained to be the same as the current fluid
-        FluidStack drained = cap.drain(new FluidStack(fluidStack, TANK_HELPER.getCapacity(tool) - fluidStack.getAmount()), FluidAction.EXECUTE);
+        FluidStack drained = cap.drain(fluidStack.copyWithAmount(TANK_HELPER.getCapacity(tool) - fluidStack.getAmount()), FluidAction.EXECUTE);
         if (!drained.isEmpty() && drained.isFluidEqual(fluidStack)) {
           fluidStack.grow(drained.getAmount());
           TANK_HELPER.setFluid(tool, fluidStack);
