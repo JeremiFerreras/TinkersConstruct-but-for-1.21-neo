@@ -1,7 +1,5 @@
 package slimeknights.tconstruct.common.registration;
 
-import slimeknights.mantle.registration.object.ItemObject;
-import net.neoforged.neoforge.registries.DeferredItem;
 import lombok.Getter;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.BlockItem;
@@ -15,6 +13,7 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import slimeknights.mantle.registration.deferred.BlockDeferredRegister;
+import slimeknights.mantle.registration.object.ItemObject;
 import slimeknights.tconstruct.world.block.BuddingCrystalBlock;
 import slimeknights.tconstruct.world.block.CrystalBlock;
 import slimeknights.tconstruct.world.block.CrystalClusterBlock;
@@ -27,14 +26,14 @@ import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 
 /** Item object for geode related blocks. Main methods represent the block */
-public class GeodeItemObject extends ItemObject<Item, Item> {
+public class GeodeItemObject extends ItemObject<Item> {
   private final Supplier<? extends Block> block;
   private final Supplier<? extends Block> budding;
   private final Supplier<? extends Block> cluster;
   private final Supplier<? extends Block> smallBud;
   private final Supplier<? extends Block> mediumBud;
   private final Supplier<? extends Block> largeBud;
-  public GeodeItemObject(DeferredHolder<Item, ? extends Item> shard, BlockDeferredRegister register, MapColor color, SoundType blockSound, SoundEvent chimeSound, Map<BudSize,SoundType> clusterSounds, int baseLight, Properties props) {
+  public GeodeItemObject(DeferredHolder<? super Item, ? extends Item> shard, BlockDeferredRegister register, MapColor color, SoundType blockSound, SoundEvent chimeSound, Map<BudSize,SoundType> clusterSounds, int baseLight, Properties props) {
     super(shard);
     // allow the crystals to glow optionally
     IntFunction<ToIntFunction<BlockState>> light = extra -> {
