@@ -59,11 +59,7 @@ import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.Tin
 import slimeknights.tconstruct.library.tools.definition.ToolDefinitionLoader;
 import slimeknights.tconstruct.library.tools.layout.StationSlotLayoutLoader;
 import slimeknights.tconstruct.library.utils.Util;
-import slimeknights.tconstruct.plugin.DietPlugin;
-import slimeknights.tconstruct.plugin.DummmmmmyPlugin;
-import slimeknights.tconstruct.plugin.ImmersiveEngineeringPlugin;
 import slimeknights.tconstruct.plugin.craftingtweaks.CraftingTweaksPlugin;
-import slimeknights.tconstruct.plugin.jsonthings.JsonThingsPlugin;
 import slimeknights.tconstruct.shared.TinkerAttributes;
 import slimeknights.tconstruct.shared.TinkerClient;
 import slimeknights.tconstruct.shared.TinkerCommons;
@@ -149,20 +145,10 @@ public class TConstruct {
 
     // compat
     ModList modList = ModList.get();
-    if (modList.isLoaded("immersiveengineering")) {
-      bus.register(new ImmersiveEngineeringPlugin());
-    }
-    if (modList.isLoaded("jsonthings")) {
-      JsonThingsPlugin.onConstruct();
-    }
-    if (modList.isLoaded("diet")) {
-      DietPlugin.onConstruct();
-    }
+    // Immersive Engineering, JSON Things and Diet integrations are excluded from
+    // this NeoForge 1.21.1 port until their matching compile APIs are available.
     if (modList.isLoaded("craftingtweaks")) {
       CraftingTweaksPlugin.onConstruct();
-    }
-    if (modList.isLoaded("dummmmmmy")) {
-      bus.register(new DummmmmmyPlugin());
     }
   }
 

@@ -73,6 +73,14 @@ println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty '
 
 sourceSets {
     main {
+        java {
+            // Optional integrations still target their 1.20.1 APIs. Keep them out of
+            // the 1.21.1 compile until their NeoForge-compatible APIs are available.
+            exclude 'slimeknights/tconstruct/plugin/DietPlugin.java'
+            exclude 'slimeknights/tconstruct/plugin/DummmmmmyPlugin.java'
+            exclude 'slimeknights/tconstruct/plugin/ImmersiveEngineeringPlugin.java'
+            exclude 'slimeknights/tconstruct/plugin/jsonthings/**'
+        }
         resources {
             srcDirs "src/generated/resources"
             //But exclude the cache of the generated data from what gets built
