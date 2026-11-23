@@ -55,6 +55,9 @@ neoForge {
         }
         client {
             client()
+            if (providers.gradleProperty('smokeWorld').isPresent()) {
+                programArguments.addAll('--quickPlaySingleplayer', providers.gradleProperty('smokeWorld').get())
+            }
         }
         server {
             server()

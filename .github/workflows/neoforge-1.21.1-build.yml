@@ -83,3 +83,36 @@ jobs:
         with:
           name: server-smoke-logs
           path: smoke/logs
+
+      - name: Join test world with the graphical client
+        timeout-minutes: 12
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p run/saves
+          cp -r smoke/world run/saves/SmokeWorld
+          printf 'renderDistance:3\nsimulationDistance:3\n' > run/options.txt
+          xvfb-run -a ./gradlew --no-daemon -PsmokeWorld=SmokeWorld runClient > client-console.log 2>&1 &
+          launcher=$!
+          trap 'kill "$launcher" 2>/dev/null || true' EXIT
+          for ((i=0; i<125; i++)); do
+            if grep -Eq 'Server thread/INFO.* joined the game' run/logs/latest.log 2>/dev/null; then
+              sleep 10
+              kill -0 "$launcher"
+              exit 0
+            fi
+            if ! kill -0 "$launcher" 2>/dev/null; then tail -100 client-console.log; exit 1; fi
+            sleep 5
+          done
+          tail -100 client-console.log
+          exit 1
+
+      - name: Upload client diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-smoke-logs
+          path: |
+            client-console.log
+            run/logs/latest.log
+            run/crash-reports/

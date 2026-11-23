@@ -1,11 +1,18 @@
 """Exercise the packaged mod on a fresh world and after reopening it."""
 import pathlib
+import signal
+import time
 import subprocess
 
 root = pathlib.Path.cwd()
 (root / "eula.txt").write_text("eula=true\n")
 (root / "server.properties").write_text("server-ip=127.0.0.1\nlevel-seed=1729\nview-distance=3\nsimulation-distance=3\n")
+def timeout(signum, frame):
+    raise TimeoutError("Timed out waiting for the dedicated server")
+
+signal.signal(signal.SIGALRM, timeout)
 for attempt in range(2):
+    signal.alarm(240)
     process = subprocess.Popen(["bash", "run.sh", "nogui"], stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     def command(value):
@@ -27,10 +34,32 @@ for attempt in range(2):
             command("setblock 0 100 0 tconstruct:tinker_station")
         command("execute if block 0 100 0 tconstruct:tinker_station run say STATION_OK")
         expect("[Server] STATION_OK")
-        command("summon minecraft:item 0 101 0 {Item:{id:'tconstruct:slime_boots',count:1}}")
-        command("execute if entity @e[type=item,nbt={Item:{id:'tconstruct:slime_boots'}}] run say BOOTS_OK")
+        if attempt == 0:
+            command("setblock 1 100 0 minecraft:chest")
+            command("item replace block 1 100 0 container.0 with tconstruct:slime_boots")
+        command("execute if items block 1 100 0 container.0 tconstruct:slime_boots run say BOOTS_OK")
         expect("[Server] BOOTS_OK")
         if attempt == 0:
+            command("setblock 2 100 0 minecraft:furnace")
+            command("item replace block 2 100 0 container.0 with tconstruct:grout")
+            command("item replace block 2 100 0 container.1 with minecraft:coal")
+            for _ in range(30):
+                time.sleep(1)
+                command("execute if items block 2 100 0 container.2 tconstruct:seared_brick run say SMELT_OK")
+                command("say POLL_END")
+                found = False
+                for line in process.stdout:
+                    print(line.rstrip(), flush=True)
+                    if "[Server] SMELT_OK" in line:
+                        found = True
+                    if "[Server] POLL_END" in line:
+                        break
+                if found:
+                    break
+            else:
+                raise AssertionError("Grout did not smelt into seared brick")
+            command("locate structure tconstruct:earth_slime_island")
+            expect("The nearest tconstruct:earth_slime_island is at")
             command("reload")
             expect("Loaded")
             command("save-all flush")
