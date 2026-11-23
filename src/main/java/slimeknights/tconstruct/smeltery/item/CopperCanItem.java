@@ -73,6 +73,11 @@ public class CopperCanItem extends Item {
     }
   }
 
+  /** Returns the fluid stored in this can, or {@link Fluids#EMPTY} when empty. */
+  public static Fluid getFluid(ItemStack stack) {
+    return contents(stack).copy().getFluid();
+  }
+
   static SimpleFluidContent contents(ItemStack stack) {
     return stack.getOrDefault(CONTENTS.get(), SimpleFluidContent.EMPTY);
   }

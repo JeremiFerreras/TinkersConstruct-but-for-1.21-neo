@@ -118,5 +118,5 @@ public class SolidFuelModule extends FuelModule {
     IFluidHandler handler = getFluidFuelHandler();
     fluidHandler = handler;
     return handler == null ? EmptyFluidHandler.INSTANCE : handler;
-  }  }
+  }
 }
