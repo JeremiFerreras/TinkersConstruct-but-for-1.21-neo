@@ -1,5 +1,7 @@
 package slimeknights.tconstruct.library.client.materials;
 
+import slimeknights.tconstruct.TConstruct;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -13,7 +15,6 @@ import net.minecraft.util.GsonHelper;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.ModLoader;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import slimeknights.mantle.data.datamap.RegistryDataMapLoader;
 import slimeknights.mantle.data.listener.IEarlySafeManagerReloadListener;
 import slimeknights.mantle.data.loadable.field.ContextKey;
@@ -53,7 +54,7 @@ public class MaterialRenderInfoLoader implements IEarlySafeManagerReloadListener
     // bit of a hack: instead of registering our resource listener to the list as we should, we use the additional model registration event
     // we do this as we need to guarantee we run before models are baked, which happens in the first stage of listeners in the bakery constructor
     // the other option would be to wait until the atlas stitch event, though that would make it more difficult to know which sprites we need
-    FMLJavaModLoadingContext.get().getModEventBus().addListener(EventPriority.NORMAL, false, ModelEvent.RegisterAdditional.class, event -> {
+    TConstruct.getModEventBus().addListener(EventPriority.NORMAL, false, ModelEvent.RegisterAdditional.class, event -> {
       if(ModLoader.isLoadingStateValid()) {
         INSTANCE.onReloadSafe(Minecraft.getInstance().getResourceManager());
       }
