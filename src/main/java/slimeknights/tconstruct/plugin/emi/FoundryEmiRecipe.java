@@ -39,7 +39,7 @@ public class FoundryEmiRecipe extends BasicEmiRecipe {
   private final EmiIngredient liquidFuels;
 
   public FoundryEmiRecipe(EmiRecipeCategory category, RecipeHolder<MeltingRecipe> holder) {
-    super(category, holder.id(), 132, 40);
+    super(category, holder.id().withPrefix("/foundry/"), 132, 40);
     this.recipe = holder.value();
 
     // input

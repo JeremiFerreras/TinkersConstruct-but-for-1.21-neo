@@ -91,7 +91,7 @@ jobs:
           set -eu
           mkdir -p run/saves
           cp -r smoke/world run/saves/SmokeWorld
-          printf 'renderDistance:3\nsimulationDistance:3\n' > run/options.txt
+          printf 'renderDistance:3\nsimulationDistance:5\n' > run/options.txt
           xvfb-run -a ./gradlew --no-daemon -PsmokeWorld=SmokeWorld runClient > client-console.log 2>&1 &
           launcher=$!
           trap 'kill "$launcher" 2>/dev/null || true' EXIT

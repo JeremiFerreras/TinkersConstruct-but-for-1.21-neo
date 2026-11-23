@@ -58,6 +58,14 @@ for attempt in range(2):
                     break
             else:
                 raise AssertionError("Grout did not smelt into seared brick")
+            command("setblock 4 100 1 tconstruct:seared_basin")
+            command('setblock 3 101 1 tconstruct:seared_ingot_tank{tank:{Fluid:{id:"tconstruct:molten_copper",amount:810}}}')
+            command("setblock 4 101 1 tconstruct:seared_faucet[facing=east]")
+            command("setblock 4 101 2 minecraft:redstone_block")
+            command("tick sprint 1500")
+            expect("Sprint completed")
+            command('execute if data block 4 100 1 Items[{Slot:1b,id:"minecraft:copper_block"}] run say CAST_OK')
+            expect("[Server] CAST_OK")
             command("locate structure tconstruct:earth_slime_island")
             expect("The nearest tconstruct:earth_slime_island is at")
             command("reload")
