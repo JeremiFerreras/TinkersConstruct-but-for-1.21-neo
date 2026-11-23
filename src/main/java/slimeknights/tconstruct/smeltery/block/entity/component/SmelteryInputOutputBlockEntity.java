@@ -37,8 +37,6 @@ public abstract class SmelteryInputOutputBlockEntity<T> extends SmelteryComponen
   private final BlockCapability<T, Direction> capability;
   /** Empty fallback retained for subclasses that wrap a fluid handler */
   protected final T emptyInstance;
-  @Nullable
-  private T capabilityHolder = null;
 
   /* Retexturing */
   @Nonnull
@@ -53,7 +51,7 @@ public abstract class SmelteryInputOutputBlockEntity<T> extends SmelteryComponen
 
   /** Clears all cached capabilities */
   private void clearHandler() {
-    capabilityHolder = null;
+    // NeoForge block capabilities are queried dynamically; no LazyOptional cache is retained.
   }
 
   @Override
@@ -100,16 +98,15 @@ public abstract class SmelteryInputOutputBlockEntity<T> extends SmelteryComponen
    */
   @Nullable
   public T getCachedHandler() {
-    if (capabilityHolder == null && validateMaster()) {
-      BlockPos master = getMasterPos();
-      if (master != null && level != null) {
-        BlockEntity te = level.getBlockEntity(master);
-        if (te != null) {
-          capabilityHolder = getHandler(te);
-        }
-      }
+    if (!validateMaster() || level == null) {
+      return null;
     }
-    return capabilityHolder;
+    BlockPos master = getMasterPos();
+    if (master == null) {
+      return null;
+    }
+    BlockEntity te = level.getBlockEntity(master);
+    return te == null ? null : getHandler(te);
   }
 
 
