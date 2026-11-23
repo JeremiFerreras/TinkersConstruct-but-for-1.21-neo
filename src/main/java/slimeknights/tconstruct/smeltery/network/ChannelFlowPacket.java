@@ -8,7 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import slimeknights.mantle.network.BlockEntityPacket;
+import slimeknights.mantle.network.packet.BlockEntityPacket;
 import slimeknights.tconstruct.smeltery.block.entity.ChannelBlockEntity;
 
 /**
