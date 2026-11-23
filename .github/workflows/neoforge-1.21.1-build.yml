@@ -11,6 +11,10 @@ on:
       - "port/neoforge-1.21.1"
   workflow_dispatch:
 
+concurrency:
+  group: neoforge-1.21.1-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
