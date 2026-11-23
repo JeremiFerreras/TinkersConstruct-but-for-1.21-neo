@@ -6,21 +6,16 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Plane;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.common.util.NonNullConsumer;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import net.neoforged.neoforge.fluids.capability.templates.EmptyFluidHandler;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
-import slimeknights.mantle.util.WeakConsumerWrapper;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.library.fluid.FillOnlyFluidHandler;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
@@ -35,6 +30,7 @@ import slimeknights.tconstruct.smeltery.network.FluidUpdatePacket.IFluidPacketRe
 import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Logic for channel fluid transfer
@@ -43,7 +39,7 @@ public class ChannelBlockEntity extends MantleBlockEntity implements IFluidPacke
 	/** Channel internal tank */
 	private final ChannelTank tank = new ChannelTank(FaucetBlockEntity.MB_PER_TICK * 4, this);
 	/** Handler to return from channel top */
-	private final LazyOptional<IFluidHandler> topHandler = LazyOptional.of(() -> new FillOnlyFluidHandler(tank));
+	private final IFluidHandler topHandler = new FillOnlyFluidHandler(tank);
 	/** Tanks for inserting on each side */
 	private final Map<Direction,IFluidHandler> sideTanks = Util.make(new EnumMap<>(Direction.class), map -> {
 		for (Direction direction : Plane.HORIZONTAL) {
@@ -51,14 +47,10 @@ public class ChannelBlockEntity extends MantleBlockEntity implements IFluidPacke
 		}
 	});
 	/** Tanks for inserting on each side */
-	private final Map<Direction,LazyOptional<IFluidHandler>> sideHandlers = new EnumMap<>(Direction.class);
 	/** Tanks for alerting neighbors the given side is present */
-	private final Map<Direction,LazyOptional<IFluidHandler>> emptySideHandler = new EnumMap<>(Direction.class);
 
 	/** Cache of tanks on all neighboring sides */
-	private final Map<Direction,LazyOptional<IFluidHandler>> neighborTanks = new EnumMap<>(Direction.class);
 	/** Consumers to attach to each of the neighbors */
-	private final Map<Direction,NonNullConsumer<LazyOptional<IFluidHandler>>> neighborConsumers = new EnumMap<>(Direction.class);
 
   /** Ticker instance for this TE, serverside only */
   public static final BlockEntityTicker<ChannelBlockEntity> SERVER_TICKER = (level, pos, state, self) -> self.tick(state);
@@ -87,128 +79,45 @@ public class ChannelBlockEntity extends MantleBlockEntity implements IFluidPacke
 		return new AABB(worldPosition.getX(), worldPosition.getY() - 1, worldPosition.getZ(), worldPosition.getX() + 1, worldPosition.getY() + 1, worldPosition.getZ() + 1);
 	}
 
-	/** Called when a capability invalidates to clear the given side */
-	private void invalidateSide(Direction side, LazyOptional<IFluidHandler> capability) {
-		if (!this.isRemoved()) {
-			if (neighborTanks.get(side) == capability) {
-				neighborTanks.remove(side);
-			}
-		}
-	}
-
-
-	/* Fluid handlers */
-
-	@Override
-	public <T> LazyOptional<T> getCapability(Capability<T> capability, @Nullable Direction side) {
-		// top side gets the insert direct
-    if (capability == ForgeCapabilities.FLUID_HANDLER) {
-      if (side == null || side == Direction.UP) {
-        return topHandler.cast();
-      }
-      // side tanks keep track of which side inserts
-      if (side != Direction.DOWN) {
-        ChannelConnection connection = getBlockState().getValue(ChannelBlock.DIRECTION_MAP.get(side));
-        if (connection == ChannelConnection.IN) {
-          return sideHandlers.computeIfAbsent(side, s -> LazyOptional.of(() -> sideTanks.get(s))).cast();
-        }
-        // for out, return an empty fluid handler so the block we are pouring into knows we support fluids, even though we disallow any interaction
-        // this will get invalidated when the connection goes back to in later
-        if (connection == ChannelConnection.OUT) {
-          return emptySideHandler.computeIfAbsent(side, s -> LazyOptional.of(() -> EmptyFluidHandler.INSTANCE)).cast();
-        }
-      }
-    }
-
-		return super.getCapability(capability, side);
-	}
-
 	/**
-	 * Gets the fluid handler directly from a neighbor, skipping the cache
-	 * @param side  Side of the neighbor to fetch
-	 * @return  Fluid handler, or empty
-	 */
-	private LazyOptional<IFluidHandler> getNeighborHandlerUncached(Direction side) {
-		assert level != null;
-		// must have a TE with a fluid handler
-		BlockEntity te = level.getBlockEntity(worldPosition.relative(side));
-		if (te != null) {
-			LazyOptional<IFluidHandler> handler = te.getCapability(ForgeCapabilities.FLUID_HANDLER, side.getOpposite());
-			if (handler.isPresent()) {
-				handler.addListener(neighborConsumers.computeIfAbsent(side, s -> new WeakConsumerWrapper<>(this, (self, lazy) -> self.invalidateSide(s, lazy))));
-				return handler;
-			}
-		}
-		return LazyOptional.empty();
-	}
+ * Returns the handler exposed by this channel on the queried side.
+ * The result is calculated from the live block state.
+ */
+@Nullable
+public IFluidHandler getExposedFluidHandler(@Nullable Direction side) {
+  if (side == null || side == Direction.UP) return topHandler;
+  if (side != Direction.DOWN) {
+    ChannelConnection connection = getBlockState().getValue(ChannelBlock.DIRECTION_MAP.get(side));
+    if (connection == ChannelConnection.IN) return sideTanks.get(side);
+    // Expose an inert handler on output sides so adjacent blocks still detect the connection.
+    if (connection == ChannelConnection.OUT) return EmptyFluidHandler.INSTANCE;
+  }
+  return null;
+}
 
-	/**
-	 * Gets the fluid handler from a neighbor
-	 * @param side  Side of the neighbor to fetch
-	 * @return  Fluid handler, or empty
-	 */
-	protected LazyOptional<IFluidHandler> getNeighborHandler(Direction side) {
-		return neighborTanks.computeIfAbsent(side, this::getNeighborHandlerUncached);
-	}
+/** Queries a neighboring block's handler using the face adjacent to this channel. */
+private Optional<IFluidHandler> getNeighborHandlerUncached(Direction side) {
+  if (level == null) return Optional.empty();
+  IFluidHandler handler = level.getCapability(Capabilities.FluidHandler.BLOCK, worldPosition.relative(side), side.getOpposite());
+  return Optional.ofNullable(handler);
+}
 
-	/**
-	 * Removes a cached handler from the given neighbor as the block changed
-	 * @param side  Side to remove
-	 */
-	public void removeCachedNeighbor(Direction side) {
-		neighborTanks.remove(side);
-	}
+/** Gets the current fluid handler from a neighbor. */
+protected Optional<IFluidHandler> getNeighborHandler(Direction side) {
+  return getNeighborHandlerUncached(side);
+}
 
-	/**
-	 * Refreshes a neighbor based on the new connection
-	 * @param state  The state that will later be put in the world, may not be the state currently in the world
-	 * @param side   Side to update
-	 */
-	public void refreshNeighbor(BlockState state, Direction side) {
-		// for below, only thing that needs to invalidate is if we are no longer connected down, remove the listener below
-		if (side == Direction.DOWN) {
-			if (!state.getValue(ChannelBlock.DOWN)) {
-				neighborTanks.remove(Direction.DOWN);
-			}
-		} else if (side != Direction.UP) {
-			ChannelConnection connection = state.getValue(ChannelBlock.DIRECTION_MAP.get(side));
-			// if no longer flowing out, remove the neighbor tank
-			if (connection != ChannelConnection.OUT) {
-				neighborTanks.remove(Direction.DOWN);
-				// remove the empty handler, mostly so the neighbor knows to update
-				LazyOptional<IFluidHandler> handler = emptySideHandler.remove(side);
-				if (handler != null) {
-					handler.invalidate();
-				}
-			}
-			// remove the side handler, if we changed from out or from in the handler is no longer correct
-			if (connection != ChannelConnection.IN) {
-				LazyOptional<IFluidHandler> handler = sideHandlers.remove(side);
-				if (handler != null) {
-					handler.invalidate();
-				}
-			}
-		}
-	}
+/** No local cache is retained after migration to dynamic NeoForge capabilities. */
+public void removeCachedNeighbor(Direction side) {
+  // Deliberately empty: the neighbor capability is queried again on the next transfer.
+}
 
-	@Override
-	public void invalidateCaps() {
-		super.invalidateCaps();
-		topHandler.invalidate();
-		for (LazyOptional<IFluidHandler> handler : sideHandlers.values()) {
-			if (handler != null) {
-				handler.invalidate();
-			}
-		}
-		for (LazyOptional<IFluidHandler> handler : emptySideHandler.values()) {
-			if (handler != null) {
-				handler.invalidate();
-			}
-		}
-	}
+/** Invalidates provider caches when a channel connection changes. */
+public void refreshNeighbor(BlockState state, Direction side) {
+  if (level != null) level.invalidateCapabilities(worldPosition);
+}
 
-
-	/* Flowing property */
+/* Flowing property */
 
 	/**
 	 * Gets the index for the given side for flowing. Same as regular index but without up

@@ -84,6 +84,7 @@ public final class TinkerCapabilityEvents {
     event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TinkerSmeltery.fluidCannon.get(), (be, side) -> be.getItemHandler());
     event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, TinkerSmeltery.fluidCannon.get(), (be, side) -> be.getTank());
     event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TinkerSmeltery.proxyTank.get(), (be, side) -> be.getItemTank());
+    event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, TinkerSmeltery.proxyTank.get(), (be, side) -> be.getItemTank());
     event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, TinkerSmeltery.drain.get(), (be, side) -> be.getCachedHandler());
     event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TinkerSmeltery.chute.get(), (be, side) -> be.getCachedHandler());
     event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, TinkerSmeltery.duct.get(), (be, side) -> be.getCachedHandler());
