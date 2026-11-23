@@ -21,7 +21,7 @@
     "MMM"
   ],
   "result": {
-    "item": "tconstruct:ichor_cake"
+    "id": "tconstruct:ichor_cake"
   },
   "show_notification": true
 }

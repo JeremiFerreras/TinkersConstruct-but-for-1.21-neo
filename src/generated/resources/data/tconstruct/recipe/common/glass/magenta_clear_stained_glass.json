@@ -16,8 +16,8 @@
     "###"
   ],
   "result": {
-    "count": 8,
-    "item": "tconstruct:magenta_clear_stained_glass"
+    "id": "tconstruct:magenta_clear_stained_glass",
+    "count": 8
   },
   "show_notification": true
 }

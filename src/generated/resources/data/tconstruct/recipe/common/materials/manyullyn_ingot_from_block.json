@@ -8,7 +8,7 @@
     }
   ],
   "result": {
-    "count": 9,
-    "item": "tconstruct:manyullyn_ingot"
+    "id": "tconstruct:manyullyn_ingot",
+    "count": 9
   }
 }

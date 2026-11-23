@@ -11,8 +11,8 @@
     "BBB"
   ],
   "result": {
-    "count": 6,
-    "item": "tconstruct:seared_cobble_slab"
+    "id": "tconstruct:seared_cobble_slab",
+    "count": 6
   },
   "show_notification": true
 }

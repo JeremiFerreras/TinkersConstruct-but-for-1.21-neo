@@ -1,13 +1,13 @@
 package slimeknights.tconstruct.shared;
 
+import net.neoforged.bus.api.IEventBus;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.RegistryObject;
 import slimeknights.mantle.registration.deferred.AttributeDeferredRegister;
 import slimeknights.tconstruct.TConstruct;
@@ -16,8 +16,8 @@ import slimeknights.tconstruct.common.config.Config;
 public class TinkerAttributes {
   private static final AttributeDeferredRegister ATTRIBUTES = new AttributeDeferredRegister(TConstruct.MOD_ID);
 
-  public TinkerAttributes() {
-    ATTRIBUTES.register(FMLJavaModLoadingContext.get().getModEventBus());
+  public TinkerAttributes(IEventBus bus) {
+    ATTRIBUTES.register(bus);
   }
 
   // booleans

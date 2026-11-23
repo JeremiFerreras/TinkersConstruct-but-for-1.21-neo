@@ -13,7 +13,7 @@
     "###"
   ],
   "result": {
-    "item": "tconstruct:sky_slime"
+    "id": "tconstruct:sky_slime"
   },
   "show_notification": true
 }

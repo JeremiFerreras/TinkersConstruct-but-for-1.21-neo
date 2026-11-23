@@ -12,8 +12,8 @@
     "BBB"
   ],
   "result": {
-    "count": 6,
-    "item": "tconstruct:seared_bricks_wall"
+    "id": "tconstruct:seared_bricks_wall",
+    "count": 6
   },
   "show_notification": true
 }

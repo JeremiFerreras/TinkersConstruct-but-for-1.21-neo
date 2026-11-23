@@ -12,8 +12,8 @@
     "###"
   ],
   "result": {
-    "count": 2,
-    "item": "tconstruct:bloodshroom_trapdoor"
+    "id": "tconstruct:bloodshroom_trapdoor",
+    "count": 2
   },
   "show_notification": true
 }

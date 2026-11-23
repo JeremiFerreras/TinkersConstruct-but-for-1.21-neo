@@ -15,7 +15,7 @@
     "#B#"
   ],
   "result": {
-    "item": "tconstruct:seared_ingot_tank"
+    "id": "tconstruct:seared_ingot_tank"
   },
   "show_notification": true
 }

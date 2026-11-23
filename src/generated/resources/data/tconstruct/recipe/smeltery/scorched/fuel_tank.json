@@ -15,7 +15,7 @@
     "###"
   ],
   "result": {
-    "item": "tconstruct:scorched_fuel_tank"
+    "id": "tconstruct:scorched_fuel_tank"
   },
   "show_notification": true
 }

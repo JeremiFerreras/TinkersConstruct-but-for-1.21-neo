@@ -11,8 +11,8 @@
     "bb"
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:scorched_bricks"
+    "id": "tconstruct:scorched_bricks",
+    "count": 4
   },
   "show_notification": true
 }

@@ -7,7 +7,7 @@
     }
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:blank_sand_cast"
+    "id": "tconstruct:blank_sand_cast",
+    "count": 4
   }
 }

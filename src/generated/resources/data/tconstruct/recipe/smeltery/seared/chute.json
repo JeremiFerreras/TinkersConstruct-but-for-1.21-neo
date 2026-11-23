@@ -15,7 +15,7 @@
     "#C#"
   ],
   "result": {
-    "item": "tconstruct:seared_chute"
+    "id": "tconstruct:seared_chute"
   },
   "show_notification": true
 }

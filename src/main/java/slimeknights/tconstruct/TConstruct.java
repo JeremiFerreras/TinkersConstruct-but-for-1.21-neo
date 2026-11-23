@@ -8,24 +8,21 @@ import net.minecraft.data.PackOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.api.distmarker.Dist;
-import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.common.data.DatapackBuiltinEntriesProvider;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.MissingMappingsEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.neoforge.registries.RegisterEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import slimeknights.mantle.registration.RegistrationHelper;
 import slimeknights.tconstruct.common.TinkerModule;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.config.Config;
@@ -91,7 +88,7 @@ import java.util.function.Supplier;
  */
 
 @Mod(TConstruct.MOD_ID)
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 public class TConstruct {
 
   public static final String MOD_ID = "tconstruct";
@@ -101,28 +98,27 @@ public class TConstruct {
   /* Instance of this mod, used for grabbing prototype fields */
   public static TConstruct instance;
 
-  public TConstruct() {
+  public TConstruct(IEventBus bus, ModContainer container) {
     instance = this;
 
-    Config.init();
-    TinkerItemDisplays.init();
+    Config.init(container);
+    TinkerItemDisplays.init(bus);
     MaterialRegistry.init();
 
     // initialize modules, done this way rather than with annotations to give us control over the order
-    NeoForge.EVENT_BUS.addListener(TConstruct::missingMappings);
-    IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
+    bus.addListener(TConstruct::registerAliases);
     // base
     bus.register(new TinkerCommons());
     bus.register(new TinkerMaterials());
-    bus.register(new TinkerEffects());
+    bus.register(new TinkerEffects(bus));
     bus.register(new TinkerGadgets());
-    bus.register(new TinkerAttributes());
+    bus.register(new TinkerAttributes(bus));
     // world
     bus.register(new TinkerWorld());
-    bus.register(new TinkerStructures());
+    bus.register(new TinkerStructures(bus));
     // tools
     bus.register(new TinkerTables());
-    bus.register(new TinkerModifiers());
+    bus.register(new TinkerModifiers(bus));
     bus.register(new TinkerToolParts());
     bus.register(new TinkerTools());
     // smeltery
@@ -130,11 +126,13 @@ public class TConstruct {
     bus.register(new TinkerFluids());
 
     // init deferred registers
-    TinkerModule.initRegisters();
+    TinkerModule.initRegisters(bus);
     TinkerNetwork.setup();
     TinkerTags.init();
     // init client logic
-    DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> TinkerClient::onConstruct);
+    if (FMLEnvironment.dist == Dist.CLIENT) {
+      TinkerClient.onConstruct();
+    }
 
     // compat
     ModList modList = ModList.get();
@@ -202,30 +200,23 @@ public class TConstruct {
   }
 
   /** Handles missing mappings of all types */
-  private static void missingMappings(MissingMappingsEvent event) {
-    RegistrationHelper.handleMissingMappings(event, MOD_ID, Registries.BLOCK, name -> switch (name) {
-      // silky jewel removal
-      case "silky_jewel_block" -> Blocks.EMERALD_BLOCK;
-      // piglin heads are vanilla
-      case "piglin_head" -> Blocks.PIGLIN_HEAD;
-      case "piglin_wall_head" -> Blocks.PIGLIN_WALL_HEAD;
-      default -> null;
-    });
-    RegistrationHelper.handleMissingMappings(event, MOD_ID, Registries.ITEM, name -> switch (name) {
-      // silky jewel removal
-      case "silky_jewel" -> Items.EMERALD;
-      case "silky_jewel_block" -> Items.EMERALD_BLOCK;
-      // piglin heads are vanilla
-      case "piglin_head" -> Items.PIGLIN_HEAD;
-      // round plate rename
-      case "round_plate" -> TinkerToolParts.adzeHead.get();
-      case "round_plate_cast" -> TinkerSmeltery.adzeHeadCast.get();
-      case "round_plate_sand_cast" -> TinkerSmeltery.adzeHeadCast.getSand();
-      case "round_plate_red_sand_cast" -> TinkerSmeltery.adzeHeadCast.getRedSand();
-      // slimesuit rework
-      case "slime_chestplate" -> TinkerTools.slimeWings.get();
-      default -> null;
-    });
+  private static void registerAliases(RegisterEvent event) {
+    if (event.getRegistryKey() == Registries.BLOCK) {
+      var blocks = event.getRegistry(Registries.BLOCK);
+      blocks.addAlias(getResource("silky_jewel_block"), ResourceLocation.withDefaultNamespace("emerald_block"));
+      blocks.addAlias(getResource("piglin_head"), ResourceLocation.withDefaultNamespace("piglin_head"));
+      blocks.addAlias(getResource("piglin_wall_head"), ResourceLocation.withDefaultNamespace("piglin_wall_head"));
+    } else if (event.getRegistryKey() == Registries.ITEM) {
+      var items = event.getRegistry(Registries.ITEM);
+      items.addAlias(getResource("silky_jewel"), ResourceLocation.withDefaultNamespace("emerald"));
+      items.addAlias(getResource("silky_jewel_block"), ResourceLocation.withDefaultNamespace("emerald_block"));
+      items.addAlias(getResource("piglin_head"), ResourceLocation.withDefaultNamespace("piglin_head"));
+      items.addAlias(getResource("round_plate"), getResource("adze_head"));
+      items.addAlias(getResource("round_plate_cast"), getResource("adze_head_cast"));
+      items.addAlias(getResource("round_plate_sand_cast"), getResource("adze_head_sand_cast"));
+      items.addAlias(getResource("round_plate_red_sand_cast"), getResource("adze_head_red_sand_cast"));
+      items.addAlias(getResource("slime_chestplate"), getResource("slime_wings"));
+    }
   }
 
   /* Utils */

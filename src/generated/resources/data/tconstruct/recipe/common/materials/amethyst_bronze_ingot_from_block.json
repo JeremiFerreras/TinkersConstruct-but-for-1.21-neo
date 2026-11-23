@@ -8,7 +8,7 @@
     }
   ],
   "result": {
-    "count": 9,
-    "item": "tconstruct:amethyst_bronze_ingot"
+    "id": "tconstruct:amethyst_bronze_ingot",
+    "count": 9
   }
 }

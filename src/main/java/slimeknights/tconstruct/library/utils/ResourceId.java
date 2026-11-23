@@ -11,22 +11,24 @@ import java.util.function.BiFunction;
  * @see IdParser
  */
 public abstract class ResourceId extends ResourceLocation {
+  protected static final class Dummy {
+    private Dummy() {}
+  }
+
   protected ResourceId(String namespace, String path, @Nullable Dummy pDummy) {
-    super(namespace, path, pDummy);
+    super(namespace, path);
   }
 
   public ResourceId(ResourceLocation location) {
     this(location.getNamespace(), location.getPath(), null);
   }
 
-  @SuppressWarnings("removal")
   public ResourceId(String namespace, String path) {
-    super(namespace, path);
+    this(ResourceLocation.fromNamespaceAndPath(namespace, path));
   }
 
-  @SuppressWarnings("removal")
   public ResourceId(String location) {
-    super(location);
+    this(ResourceLocation.parse(location));
   }
 
 
@@ -39,7 +41,7 @@ public abstract class ResourceId extends ResourceLocation {
    */
   @Nullable
   protected static <T extends ResourceLocation> T tryParse(String string, BiFunction<String,String,T> constructor) {
-    String[] parts = decompose(string, ':');
+    String[] parts = IdParser.decompose(ResourceLocation.DEFAULT_NAMESPACE, string);
     return tryBuild(parts[0], parts[1], constructor);
   }
 

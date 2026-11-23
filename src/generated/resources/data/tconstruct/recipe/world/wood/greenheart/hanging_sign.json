@@ -16,8 +16,8 @@
     "###"
   ],
   "result": {
-    "count": 6,
-    "item": "tconstruct:greenheart_hanging_sign"
+    "id": "tconstruct:greenheart_hanging_sign",
+    "count": 6
   },
   "show_notification": true
 }

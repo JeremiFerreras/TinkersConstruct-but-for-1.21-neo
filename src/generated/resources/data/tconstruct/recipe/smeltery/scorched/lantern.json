@@ -18,8 +18,8 @@
     "BBB"
   ],
   "result": {
-    "count": 3,
-    "item": "tconstruct:scorched_lantern"
+    "id": "tconstruct:scorched_lantern",
+    "count": 3
   },
   "show_notification": true
 }

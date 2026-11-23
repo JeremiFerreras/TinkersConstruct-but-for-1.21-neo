@@ -15,8 +15,8 @@
     " C "
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:copper_gauge"
+    "id": "tconstruct:copper_gauge",
+    "count": 4
   },
   "show_notification": true
 }

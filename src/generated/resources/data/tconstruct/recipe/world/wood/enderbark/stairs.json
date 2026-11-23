@@ -13,8 +13,8 @@
     "###"
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:enderbark_planks_stairs"
+    "id": "tconstruct:enderbark_planks_stairs",
+    "count": 4
   },
   "show_notification": true
 }

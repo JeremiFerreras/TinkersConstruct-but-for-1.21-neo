@@ -15,8 +15,8 @@
     " C "
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:obsidian_gauge"
+    "id": "tconstruct:obsidian_gauge",
+    "count": 4
   },
   "show_notification": true
 }

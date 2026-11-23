@@ -11,8 +11,8 @@
     "bb"
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:seared_bricks"
+    "id": "tconstruct:seared_bricks",
+    "count": 4
   },
   "show_notification": true
 }

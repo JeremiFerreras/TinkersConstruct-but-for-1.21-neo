@@ -8,7 +8,7 @@
     }
   ],
   "result": {
-    "count": 9,
-    "item": "tconstruct:steel_nugget"
+    "id": "tconstruct:steel_nugget",
+    "count": 9
   }
 }

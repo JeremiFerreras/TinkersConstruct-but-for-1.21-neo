@@ -24,7 +24,7 @@
     "WWW"
   ],
   "result": {
-    "item": "minecraft:daylight_detector"
+    "id": "minecraft:daylight_detector"
   },
   "show_notification": true
 }

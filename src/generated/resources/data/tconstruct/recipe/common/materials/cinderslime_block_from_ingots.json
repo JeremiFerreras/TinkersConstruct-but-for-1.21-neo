@@ -16,7 +16,7 @@
     "###"
   ],
   "result": {
-    "item": "tconstruct:cinderslime_block"
+    "id": "tconstruct:cinderslime_block"
   },
   "show_notification": true
 }

@@ -11,8 +11,8 @@
     "###"
   ],
   "result": {
-    "count": 16,
-    "item": "tconstruct:gold_bars"
+    "id": "tconstruct:gold_bars",
+    "count": 16
   },
   "show_notification": true
 }

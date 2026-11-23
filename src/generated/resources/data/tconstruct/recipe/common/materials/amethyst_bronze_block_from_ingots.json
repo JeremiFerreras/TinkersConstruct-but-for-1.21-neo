@@ -16,7 +16,7 @@
     "###"
   ],
   "result": {
-    "item": "tconstruct:amethyst_bronze_block"
+    "id": "tconstruct:amethyst_bronze_block"
   },
   "show_notification": true
 }

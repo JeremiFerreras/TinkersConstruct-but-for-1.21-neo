@@ -13,8 +13,8 @@
     "BBB"
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:seared_stone_stairs"
+    "id": "tconstruct:seared_stone_stairs",
+    "count": 4
   },
   "show_notification": true
 }

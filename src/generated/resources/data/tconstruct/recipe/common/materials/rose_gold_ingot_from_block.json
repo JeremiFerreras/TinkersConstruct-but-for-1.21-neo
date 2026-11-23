@@ -8,7 +8,7 @@
     }
   ],
   "result": {
-    "count": 9,
-    "item": "tconstruct:rose_gold_ingot"
+    "id": "tconstruct:rose_gold_ingot",
+    "count": 9
   }
 }

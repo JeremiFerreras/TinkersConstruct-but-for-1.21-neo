@@ -15,8 +15,8 @@
     "#.#"
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:cobalt_platform"
+    "id": "tconstruct:cobalt_platform",
+    "count": 4
   },
   "show_notification": true
 }

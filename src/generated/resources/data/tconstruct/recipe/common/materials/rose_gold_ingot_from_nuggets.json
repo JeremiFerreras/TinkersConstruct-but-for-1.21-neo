@@ -16,7 +16,7 @@
     "###"
   ],
   "result": {
-    "item": "tconstruct:rose_gold_ingot"
+    "id": "tconstruct:rose_gold_ingot"
   },
   "show_notification": true
 }

@@ -11,8 +11,8 @@
     "WWW"
   ],
   "result": {
-    "count": 6,
-    "item": "tconstruct:nahuatl_fence"
+    "id": "tconstruct:nahuatl_fence",
+    "count": 6
   },
   "show_notification": true
 }

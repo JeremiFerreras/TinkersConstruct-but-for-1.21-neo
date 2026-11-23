@@ -15,7 +15,7 @@
     "#B#"
   ],
   "result": {
-    "item": "tconstruct:scorched_ingot_tank"
+    "id": "tconstruct:scorched_ingot_tank"
   },
   "show_notification": true
 }

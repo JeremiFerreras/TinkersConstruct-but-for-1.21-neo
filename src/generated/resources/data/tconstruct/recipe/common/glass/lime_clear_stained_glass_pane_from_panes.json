@@ -16,8 +16,8 @@
     "###"
   ],
   "result": {
-    "count": 8,
-    "item": "tconstruct:lime_clear_stained_glass_pane"
+    "id": "tconstruct:lime_clear_stained_glass_pane",
+    "count": 8
   },
   "show_notification": true
 }

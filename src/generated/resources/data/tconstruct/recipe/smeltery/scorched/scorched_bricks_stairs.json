@@ -13,8 +13,8 @@
     "BBB"
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:scorched_bricks_stairs"
+    "id": "tconstruct:scorched_bricks_stairs",
+    "count": 4
   },
   "show_notification": true
 }

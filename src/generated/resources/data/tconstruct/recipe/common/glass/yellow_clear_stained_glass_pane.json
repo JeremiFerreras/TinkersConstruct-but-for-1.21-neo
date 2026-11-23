@@ -12,8 +12,8 @@
     "###"
   ],
   "result": {
-    "count": 16,
-    "item": "tconstruct:yellow_clear_stained_glass_pane"
+    "id": "tconstruct:yellow_clear_stained_glass_pane",
+    "count": 16
   },
   "show_notification": true
 }

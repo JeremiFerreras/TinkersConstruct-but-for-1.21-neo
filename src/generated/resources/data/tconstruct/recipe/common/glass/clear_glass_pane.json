@@ -11,8 +11,8 @@
     "###"
   ],
   "result": {
-    "count": 16,
-    "item": "tconstruct:clear_glass_pane"
+    "id": "tconstruct:clear_glass_pane",
+    "count": 16
   },
   "show_notification": true
 }

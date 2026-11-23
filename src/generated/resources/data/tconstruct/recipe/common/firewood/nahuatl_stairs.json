@@ -13,8 +13,8 @@
     "BBB"
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:nahuatl_stairs"
+    "id": "tconstruct:nahuatl_stairs",
+    "count": 4
   },
   "show_notification": true
 }

@@ -11,8 +11,8 @@
     "###"
   ],
   "result": {
-    "count": 16,
-    "item": "tconstruct:scorched_soul_glass_pane"
+    "id": "tconstruct:scorched_soul_glass_pane",
+    "count": 16
   },
   "show_notification": true
 }

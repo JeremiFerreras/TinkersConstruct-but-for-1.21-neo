@@ -15,8 +15,8 @@
     "BBB"
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:scorched_ladder"
+    "id": "tconstruct:scorched_ladder",
+    "count": 4
   },
   "show_notification": true
 }

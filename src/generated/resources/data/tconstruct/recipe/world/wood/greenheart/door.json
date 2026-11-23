@@ -13,8 +13,8 @@
     "##"
   ],
   "result": {
-    "count": 3,
-    "item": "tconstruct:greenheart_door"
+    "id": "tconstruct:greenheart_door",
+    "count": 3
   },
   "show_notification": true
 }

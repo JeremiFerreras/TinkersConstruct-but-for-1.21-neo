@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.shared;
 
+import net.neoforged.bus.api.IEventBus;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffects;
@@ -13,9 +14,8 @@ import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionBrewing;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import slimeknights.mantle.registration.deferred.PotionDeferredRegister;
@@ -69,8 +69,8 @@ public class TinkerEffects extends TinkerModule {
   public static final EnumObject<PotionType,Potion> enderferencePotion = POTIONS.registerTypes(enderference, 90 * 20, 0).withLong().build();
 
   @SuppressWarnings("removal")
-  public TinkerEffects() {
-    POTIONS.register(FMLJavaModLoadingContext.get().getModEventBus());
+  public TinkerEffects(IEventBus bus) {
+    POTIONS.register(bus);
   }
 
   @SubscribeEvent

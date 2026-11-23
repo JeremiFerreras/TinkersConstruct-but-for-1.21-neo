@@ -8,7 +8,7 @@
     }
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:enderbark_planks"
+    "id": "tconstruct:enderbark_planks",
+    "count": 4
   }
 }

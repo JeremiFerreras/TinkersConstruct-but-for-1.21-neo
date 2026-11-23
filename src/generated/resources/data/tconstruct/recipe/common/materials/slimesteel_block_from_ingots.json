@@ -16,7 +16,7 @@
     "###"
   ],
   "result": {
-    "item": "tconstruct:slimesteel_block"
+    "id": "tconstruct:slimesteel_block"
   },
   "show_notification": true
 }

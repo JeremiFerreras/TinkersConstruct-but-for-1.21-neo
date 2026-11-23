@@ -16,8 +16,8 @@
     " X "
   ],
   "result": {
-    "count": 3,
-    "item": "tconstruct:greenheart_sign"
+    "id": "tconstruct:greenheart_sign",
+    "count": 3
   },
   "show_notification": true
 }

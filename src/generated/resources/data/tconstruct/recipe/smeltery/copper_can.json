@@ -11,8 +11,8 @@
     " c "
   ],
   "result": {
-    "count": 3,
-    "item": "tconstruct:copper_can"
+    "id": "tconstruct:copper_can",
+    "count": 3
   },
   "show_notification": true
 }

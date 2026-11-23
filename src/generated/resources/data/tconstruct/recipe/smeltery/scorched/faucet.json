@@ -11,8 +11,8 @@
     " # "
   ],
   "result": {
-    "count": 3,
-    "item": "tconstruct:scorched_faucet"
+    "id": "tconstruct:scorched_faucet",
+    "count": 3
   },
   "show_notification": true
 }

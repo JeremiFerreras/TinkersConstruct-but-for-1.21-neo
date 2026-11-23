@@ -12,7 +12,7 @@
     "##"
   ],
   "result": {
-    "item": "tconstruct:ichor_congealed_slime"
+    "id": "tconstruct:ichor_congealed_slime"
   },
   "show_notification": true
 }

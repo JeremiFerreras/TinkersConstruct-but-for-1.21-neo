@@ -24,7 +24,7 @@
     "GTG"
   ],
   "result": {
-    "item": "minecraft:end_crystal"
+    "id": "minecraft:end_crystal"
   },
   "show_notification": true
 }

@@ -11,8 +11,8 @@
     "###"
   ],
   "result": {
-    "count": 6,
-    "item": "tconstruct:skyroot_planks_slab"
+    "id": "tconstruct:skyroot_planks_slab",
+    "count": 6
   },
   "show_notification": true
 }

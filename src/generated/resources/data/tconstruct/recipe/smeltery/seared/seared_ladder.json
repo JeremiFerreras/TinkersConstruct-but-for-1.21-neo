@@ -15,8 +15,8 @@
     "BBB"
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:seared_ladder"
+    "id": "tconstruct:seared_ladder",
+    "count": 4
   },
   "show_notification": true
 }

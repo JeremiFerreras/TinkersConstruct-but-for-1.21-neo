@@ -16,8 +16,8 @@
     "###"
   ],
   "result": {
-    "count": 8,
-    "item": "tconstruct:light_gray_clear_stained_glass"
+    "id": "tconstruct:light_gray_clear_stained_glass",
+    "count": 8
   },
   "show_notification": true
 }

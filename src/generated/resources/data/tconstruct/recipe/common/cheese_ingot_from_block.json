@@ -7,7 +7,7 @@
     }
   ],
   "result": {
-    "count": 4,
-    "item": "tconstruct:cheese_ingot"
+    "id": "tconstruct:cheese_ingot",
+    "count": 4
   }
 }

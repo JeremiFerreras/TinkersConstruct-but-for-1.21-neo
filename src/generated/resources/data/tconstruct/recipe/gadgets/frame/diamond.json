@@ -16,7 +16,7 @@
     " e "
   ],
   "result": {
-    "item": "tconstruct:diamond_item_frame"
+    "id": "tconstruct:diamond_item_frame"
   },
   "show_notification": true
 }

@@ -14,8 +14,8 @@
     "sp"
   ],
   "result": {
-    "count": 6,
-    "item": "tconstruct:pattern"
+    "id": "tconstruct:pattern",
+    "count": 6
   },
   "show_notification": true
 }

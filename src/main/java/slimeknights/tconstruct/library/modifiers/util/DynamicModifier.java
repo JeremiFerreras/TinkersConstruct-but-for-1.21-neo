@@ -1,7 +1,7 @@
 package slimeknights.tconstruct.library.modifiers.util;
 
 import net.neoforged.neoforge.common.NeoForge;
-import net.minecraftforge.eventbus.api.EventPriority;
+import net.neoforged.bus.api.EventPriority;
 import slimeknights.tconstruct.library.modifiers.Modifier;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
 import slimeknights.tconstruct.library.modifiers.ModifierManager;
