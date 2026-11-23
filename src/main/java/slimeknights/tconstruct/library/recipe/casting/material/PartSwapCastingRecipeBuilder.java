@@ -49,7 +49,6 @@ public class PartSwapCastingRecipeBuilder extends AbstractRecipeBuilder<PartSwap
   }
 
   @SuppressWarnings("deprecation")
-  @SuppressWarnings("deprecation")
   @Override
   public void save(RecipeOutput consumer) {
     save(consumer, BuiltInRegistries.ITEM.getKey(tools.getItems().findFirst().orElseThrow().getItem()));
