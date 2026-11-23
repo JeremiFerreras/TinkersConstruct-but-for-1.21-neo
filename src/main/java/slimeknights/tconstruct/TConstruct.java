@@ -48,7 +48,6 @@ import slimeknights.tconstruct.common.data.tags.PotionTagProvider;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.fluids.TinkerFluids;
 import slimeknights.tconstruct.gadgets.TinkerGadgets;
-import slimeknights.tconstruct.library.TinkerItemDisplays;
 import slimeknights.tconstruct.library.materials.MaterialRegistry;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.ComputableDataKey;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.TinkerDataKey;
@@ -102,7 +101,6 @@ public class TConstruct {
     instance = this;
 
     Config.init(container);
-    TinkerItemDisplays.init(bus);
     MaterialRegistry.init();
 
     // initialize modules, done this way rather than with annotations to give us control over the order

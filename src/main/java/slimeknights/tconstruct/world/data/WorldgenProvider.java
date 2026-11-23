@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.world.data;
 
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderOwner;
@@ -153,7 +154,7 @@ public class WorldgenProvider {
     builder.add(Registries.PLACED_FEATURE, WorldgenProvider::registerPlacedFeatures);
     builder.add(Registries.STRUCTURE, WorldgenProvider::registerStructures);
     builder.add(Registries.STRUCTURE_SET, WorldgenProvider::registerStructureSets);
-    builder.add(ForgeRegistries.Keys.BIOME_MODIFIERS, WorldgenProvider::registerBiomeModifiers);
+    builder.add(NeoForgeRegistries.Keys.BIOME_MODIFIERS, WorldgenProvider::registerBiomeModifiers);
   }
 
   /** Registers all configured features */

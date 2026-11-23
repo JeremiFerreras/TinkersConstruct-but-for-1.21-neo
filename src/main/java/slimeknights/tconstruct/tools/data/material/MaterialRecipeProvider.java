@@ -18,7 +18,7 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.common.crafting.CompoundIngredient;
 import net.neoforged.neoforge.common.crafting.DifferenceIngredient;
-import net.minecraftforge.common.crafting.conditions.OrCondition;
+import net.neoforged.neoforge.common.conditions.OrCondition;
 import net.neoforged.neoforge.fluids.FluidType;
 import slimeknights.mantle.datagen.MantleTags;
 import slimeknights.mantle.recipe.condition.TagCombinationCondition;
@@ -234,7 +234,7 @@ public class MaterialRecipeProvider extends BaseRecipeProvider implements IMater
     metalMaterialRecipe(consumer, MaterialIds.invar, folder, "invar", true);
     metalMaterialRecipe(consumer, MaterialIds.pewter, folder, "pewter", true);
     materialRecipe(
-      withCondition(consumer, new OrCondition(ConfigEnabledCondition.FORCE_INTEGRATION_MATERIALS, tagCondition("ingots/uranium"))),
+      withCondition(consumer, new OrCondition(List.of(ConfigEnabledCondition.FORCE_INTEGRATION_MATERIALS, tagCondition("ingots/uranium")))),
       MaterialIds.necronium, Ingredient.of(TinkerMaterials.necroniumBone), 1, 1, folder + "necronium");
     metalMaterialRecipe(consumer, MaterialIds.electrum, folder, "electrum", true);
     metalMaterialRecipe(consumer, MaterialIds.steeleaf, folder, "steeleaf", true);
@@ -361,10 +361,10 @@ public class MaterialRecipeProvider extends BaseRecipeProvider implements IMater
     compatMeltingCasting(consumer, MaterialIds.steeleaf,   TinkerFluids.moltenSteeleaf, folder);
     // pewter has two different ores that let it appear, tin and lead
     materialMeltingCasting(
-      withCondition(consumer, new OrCondition(tagCondition("ingots/pewter"), tagCondition("ingots/tin"), tagCondition("ingots/lead"))),
+      withCondition(consumer, new OrCondition(List.of(tagCondition("ingots/pewter"), tagCondition("ingots/tin"), tagCondition("ingots/lead")))),
       MaterialIds.pewter, TinkerFluids.moltenPewter, folder);
     materialMeltingComposite(withCondition(consumer, tagCondition("ingots/uranium")), MaterialIds.necroticBone, MaterialIds.necronium, TinkerFluids.moltenUranium, FluidValues.INGOT, folder);
-    materialMeltingComposite(withCondition(consumer, new OrCondition(tagCondition("ingots/brass"), tagCondition("ingots/zinc"))),
+    materialMeltingComposite(withCondition(consumer, new OrCondition(List.of(tagCondition("ingots/brass"), tagCondition("ingots/zinc")))),
                              MaterialIds.slimewood, MaterialIds.platedSlimewood, TinkerFluids.moltenBrass, FluidValues.INGOT, folder);
     // tier 4 compat
     Consumer<FinishedRecipe> fieryConsumer = withCondition(consumer, tagCondition("ingots/fiery"));
@@ -374,7 +374,7 @@ public class MaterialRecipeProvider extends BaseRecipeProvider implements IMater
       .save(fieryConsumer, location(folder + "melting/fiery"));
     // nicrosil has three different ores that let it appear, tin, nickel, and chromium
     materialMeltingCasting(
-      withCondition(consumer, new OrCondition(tagCondition("ingots/nicrosil"), tagCondition("ingots/tin"), tagCondition("ingots/nickel"), tagCondition("ingots/chromium"))),
+      withCondition(consumer, new OrCondition(List.of(tagCondition("ingots/nicrosil"), tagCondition("ingots/tin"), tagCondition("ingots/nickel"), tagCondition("ingots/chromium")))),
       MaterialIds.nicrosil, TinkerFluids.moltenNicrosil, folder);
 
     // slimesuit - slime

@@ -1,11 +1,12 @@
 package slimeknights.tconstruct.library.data.recipe;
 
+import java.util.List;
 import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.crafting.conditions.OrCondition;
+import net.neoforged.neoforge.common.conditions.OrCondition;
 import slimeknights.mantle.recipe.data.IRecipeHelper;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 import slimeknights.mantle.registration.object.FluidObject;
@@ -107,7 +108,7 @@ public interface IMaterialRecipeHelper extends IRecipeHelper {
 
   /** Adds recipes to melt and cast a compat material of ingot size with a second tag allowed to make the material exist */
   default void compatMeltingCasting(Consumer<FinishedRecipe> consumer, MaterialId material, FluidObject<?> fluid, String altTag, String folder) {
-    materialMeltingCasting(withCondition(consumer, new OrCondition(tagCondition("ingots/" + material.getPath()), tagCondition("ingots/" + altTag))), material, fluid, folder);
+    materialMeltingCasting(withCondition(consumer, new OrCondition(List.of(tagCondition("ingots/" + material.getPath()), tagCondition("ingots/" + altTag)))), material, fluid, folder);
   }
 
   /** Adds recipes to melt and cast a material of ingot size */

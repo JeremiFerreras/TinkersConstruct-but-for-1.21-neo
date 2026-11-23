@@ -6,6 +6,7 @@ license="MIT"
 
 [[mods]]
     modId="tconstruct"
+    enumExtensions="META-INF/enumextensions.json"
     version="${version}"
     displayName="Tinkers' Construct"
     authors="Slime Knights"
