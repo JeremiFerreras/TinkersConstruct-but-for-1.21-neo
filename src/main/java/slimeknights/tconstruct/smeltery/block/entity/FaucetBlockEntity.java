@@ -23,6 +23,8 @@ import slimeknights.tconstruct.smeltery.network.FaucetActivationPacket;
 
 import static slimeknights.tconstruct.smeltery.block.FaucetBlock.FACING;
 
+import javax.annotation.Nullable;
+
 public class FaucetBlockEntity extends MantleBlockEntity {
   /** amount of MB to extract from the input at a time */
   public static final int PACKET_SIZE = FluidValues.INGOT;
