@@ -63,3 +63,23 @@ jobs:
             build/libs/*.jar
             !build/libs/*-sources.jar
           if-no-files-found: error
+
+      - name: Test packaged mod on a dedicated server
+        timeout-minutes: 12
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p smoke/mods
+          cp "$(find build/libs -name '*.jar' ! -name '*-sources.jar' -print -quit)" smoke/mods/
+          cd smoke
+          curl --fail --location --retry 3 https://github.com/vancevoj/neomantle/releases/download/v1.28/NeoMantle-1.21.1-1.21.0-v1.28.jar -o mods/NeoMantle.jar
+          curl --fail --location --retry 3 https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.266/neoforge-21.1.266-installer.jar -o installer.jar
+          java -jar installer.jar --installServer
+          python ../.github/tests/server-smoke.py
+
+      - name: Upload dedicated server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-smoke-logs
+          path: smoke/logs
