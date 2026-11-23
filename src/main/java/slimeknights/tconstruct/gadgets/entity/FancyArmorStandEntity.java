@@ -11,6 +11,9 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Items;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -34,10 +37,10 @@ public class FancyArmorStandEntity extends ArmorStand {
   /* Data */
 
   @Override
-  protected void defineSynchedData() {
-    super.defineSynchedData();
-    this.entityData.define(VARIANT, 0);
-    this.entityData.define(LEFT_HANDED, false);
+  protected void defineSynchedData(SynchedEntityData.Builder builder) {
+    super.defineSynchedData(builder);
+    builder.define(VARIANT, 0);
+    builder.define(LEFT_HANDED, false);
   }
 
   @Override
@@ -113,7 +116,7 @@ public class FancyArmorStandEntity extends ArmorStand {
 
   /** Sets the type of this stand */
   public void setStandType(StandType type) {
-    this.entityData.set(VARIANT, type.getId());
+    this.entityData.set(VARIANT, type.ordinal());
   }
 
   /** Makes this armor stand small */
@@ -140,14 +143,15 @@ public class FancyArmorStandEntity extends ArmorStand {
   }
 
   @Override
-  protected void brokenByPlayer(DamageSource source) {
-    ItemStack stack = new ItemStack(getStandItem());
-    if (this.hasCustomName()) {
-      stack.setHoverName(this.getCustomName());
+  public ItemEntity spawnAtLocation(ItemStack stack, float offsetY) {
+    if (stack.is(Items.ARMOR_STAND)) {
+      ItemStack replacement = new ItemStack(getStandItem());
+      if (this.hasCustomName()) {
+        replacement.set(DataComponents.CUSTOM_NAME, this.getCustomName());
+      }
+      stack = replacement;
     }
-    Block.popResource(this.level(), this.blockPosition(), stack);
-
-    this.brokenByAnything(source);
+    return super.spawnAtLocation(stack, offsetY);
   }
 
 
