@@ -13,10 +13,10 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.crafting.CraftingHelper;
+import net.neoforged.neoforge.common.conditions.ICondition;
 import net.neoforged.neoforge.common.conditions.ICondition.IContext;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
-import net.neoforged.neoforge.event.entity.living.MobSpawnEvent.FinalizeSpawn;
+import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.bus.api.EventPriority;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.mantle.data.loadable.Loadable;
@@ -55,7 +55,7 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener {
   @Internal
   public static void init() {
     NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, AddReloadListenerEvent.class, INSTANCE::addDataPackListeners);
-    NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, FinalizeSpawn.class, INSTANCE::finalizeSpawn);
+    NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, FinalizeSpawnEvent.class, INSTANCE::finalizeSpawn);
   }
 
   @Override
@@ -71,8 +71,23 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener {
       try {
         JsonObject json = GsonHelper.convertToJsonObject(entry.getValue(), key.toString());
         // skip if conditions fail
-        if (!CraftingHelper.processConditions(json, "conditions", context)) {
-          continue;
+        if (!json.has("conditions") && !json.has(net.neoforged.neoforge.common.conditions.ConditionalOps.DEFAULT_CONDITIONS_KEY)) {
+          // no conditions
+        } else {
+          com.google.gson.JsonElement conditionsElement = json.has(net.neoforged.neoforge.common.conditions.ConditionalOps.DEFAULT_CONDITIONS_KEY)
+            ? json.get(net.neoforged.neoforge.common.conditions.ConditionalOps.DEFAULT_CONDITIONS_KEY) : json.get("conditions");
+          // PORT: CraftingHelper.processConditions is gone
+          java.util.List<ICondition> conditions = ICondition.LIST_CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, conditionsElement).getOrThrow(JsonSyntaxException::new);
+          boolean ok = true;
+          for (ICondition condition : conditions) {
+            if (!condition.test(context)) {
+              ok = false;
+              break;
+            }
+          }
+          if (!ok) {
+            continue;
+          }
         }
         // parse the object
         List<MobEquipment> equipment = MobEquipment.LIST_LOADABLE.getIfPresent(json, "equip", TypedMapBuilder.builder().put(ContextKey.ID, key).put(ContextKey.DEBUG, "Mob Equipment " + key).build());
@@ -87,7 +102,7 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener {
             // need to use the condition context to fetch tag values as they are not yet in the mananger
             TagKey<EntityType<?>> tag = Loadables.ENTITY_TYPE_TAG.parseString(type.substring(1), "entity");
             for (Holder<EntityType<?>> holder : context.getTag(tag)) {
-              parsed.computeIfAbsent(holder.get(), ifAbsent).addAll(equipment);
+              parsed.computeIfAbsent(holder.value(), ifAbsent).addAll(equipment);
             }
           } else {
             parsed.computeIfAbsent(Loadables.ENTITY_TYPE.parseString(type, "entity"), ifAbsent).addAll(equipment);
@@ -130,7 +145,7 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener {
   }
 
   /** Handler for the finalize spawn event */
-  private void finalizeSpawn(FinalizeSpawn event) {
+  private void finalizeSpawn(FinalizeSpawnEvent event) {
     Mob mob = event.getEntity();
     List<MobEquipment> equipment = get(mob.getType());
     if (!equipment.isEmpty() && MobEquipment.apply(equipment, mob, event)) {
