@@ -8,7 +8,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import slimeknights.mantle.registration.deferred.AttributeDeferredRegister;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.config.Config;
@@ -22,50 +22,50 @@ public class TinkerAttributes {
 
   // booleans
   /** If true, the entity will bounce. Used to implement slime boots */
-  public static final RegistryObject<Attribute> BOUNCY = ATTRIBUTES.registerPercent("generic.bouncy", 0f, true);
+  public static final DeferredHolder<Attribute, ? extends Attribute> BOUNCY = ATTRIBUTES.register("generic.bouncy").sync().percent(0f);
 
   // stats
   /** Changes the speed debuff percentage when the player moves while using an item */
-  public static final RegistryObject<Attribute> USE_ITEM_SPEED = ATTRIBUTES.registerPercent("player.use_item_speed", 0.2f, true);
+  public static final DeferredHolder<Attribute, ? extends Attribute> USE_ITEM_SPEED = ATTRIBUTES.register("player.use_item_speed").sync().percent(0.2f);
   /** Changes the speed debuff when the player moves while using an item */
-  public static final RegistryObject<Attribute> PROTECTION_CAP = ATTRIBUTES.register("generic.protection_cap", 0.8, 0, 0.95f, true);
+  public static final DeferredHolder<Attribute, ? extends Attribute> PROTECTION_CAP = ATTRIBUTES.register("generic.protection_cap").sync().ranged(0.8, 0, 0.95f);
   /** Percentage boost to critical hits for any airborne attacker, used for {@link slimeknights.tconstruct.tools.data.ModifierIds#dragonborn} */
-  public static final RegistryObject<Attribute> CRITICAL_DAMAGE = ATTRIBUTES.register("player.critical_damage", 1.5f, 0, 100, false);
+  public static final DeferredHolder<Attribute, ? extends Attribute> CRITICAL_DAMAGE = ATTRIBUTES.register("player.critical_damage").ranged(1.5f, 0, 100);
   /** Loot bonus for {@link slimeknights.tconstruct.tools.data.ModifierIds#chrysophilite} */
-  public static final RegistryObject<Attribute> CHRYSOPHILITE = ATTRIBUTES.register("generic.chrysophilite", 0, 0, 100, false);
+  public static final DeferredHolder<Attribute, ? extends Attribute> CHRYSOPHILITE = ATTRIBUTES.register("generic.chrysophilite").ranged(0, 0, 100);
 
   // stat bonuses
   /** Bonus jump height in blocks */
-  public static final RegistryObject<Attribute> JUMP_BOOST = ATTRIBUTES.register("generic.jump_boost", 0, 0, 100, true);
+  public static final DeferredHolder<Attribute, ? extends Attribute> JUMP_BOOST = ATTRIBUTES.register("generic.jump_boost").sync().ranged(0, 0, 100);
   /** Distance you can safely fall without damage */
-  public static final RegistryObject<Attribute> SAFE_FALL_DISTANCE = ATTRIBUTES.register("generic.safe_fall_distance", 0, -10, 100, true);
+  public static final DeferredHolder<Attribute, ? extends Attribute> SAFE_FALL_DISTANCE = ATTRIBUTES.register("generic.safe_fall_distance").sync().ranged(0, -10, 100);
   /** Number of jumps the player may perform, used by the double jump modifier. */
-  public static final RegistryObject<Attribute> JUMP_COUNT = ATTRIBUTES.register("player.jump_count", 1, 1, 100, true);
+  public static final DeferredHolder<Attribute, ? extends Attribute> JUMP_COUNT = ATTRIBUTES.register("player.jump_count").sync().ranged(1, 1, 100);
 
   // stat multipliers
   /** Multiplier for knockback this entity takes. Similar to {@link net.minecraft.world.entity.ai.attributes.Attributes#KNOCKBACK_RESISTANCE} but can be used to increase knockback */
-  public static final RegistryObject<Attribute> KNOCKBACK_MULTIPLIER = ATTRIBUTES.registerMultiplier("generic.knockback_multiplier", true);
+  public static final DeferredHolder<Attribute, ? extends Attribute> KNOCKBACK_MULTIPLIER = ATTRIBUTES.register("generic.knockback_multiplier").sync().multiplier();
   /** Player modifier data key for mining speed multiplier as an additive percentage boost on mining speed. Used for armor haste. */
-  public static final RegistryObject<Attribute> MINING_SPEED_MULTIPLIER = ATTRIBUTES.registerMultiplier("player.mining_speed_multiplier", true);
+  public static final DeferredHolder<Attribute, ? extends Attribute> MINING_SPEED_MULTIPLIER = ATTRIBUTES.register("player.mining_speed_multiplier").sync().multiplier();
   /** Attribute for experience from all sources */
-  public static final RegistryObject<Attribute> EXPERIENCE_MULTIPLIER = ATTRIBUTES.registerMultiplier("player.experience_multiplier", false);
+  public static final DeferredHolder<Attribute, ? extends Attribute> EXPERIENCE_MULTIPLIER = ATTRIBUTES.register("player.experience_multiplier").multiplier();
   /** Percentage boost to damage while crouching, used by {@link slimeknights.tconstruct.tools.data.ModifierIds#shulking} */
-  public static final RegistryObject<Attribute> CROUCH_DAMAGE_MULTIPLIER = ATTRIBUTES.registerMultiplier("generic.crouch_damage_multiplier", false);
+  public static final DeferredHolder<Attribute, ? extends Attribute> CROUCH_DAMAGE_MULTIPLIER = ATTRIBUTES.register("generic.crouch_damage_multiplier").multiplier();
   // effect durations
   /** Percentage boost to positive potion effects */
-  public static final RegistryObject<Attribute> GOOD_EFFECT_DURATION = ATTRIBUTES.registerMultiplier("generic.good_effect_duration_multiplier", false);
+  public static final DeferredHolder<Attribute, ? extends Attribute> GOOD_EFFECT_DURATION = ATTRIBUTES.register("generic.good_effect_duration_multiplier").multiplier();
   /** Percentage boost to negative potion effects, used for {@link slimeknights.tconstruct.tools.data.ModifierIds#magicProtection} */
-  public static final RegistryObject<Attribute> BAD_EFFECT_DURATION = ATTRIBUTES.registerMultiplier("generic.bad_effect_duration_multiplier", false);
+  public static final DeferredHolder<Attribute, ? extends Attribute> BAD_EFFECT_DURATION = ATTRIBUTES.register("generic.bad_effect_duration_multiplier").multiplier();
 
 
   @SubscribeEvent
   void addAttributes(EntityAttributeModificationEvent event) {
     // player attributes
-    event.add(EntityType.PLAYER, USE_ITEM_SPEED.get());
-    event.add(EntityType.PLAYER, CRITICAL_DAMAGE.get());
-    event.add(EntityType.PLAYER, MINING_SPEED_MULTIPLIER.get());
-    event.add(EntityType.PLAYER, EXPERIENCE_MULTIPLIER.get());
-    event.add(EntityType.PLAYER, JUMP_COUNT.get());
+    event.add(EntityType.PLAYER, USE_ITEM_SPEED);
+    event.add(EntityType.PLAYER, CRITICAL_DAMAGE);
+    event.add(EntityType.PLAYER, MINING_SPEED_MULTIPLIER);
+    event.add(EntityType.PLAYER, EXPERIENCE_MULTIPLIER);
+    event.add(EntityType.PLAYER, JUMP_COUNT);
     // general attributes
     addToAll(event, BOUNCY);
     addToAll(event, PROTECTION_CAP);
@@ -83,21 +83,20 @@ public class TinkerAttributes {
     event.enqueueWork(() -> {
       // make knockback resistance syncable, as we need that info clientside
       if (Config.COMMON.syncKnockbackResistance.get()) {
-        Attributes.KNOCKBACK_RESISTANCE.setSyncable(true);
+        Attributes.KNOCKBACK_RESISTANCE.value().setSyncable(true);
       }
     });
   }
 
   /** Adds an attribute to all entities */
-  private static void addToAll(EntityAttributeModificationEvent event, RegistryObject<Attribute> attribute, double defaultValue) {
-    Attribute attr = attribute.get();
+  private static void addToAll(EntityAttributeModificationEvent event, DeferredHolder<Attribute, ? extends Attribute> attribute, double defaultValue) {
     for (EntityType<? extends LivingEntity> entity : event.getTypes()) {
-      event.add(entity, attr, defaultValue);
+      event.add(entity, attribute, defaultValue);
     }
   }
 
   /** Adds an attribute to all entities */
-  private static void addToAll(EntityAttributeModificationEvent event, RegistryObject<Attribute> attribute) {
+  private static void addToAll(EntityAttributeModificationEvent event, DeferredHolder<Attribute, ? extends Attribute> attribute) {
     addToAll(event, attribute, attribute.get().getDefaultValue());
   }
 }

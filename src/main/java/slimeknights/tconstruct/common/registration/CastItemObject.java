@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.common.registration;
 
+import net.neoforged.neoforge.registries.DeferredItem;
 import lombok.Getter;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -13,12 +14,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import static slimeknights.mantle.util.RegistryHelper.getHolder;
 
 /**
  * Deferred wrapper holding gold, sand, and red sand casts
  */
-public class CastItemObject extends ItemObject<Item> {
+public class CastItemObject extends ItemObject<Item, Item> {
   @Getter
   private final ResourceLocation name;
   private final Supplier<? extends Item> sand;
@@ -30,15 +30,15 @@ public class CastItemObject extends ItemObject<Item> {
 
   @SuppressWarnings("deprecation")  // you know, pointless deprecations is really going to make people start ignoring deprecations
   public CastItemObject(ResourceLocation name, Item gold, Item sand, Item redSand) {
-    super(BuiltInRegistries.ITEM, gold);
+    super(gold.builtInRegistryHolder());
     this.name = name;
-    this.sand = getHolder(BuiltInRegistries.ITEM, sand);
-    this.redSand = getHolder(BuiltInRegistries.ITEM, redSand);
+    this.sand = () -> sand;
+    this.redSand = () -> redSand;
     this.singleUseTag = makeTag("single_use");
     this.multiUseTag = makeTag("multi_use");
   }
 
-  public CastItemObject(ResourceLocation name, ItemObject<? extends Item> gold, Supplier<? extends Item> sand, Supplier<? extends Item> redSand) {
+  public CastItemObject(ResourceLocation name, DeferredItem<? extends Item> gold, Supplier<? extends Item> sand, Supplier<? extends Item> redSand) {
     super(gold);
     this.name = name;
     this.sand = sand;
