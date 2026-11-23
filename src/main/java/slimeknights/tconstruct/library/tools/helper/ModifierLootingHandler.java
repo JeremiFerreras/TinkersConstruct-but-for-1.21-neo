@@ -8,7 +8,7 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.common.NeoForge;
-import net.minecraftforge.event.entity.living.LootingLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent;
 import net.neoforged.bus.api.EventPriority;
 import slimeknights.tconstruct.common.TinkerDamageTypes;
@@ -37,6 +37,8 @@ import java.util.UUID;
 public class ModifierLootingHandler {
   /** If contained in the set, they should use the offhand for looting */
   private static final Map<UUID,EquipmentSlot> LOOTING_OFFHAND = new HashMap<>();
+  /** PORT: last computed looting for this thread; LivingDropsEvent no longer stores it. */
+  private static final ThreadLocal<Integer> LAST_LOOTING = ThreadLocal.withInitial(() -> 0);
   private static boolean init = false;
 
   /** Initializies this listener */
@@ -68,10 +70,15 @@ public class ModifierLootingHandler {
     return entity != null ? LOOTING_OFFHAND.getOrDefault(entity.getUUID(), EquipmentSlot.MAINHAND) : EquipmentSlot.MAINHAND;
   }
 
+  /** PORT: last looting level computed for the current drop event, since the event itself no longer carries one. */
+  public static int getLastLooting() {
+    return LAST_LOOTING.get();
+  }
+
   /** Applies the looting bonus for modifiers */
-  private static void onLooting(LootingLevelEvent event) {
+  private static void onLooting(LivingDropsEvent event) {
     // must be an attacker with our tool
-    DamageSource damageSource = event.getDamageSource();
+    DamageSource damageSource = event.getSource();
     if (damageSource == null) {
       return;
     }
@@ -79,7 +86,11 @@ public class ModifierLootingHandler {
 
     // bleeding kills use the level of the effect for looting
     if (damageSource.is(TinkerDamageTypes.BLEEDING)) {
-      event.setLootingLevel(Math.max(0, TinkerEffect.getAmplifier(target, TinkerEffects.bleeding.get())));
+      // PORT: LivingDropsEvent no longer carries a looting level. Looting is applied via
+      // EnchantmentHelper / loot functions at table generation. Bleeding kills still compute a
+      // synthetic level here so other Tinkers hooks can read it, but it cannot be written back.
+      int bleedingLooting = Math.max(0, TinkerEffect.getAmplifier(target, TinkerEffects.bleeding));
+      LAST_LOOTING.set(bleedingLooting);
       return;
     }
 
@@ -87,7 +98,7 @@ public class ModifierLootingHandler {
     Entity source = damageSource.getEntity();
     if (source instanceof LivingEntity holder) {
       Entity direct = damageSource.getDirectEntity();
-      int level = event.getLootingLevel();
+      int level = 0;
 
       // determine who is in charge of the looting
       LootingContext context;
@@ -99,7 +110,7 @@ public class ModifierLootingHandler {
         // no modifiers means its not a projectile we fired, so just defer to dumb vanilla behavior of whatever looting
         // since we don't set the enchantment on our tools, our looting modifiers won't set anything here anyways
         if (!modifiers.isEmpty()) {
-          ModDataNBT persistentData = PersistentDataCapability.getOrEmpty(direct);
+          ModDataNBT persistentData = java.util.Optional.ofNullable(direct.getCapability(PersistentDataCapability.CAPABILITY)).orElseGet(ModDataNBT::new);
           level = LootingModifierHook.getLooting(new DummyToolStack(Items.AIR, modifiers, persistentData), context, 0);
         }
       } else {
@@ -119,8 +130,9 @@ public class ModifierLootingHandler {
       }
       // boost looting with armor regardless, hopefully you did not switch your pants mid arrow firing
       level = ArmorLootingModifierHook.getLooting(tool, context, level);
-      // we allow the hook to return negatives to cancel out looting, so ensure its at least 0
-      event.setLootingLevel(Math.max(level, 0));
+      // PORT: LivingDropsEvent.setLootingLevel is gone in 1.21; looting must come from the weapon's
+      // reported enchantment level (EnchantmentModifierHook) at loot-table time.
+      LAST_LOOTING.set(Math.max(level, 0));
     }
   }
 

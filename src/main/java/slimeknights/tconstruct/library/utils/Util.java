@@ -18,10 +18,10 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.ForgeI18n;
+import net.neoforged.fml.i18n.FMLTranslations;
 import net.neoforged.neoforge.common.conditions.ICondition;
 import net.neoforged.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
+import net.neoforged.fml.ModLoadingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -74,7 +74,7 @@ public class Util {
    * @return  True if it can be translated
    */
   public static boolean canTranslate(String key) {
-    return !ForgeI18n.getPattern(key).equals(key);
+    return !FMLTranslations.getPattern(key, () -> key).equals(key);
   }
 
   /**
@@ -176,8 +176,7 @@ public class Util {
 
   /** Calculates the given color */
   private static int calcColor(DyeColor color) {
-    float[] diffuse = color.getTextureDiffuseColors();
-    return FastColor.ARGB32.color(255, Math.round(255 * diffuse[0]), Math.round(255 * diffuse[1]), Math.round(255 * diffuse[2]));
+    return FastColor.ARGB32.opaque(color.getTextureDiffuseColor());
   }
 
   /** Array of tints for each dye color */
