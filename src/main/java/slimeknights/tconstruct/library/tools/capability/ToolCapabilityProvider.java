@@ -2,7 +2,10 @@ package slimeknights.tconstruct.library.tools.capability;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import slimeknights.tconstruct.library.tools.item.IModifiable;
 import net.neoforged.neoforge.capabilities.ItemCapability;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
@@ -27,6 +30,18 @@ public class ToolCapabilityProvider {
   private ToolCapabilityProvider() {}
 
   private static final List<BiFunction<ItemStack,Supplier<? extends IToolStackView>,IToolCapabilityProvider>> PROVIDER_CONSTRUCTORS = new ArrayList<>();
+
+  /** Registers all standard capabilities on every modifiable tool item. */
+  public static void registerItemCaps(RegisterCapabilitiesEvent event) {
+    for (Item item : BuiltInRegistries.ITEM) {
+      if (item instanceof IModifiable) {
+        register(event, Capabilities.FluidHandler.ITEM, item);
+        register(event, Capabilities.ItemHandler.ITEM, item);
+        register(event, Capabilities.EnergyStorage.ITEM, item);
+        register(event, BlockItemProviderCapability.CAPABILITY, item);
+      }
+    }
+  }
 
   /** Registers a tool capability provider constructor. Every new tool will call this constructor to create your provider.
    * Is it valid for this constructor to return null, just note that it will not be called a second time if the tools state changes. Thus you should avoid conditioning on anything other than item type */

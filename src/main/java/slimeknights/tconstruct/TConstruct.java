@@ -24,6 +24,7 @@ import net.neoforged.neoforge.registries.RegisterEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import slimeknights.tconstruct.common.TinkerModule;
+import slimeknights.tconstruct.common.TinkerCapabilityEvents;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.common.data.AdvancementsProvider;
@@ -111,6 +112,8 @@ public class TConstruct {
     TinkerDataCapability.register(bus);
     PersistentDataCapability.register(bus);
     EntityModifierCapability.register(bus);
+    // NeoForge 1.21 requires item capability providers to be registered during RegisterCapabilitiesEvent.
+    bus.addListener(TinkerCapabilityEvents::onRegisterCapabilities);
 
     // initialize modules, done this way rather than with annotations to give us control over the order
     bus.addListener(TConstruct::registerAliases);
