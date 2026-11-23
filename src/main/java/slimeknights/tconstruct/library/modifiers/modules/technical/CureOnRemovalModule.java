@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.library.modifiers.modules.technical;
 
+import slimeknights.tconstruct.library.utils.EffectCureUtil;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
@@ -36,7 +37,7 @@ public enum CureOnRemovalModule implements HookProvider, EquipmentChangeModifier
       IToolStackView replacement = context.getReplacementTool();
       if (replacement == null || replacement.getModifierLevel(modifier.getModifier()) == 0 || replacement.getItem() != tool.getItem()) {
         // cure effects using the helmet
-        context.getEntity().curePotionEffects(new ItemStack(tool.getItem()));
+        EffectCureUtil.cure(context.getEntity(), new ItemStack(tool.getItem()));
       }
     }
   }

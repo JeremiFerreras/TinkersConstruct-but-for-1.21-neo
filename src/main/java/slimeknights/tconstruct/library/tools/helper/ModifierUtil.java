@@ -44,6 +44,15 @@ import slimeknights.tconstruct.library.utils.StackNBT;
 /** Generic modifier hooks that don't quite fit elsewhere */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ModifierUtil {
+  /** Creative players use tools without spending durability, ammunition or fluid. */
+  public static boolean consumesResources(@Nullable LivingEntity entity) {
+    return !(entity instanceof Player player) || consumesResources(player);
+  }
+
+  public static boolean consumesResources(@Nullable Player player) {
+    return player == null || !player.isCreative();
+  }
+
   /** Drops an item at the given position */
   public static void dropItem(Level level, double x, double y, double z, ItemStack stack) {
     if (!stack.isEmpty() && !level.isClientSide) {

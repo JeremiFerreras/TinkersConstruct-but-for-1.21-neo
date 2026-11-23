@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.library.modifiers.fluid;
 
+import slimeknights.tconstruct.library.utils.EffectCureUtil;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffect;
@@ -19,7 +20,6 @@ import slimeknights.tconstruct.library.modifiers.fluid.entity.MobEffectFluidEffe
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 /**
  * Common logic for effects between {@link slimeknights.tconstruct.library.modifiers.fluid.entity.MobEffectFluidEffect} and {@link slimeknights.tconstruct.library.modifiers.fluid.block.MobEffectCloudFluidEffect}
@@ -55,7 +55,7 @@ public record FluidMobEffect(MobEffect effect, int time, int level, @Nullable Li
   public MobEffectInstance effectWithTime(int time) {
     MobEffectInstance instance = new MobEffectInstance(effect, time, this.level - 1);
     if (curativeItems != null) {
-      instance.setCurativeItems(curativeItems.stream().map(ItemStack::new).collect(Collectors.toList()));
+      EffectCureUtil.set(instance, curativeItems);
     }
     return instance;
   }

@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.library.modifiers.modules.interaction.edible;
 
+import slimeknights.tconstruct.library.utils.EffectCureUtil;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -46,7 +47,7 @@ public record EdibleCureEffectsModule(ItemStack curativeItem, IJsonPredicate<Liv
   @Override
   public void onToolEaten(IToolStackView tool, ModifierEntry modifier, Player player, EquipmentSlot eatenSlot, int hunger, float saturation, List<ItemStack> representativeItems) {
     if (condition.matches(tool, modifier) && holder.matches(player)) {
-      player.curePotionEffects(curativeItem);
+      EffectCureUtil.cure(player, curativeItem);
     }
   }
 }

@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.library.modifiers.modules.combat;
 
+import slimeknights.tconstruct.library.utils.EffectCureUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -70,7 +71,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNullElse;
 import static slimeknights.tconstruct.TConstruct.RANDOM;
@@ -240,7 +240,7 @@ public interface MobEffectModule extends ModifierModule, ConditionalModule<ITool
       if (duration > 0) {
         MobEffectInstance instance = new MobEffectInstance(effect, (int)duration, level);
         if (curativeItems != null) {
-          instance.setCurativeItems(curativeItems.stream().map(ItemStack::new).collect(Collectors.toList()));
+          EffectCureUtil.set(instance, curativeItems);
         }
         target.addEffect(instance, cause);
       }

@@ -309,7 +309,7 @@ public class ModifierEvents {
   @SubscribeEvent
   static void onPotionStart(MobEffectEvent.Added event) {
     MobEffectInstance newEffect = event.getEffectInstance();
-    if (!newEffect.isInfiniteDuration() && !newEffect.getCurativeItems().isEmpty()) {
+    if (!newEffect.isInfiniteDuration() && !newEffect.getCures().isEmpty()) {
       // use two different stats based on whether the effect is beneficial
       boolean beneficial = newEffect.getEffect().isBeneficial();
       LivingEntity entity = event.getEntity();
