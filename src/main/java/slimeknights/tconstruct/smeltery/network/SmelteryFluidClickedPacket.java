@@ -8,7 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import slimeknights.mantle.inventory.BaseContainerMenu;
-import slimeknights.mantle.network.ISimplePacket;
+import slimeknights.mantle.network.packet.ISimplePacket;
 import slimeknights.tconstruct.smeltery.block.entity.tank.ISmelteryTankHandler;
 
 /**
