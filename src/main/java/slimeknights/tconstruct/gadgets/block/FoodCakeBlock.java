@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.gadgets.block;
 
-import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.stats.Stats;
@@ -10,6 +9,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -41,27 +41,21 @@ public class FoodCakeBlock extends CakeBlock {
   }
 
   @Override
-  public void appendHoverText(ItemStack pStack, @Nullable BlockGetter pLevel, List<Component> tooltip, TooltipFlag pFlag) {
+  public void appendHoverText(ItemStack pStack, Item.TooltipContext pContext, List<Component> tooltip, TooltipFlag pFlag) {
     ContainerFoodItem.addEffectTooltip(food, tooltip);
   }
 
   @Override
-  public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-    InteractionResult result = this.eatSlice(world, pos, state, player);
-    if (result.consumesAction()) {
-      return result;
-    }
-    if (world.isClientSide() && player.getItemInHand(handIn).isEmpty()) {
-      return InteractionResult.CONSUME;
-    }
-    return InteractionResult.PASS;
+  protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player) {
+    return eatSlice(world, pos, state, player);
   }
 
   /** Checks if the given player has all potion effects from the food */
   private boolean hasAllEffects(Player player) {
-    for (Pair<MobEffectInstance,Float> pair : food.getEffects()) {
-      if (pair.getFirst() != null) {
-        MobEffectInstance current = player.getEffect(pair.getFirst().getEffect());
+    for (FoodProperties.PossibleEffect possible : food.effects()) {
+      MobEffectInstance effect = possible.effect();
+      if (effect != null) {
+        MobEffectInstance current = player.getEffect(effect.getEffect());
         if (current == null || current.getDuration() < 100) {
           return false;
         }
@@ -81,15 +75,15 @@ public class FoodCakeBlock extends CakeBlock {
     }
     player.awardStat(Stats.EAT_CAKE_SLICE);
     // apply food stats
-    player.getFoodData().eat(food.getNutrition(), food.getSaturationModifier());
-    for (Pair<MobEffectInstance,Float> pair : food.getEffects()) {
-      if (!world.isClientSide() && pair.getFirst() != null && world.getRandom().nextFloat() < pair.getSecond()) {
-        MobEffectInstance effect = new MobEffectInstance(pair.getFirst());
+    player.getFoodData().eat(food.nutrition(), food.saturation());
+    for (FoodProperties.PossibleEffect possible : food.effects()) {
+      if (!world.isClientSide() && world.getRandom().nextFloat() < possible.probability()) {
+        MobEffectInstance effect = new MobEffectInstance(possible.effect());
         // if adding, increase duration by current duration, provided its an exact level match
         if (combination == EffectCombination.ADD) {
           MobEffectInstance current = player.getEffect(effect.getEffect());
           if (current != null && current.getAmplifier() == effect.getAmplifier()) {
-            effect.duration += current.getDuration();
+            effect = new MobEffectInstance(effect.getEffect(), effect.getDuration() + current.getDuration(), effect.getAmplifier(), effect.isAmbient(), effect.isVisible(), effect.showIcon());
           }
         }
         player.addEffect(effect);

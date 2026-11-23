@@ -1,5 +1,7 @@
 package slimeknights.tconstruct.tools.modules;
 
+import javax.annotation.Nullable;
+
 import lombok.Getter;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
