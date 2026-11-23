@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import slimeknights.mantle.network.ISimplePacket;
+import slimeknights.mantle.network.packet.ISimplePacket;
 import slimeknights.tconstruct.library.tools.layout.StationSlotLayoutLoader;
 import slimeknights.tconstruct.tables.menu.TinkerStationContainerMenu;
 
@@ -25,8 +25,7 @@ public class TinkerStationSelectionPacket implements ISimplePacket {
 
   @Override
   public void handle(IPayloadContext context) {
-    ServerPlayer sender = (ServerPlayer) context.player();
-    if (sender != null) {
+    if (context.player() instanceof ServerPlayer sender) {
       AbstractContainerMenu container = sender.containerMenu;
       if (container instanceof TinkerStationContainerMenu tinker) {
         tinker.setToolSelection(StationSlotLayoutLoader.getInstance().get(layoutName));

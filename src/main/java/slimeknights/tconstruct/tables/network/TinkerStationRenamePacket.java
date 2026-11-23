@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import slimeknights.mantle.network.ISimplePacket;
+import slimeknights.mantle.network.packet.ISimplePacket;
 import slimeknights.tconstruct.tables.block.entity.table.TinkerStationBlockEntity;
 import slimeknights.tconstruct.tables.menu.TinkerStationContainerMenu;
 
@@ -25,8 +25,7 @@ public class TinkerStationRenamePacket implements ISimplePacket {
 
   @Override
   public void handle(IPayloadContext context) {
-    ServerPlayer sender = (ServerPlayer) context.player();
-    if (sender != null && sender.containerMenu instanceof TinkerStationContainerMenu station) {
+    if (context.player() instanceof ServerPlayer sender && sender.containerMenu instanceof TinkerStationContainerMenu station) {
       TinkerStationBlockEntity tile = station.getTile();
       if (tile != null) {
         station.getTile().setItemName(name);

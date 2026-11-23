@@ -12,8 +12,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import net.minecraftforge.network.NetworkHooks;
-import slimeknights.mantle.network.ISimplePacket;
+
+import slimeknights.mantle.network.packet.ISimplePacket;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.tables.block.ITabbedBlock;
 
@@ -31,8 +31,7 @@ public class StationTabPacket implements ISimplePacket {
 
   @Override
   public void handle(IPayloadContext context) {
-    ServerPlayer sender = (ServerPlayer) context.player();
-    if (sender != null) {
+    if (context.player() instanceof ServerPlayer sender) {
       ItemStack heldStack = sender.containerMenu.getCarried();
       if (!heldStack.isEmpty()) {
         // set it to empty, so it's doesn't get dropped
@@ -49,7 +48,7 @@ public class StationTabPacket implements ISimplePacket {
       } else {
         MenuProvider provider = state.getMenuProvider(sender.getCommandSenderWorld(), pos);
         if (provider != null) {
-          NetworkHooks.openScreen(sender, provider, pos);
+          sender.openMenu(provider, pos);
         }
       }
 
