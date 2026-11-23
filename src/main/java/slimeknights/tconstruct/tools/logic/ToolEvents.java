@@ -418,7 +418,7 @@ public class ToolEvents {
               // if not our armor, damage using vanilla like logic
               ItemStack armorStack = entity.getItemBySlot(slotType);
               if (!armorStack.isEmpty() && (!source.is(DamageTypeTags.IS_FIRE) || !armorStack.has(net.minecraft.core.component.DataComponents.FIRE_RESISTANT)) && armorStack.getItem() instanceof ArmorItem) {
-                armorStack.hurtAndBreak(damageMissed, entity, slotType)
+                armorStack.hurtAndBreak(damageMissed, entity, slotType);
               }
             }
           }
