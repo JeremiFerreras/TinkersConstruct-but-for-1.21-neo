@@ -1,14 +1,19 @@
 package slimeknights.tconstruct.tools.network;
 
-import net.minecraft.network.codec.StreamCodec;
-import slimeknights.tconstruct.TConstruct;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import slimeknights.mantle.network.ISimplePacket;
+import slimeknights.mantle.network.packet.ISimplePacket;
+import slimeknights.mantle.network.packet.IThreadsafePacket;
+import slimeknights.tconstruct.TConstruct;
 
-public class EntityMovementChangePacket implements ISimplePacket {
+public class EntityMovementChangePacket implements IThreadsafePacket {
+  public static final Type<EntityMovementChangePacket> TYPE = new Type<>(TConstruct.getResource("entity_movement_change"));
+  public static final StreamCodec<RegistryFriendlyByteBuf,EntityMovementChangePacket> STREAM_CODEC = ISimplePacket.codec(EntityMovementChangePacket::new);
+
   private final int entityID;
   private final double x;
   private final double y;
@@ -25,7 +30,7 @@ public class EntityMovementChangePacket implements ISimplePacket {
     this.xRot = entity.getXRot();
   }
 
-  public EntityMovementChangePacket(RegistryFriendlyByteBuf buffer) {
+  public EntityMovementChangePacket(FriendlyByteBuf buffer) {
     this.entityID = buffer.readInt();
     this.x = buffer.readDouble();
     this.y = buffer.readDouble();
@@ -34,7 +39,8 @@ public class EntityMovementChangePacket implements ISimplePacket {
     this.xRot = buffer.readFloat();
   }
 
-  public void encode(RegistryFriendlyByteBuf packetBuffer) {
+  @Override
+  public void encode(FriendlyByteBuf packetBuffer) {
     packetBuffer.writeInt(this.entityID);
     packetBuffer.writeDouble(this.x);
     packetBuffer.writeDouble(this.y);
@@ -44,7 +50,12 @@ public class EntityMovementChangePacket implements ISimplePacket {
   }
 
   @Override
-  public void handle(IPayloadContext context) {
+  public Type<EntityMovementChangePacket> type() {
+    return TYPE;
+  }
+
+  @Override
+  public void handleThreadsafe(IPayloadContext context) {
     HandleClient.handle(this);
   }
 
@@ -59,13 +70,5 @@ public class EntityMovementChangePacket implements ISimplePacket {
         entity.setXRot(packet.xRot);
       }
     }
-  }
-  public static final Type<EntityMovementChangePacket> TYPE = new Type<>(TConstruct.getResource("entity_movement_change"));
-  public static final StreamCodec<RegistryFriendlyByteBuf, EntityMovementChangePacket> CODEC =
-    StreamCodec.ofMember(EntityMovementChangePacket::encode, EntityMovementChangePacket::new);
-
-  @Override
-  public Type<EntityMovementChangePacket> type() {
-    return TYPE;
   }
 }
