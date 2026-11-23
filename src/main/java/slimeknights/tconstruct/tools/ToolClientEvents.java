@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.item.ItemColors;
-import net.minecraft.client.gui.screens.MenuScreens;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.renderer.entity.ItemEntityRenderer;
@@ -24,10 +24,10 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
+import net.neoforged.neoforge.client.event.RegisterSpriteSourceTypesEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.common.NeoForge;
-import net.minecraftforge.event.TickEvent.Phase;
-import net.minecraftforge.event.TickEvent.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.fml.ModList;
@@ -96,10 +96,16 @@ import static slimeknights.tconstruct.library.client.model.tools.ToolModel.regis
 @SuppressWarnings("unused")
 @EventBusSubscriber(modid = TConstruct.MOD_ID, value = Dist.CLIENT, bus = Bus.MOD)
 public class ToolClientEvents extends ClientEventBase {
-  /** Keybinding for interacting using a helmet */
-  private static final KeyMapping HELMET_INTERACT = new KeyMapping(TConstruct.makeTranslationKey("key", "helmet_interact"), KeyConflictContext.IN_GAME, InputConstants.getKey("key.keyboard.z"), "key.categories.tconstruct");
-  /** Keybinding for interacting using leggings */
-  private static final KeyMapping LEGGINGS_INTERACT = new KeyMapping(TConstruct.makeTranslationKey("key", "leggings_interact"), KeyConflictContext.IN_GAME, InputConstants.getKey("key.keyboard.i"), "key.categories.tconstruct");
+  /**
+   * Keybinding for interacting using a helmet. Constructed lazily inside {@link #registerKeyBinding} rather than in a
+   * static initializer: building a KeyMapping touches {@code KeyMapping}/{@code InputConstants}, so doing it at field
+   * init forced those classes to initialize the moment this client-only subscriber was class-loaded during mod setup.
+   * If another mod (e.g. via Sinytra Connector) has already broken {@code KeyMapping}'s static init, that early touch
+   * makes Tinkers the apparent trigger of an unrelated crash. Deferring to {@link RegisterKeyMappingsEvent} avoids it.
+   */
+  private static KeyMapping HELMET_INTERACT;
+  /** Keybinding for interacting using leggings. Initialized lazily; see {@link #HELMET_INTERACT}. */
+  private static KeyMapping LEGGINGS_INTERACT;
 
   /** Listener to clear modifier cache */
   private static final ISafeManagerReloadListener MODIFIER_RELOAD_LISTENER = manager -> {
@@ -118,14 +124,18 @@ public class ToolClientEvents extends ClientEventBase {
     manager.registerReloadListener(HarvestTiers.RELOAD_LISTENER);
     ArmorModelManager.init(manager);
     manager.registerReloadListener(TrimArmorTextureSupplier.CACHE_INVALIDATOR);
-    ShieldBannerModifierSpriteSource.register();
+  }
+
+  @SubscribeEvent
+  static void registerSpriteSources(RegisterSpriteSourceTypesEvent event) {
+    ShieldBannerModifierSpriteSource.register(event);
   }
 
   @SubscribeEvent
   static void registerModelLoaders(RegisterGeometryLoaders event) {
-    event.register("material", MaterialModel.LOADER);
-    event.register("tool", ToolModel.LOADER);
-    event.register("material_block", MaterialBlockModel.LOADER);
+    event.register(getResource("material"), MaterialModel.LOADER);
+    event.register(getResource("tool"), ToolModel.LOADER);
+    event.register(getResource("material_block"), MaterialBlockModel.LOADER);
   }
 
   @SubscribeEvent
@@ -158,8 +168,16 @@ public class ToolClientEvents extends ClientEventBase {
 
   @SubscribeEvent
   static void registerKeyBinding(RegisterKeyMappingsEvent event) {
+    // construct the keybinds here (not in static fields) so class-loading this subscriber never forces KeyMapping init
+    HELMET_INTERACT = new KeyMapping(TConstruct.makeTranslationKey("key", "helmet_interact"), KeyConflictContext.IN_GAME, InputConstants.getKey("key.keyboard.z"), "key.categories.tconstruct");
+    LEGGINGS_INTERACT = new KeyMapping(TConstruct.makeTranslationKey("key", "leggings_interact"), KeyConflictContext.IN_GAME, InputConstants.getKey("key.keyboard.i"), "key.categories.tconstruct");
     event.register(HELMET_INTERACT);
     event.register(LEGGINGS_INTERACT);
+  }
+
+  @SubscribeEvent
+  static void registerScreens(RegisterMenuScreensEvent event) {
+    event.register(TinkerTools.toolContainer.get(), ToolContainerScreen::new);
   }
 
   @SubscribeEvent
@@ -173,8 +191,6 @@ public class ToolClientEvents extends ClientEventBase {
       // fake ingot showing in the book is a little nicer than the repair kits
       AbstractMaterialContent.registerFallbackPart(TinkerToolParts.fakeIngot);
       AbstractMaterialContent.registerFallbackPart(TinkerToolParts.fakeStorageBlockItem);
-      // screens
-      MenuScreens.register(TinkerTools.toolContainer.get(), ToolContainerScreen::new);
 
       // properties
       // stone
@@ -285,7 +301,9 @@ public class ToolClientEvents extends ClientEventBase {
     event.register((stack, index) -> {
       ModifierId modifier = ModifierCrystalItem.getModifier(stack);
       if (modifier != null) {
-        return ResourceColorManager.getColor(Util.makeTranslationKey("modifier", modifier));
+        // 1.21 item colors honor the alpha byte; ResourceColorManager returns 0xRRGGBB (alpha 0),
+        // which renders the tinted layer0 fully transparent (the crystal looked invisible). Force opaque.
+        return 0xFF000000 | ResourceColorManager.getColor(Util.makeTranslationKey("modifier", modifier));
       }
       return -1;
     }, TinkerModifiers.modifierCrystal);
@@ -300,47 +318,47 @@ public class ToolClientEvents extends ClientEventBase {
   private static boolean wasLeggingsInteracting = false;
 
   /** Called on player tick to handle keybinding presses */
-  private static void handleKeyBindings(PlayerTickEvent event) {
+  private static void handleKeyBindings(PlayerTickEvent.Pre event) {
     Minecraft minecraft = Minecraft.getInstance();
-    if (minecraft.player != null && minecraft.player == event.player && event.phase == Phase.START && event.side == LogicalSide.CLIENT && !minecraft.player.isSpectator()) {
+    if (minecraft.player != null && minecraft.player == event.getEntity() && !minecraft.player.isSpectator()) {
 
       // jumping in mid air for double jump
       // ensure we pressed the key since the last tick, holding should not use all your jumps at once
       boolean isJumping = minecraft.options.keyJump.isDown();
       if (!wasJumping && isJumping) {
-        if (TinkerEffects.antigravity.get().antigravityJump(event.player)) {
+        if (TinkerEffects.antigravity.get().antigravityJump(event.getEntity())) {
           TinkerNetwork.getInstance().sendToServer(TinkerControlPacket.ANTIGRAVITY_JUMP);
         }
-        else if (DoubleJumpHandler.extraJump(event.player)) {
+        else if (DoubleJumpHandler.extraJump(event.getEntity())) {
           TinkerNetwork.getInstance().sendToServer(TinkerControlPacket.DOUBLE_JUMP);
         }
       }
       wasJumping = isJumping;
 
-      // helmet interaction
-      boolean isHelmetInteracting = HELMET_INTERACT.isDown();
+      // helmet interaction (keybinds are lazily constructed in registerKeyBinding; guard in case input fires first)
+      boolean isHelmetInteracting = HELMET_INTERACT != null && HELMET_INTERACT.isDown();
       if (!wasHelmetInteracting && isHelmetInteracting) {
         TooltipKey key = SafeClientAccess.getTooltipKey();
-        if (InteractionHandler.startArmorInteract(event.player, EquipmentSlot.HEAD, key)) {
+        if (InteractionHandler.startArmorInteract(event.getEntity(), EquipmentSlot.HEAD, key)) {
           TinkerNetwork.getInstance().sendToServer(TinkerControlPacket.getStartHelmetInteract(key));
         }
       }
       if (wasHelmetInteracting && !isHelmetInteracting) {
-        if (InteractionHandler.stopArmorInteract(event.player, EquipmentSlot.HEAD)) {
+        if (InteractionHandler.stopArmorInteract(event.getEntity(), EquipmentSlot.HEAD)) {
           TinkerNetwork.getInstance().sendToServer(TinkerControlPacket.STOP_HELMET_INTERACT);
         }
       }
 
       // leggings interaction
-      boolean isLeggingsInteract = LEGGINGS_INTERACT.isDown();
+      boolean isLeggingsInteract = LEGGINGS_INTERACT != null && LEGGINGS_INTERACT.isDown();
       if (!wasLeggingsInteracting && isLeggingsInteract) {
         TooltipKey key = SafeClientAccess.getTooltipKey();
-        if (InteractionHandler.startArmorInteract(event.player, EquipmentSlot.LEGS, key)) {
+        if (InteractionHandler.startArmorInteract(event.getEntity(), EquipmentSlot.LEGS, key)) {
           TinkerNetwork.getInstance().sendToServer(TinkerControlPacket.getStartLeggingsInteract(key));
         }
       }
       if (wasLeggingsInteracting && !isLeggingsInteract) {
-        if (InteractionHandler.stopArmorInteract(event.player, EquipmentSlot.LEGS)) {
+        if (InteractionHandler.stopArmorInteract(event.getEntity(), EquipmentSlot.LEGS)) {
           TinkerNetwork.getInstance().sendToServer(TinkerControlPacket.STOP_LEGGINGS_INTERACT);
         }
       }
@@ -356,7 +374,7 @@ public class ToolClientEvents extends ClientEventBase {
     if (player.isUsingItem() && !player.isPassenger()) {
       ItemStack using = player.getUseItem();
       // start with the attribute
-      double speed = player.getAttributeValue(TinkerAttributes.USE_ITEM_SPEED.get());
+      double speed = player.getAttributeValue(TinkerAttributes.USE_ITEM_SPEED);
       // start by calculating tool stat, not an attribute to ensure both hands get their say
       if (using.is(TinkerTags.Items.HELD)) {
         ToolStack tool = ToolStack.from(using);
