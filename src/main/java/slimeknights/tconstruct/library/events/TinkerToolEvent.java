@@ -12,6 +12,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.bus.api.Event;
 import slimeknights.tconstruct.library.modifiers.hook.interaction.InteractionSource;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
@@ -24,15 +25,20 @@ import javax.annotation.Nullable;
 public abstract class TinkerToolEvent extends Event {
   private final ItemStack stack;
   private final IToolStackView tool;
+  private TriState result = TriState.DEFAULT;
+
+  /** Overrides the default behavior for this tool event. */
+  public void setResult(TriState result) {
+    this.result = result;
+  }
   public TinkerToolEvent(ItemStack stack) {
     this.stack = stack;
     this.tool = ToolStack.from(stack);
   }
 
   /**
-   * Event fired when a kama tries to harvest a crop. Set result to {@link Result#ALLOW} if you handled the harvest yourself. Set the result to {@link Result#DENY} if the block cannot be harvested.
+   * Event fired when a kama tries to harvest a crop. Set result to {@link TriState#TRUE} if you handled the harvest yourself. Set the result to {@link TriState#FALSE} if the block cannot be harvested.
    */
-  @HasResult
   @Getter
   public static class ToolHarvestEvent extends TinkerToolEvent {
     /** Item context, note this is the original context, so some information (such as position) may not be accurate */
@@ -75,7 +81,7 @@ public abstract class TinkerToolEvent extends Event {
     }
 
     /** Fires this event and posts the result */
-    public Result fire() {
+    public TriState fire() {
       NeoForge.EVENT_BUS.post(this);
       return this.getResult();
     }
