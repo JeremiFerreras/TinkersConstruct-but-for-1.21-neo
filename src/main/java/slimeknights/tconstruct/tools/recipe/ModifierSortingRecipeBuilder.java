@@ -1,8 +1,10 @@
 package slimeknights.tconstruct.tools.recipe;
 
+
+import net.minecraft.core.registries.Registries;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import slimeknights.tconstruct.library.recipe.worktable.AbstractSizedIngredientRecipeBuilder;
 
@@ -13,16 +15,16 @@ import java.util.function.Consumer;
 public class ModifierSortingRecipeBuilder extends AbstractSizedIngredientRecipeBuilder<ModifierSortingRecipeBuilder> {
 
   @Override
-  public void save(Consumer<FinishedRecipe> consumer) {
+  public void save(RecipeOutput consumer) {
     save(consumer, BuiltInRegistries.ITEM.getKey((inputs.get(0).getMatchingStacks().get(0).getItem())));
   }
 
   @Override
-  public void save(Consumer<FinishedRecipe> consumer, ResourceLocation id) {
+  public void save(RecipeOutput consumer, ResourceLocation id) {
     if (inputs.isEmpty()) {
       throw new IllegalStateException("Must have at least one ingredient");
     }
-    ResourceLocation advancementId = buildOptionalAdvancement(id, "modifiers");
-    consumer.accept(new LoadableFinishedRecipe<>(new ModifierSortingRecipe(id, inputs), ModifierSortingRecipe.LOADER, advancementId));
+    net.minecraft.advancements.AdvancementHolder advancementId = buildOptionalAdvancement(consumer, id, "modifiers");
+    consumer.accept(id, new ModifierSortingRecipe(id, inputs), advancementId);
   }
 }
