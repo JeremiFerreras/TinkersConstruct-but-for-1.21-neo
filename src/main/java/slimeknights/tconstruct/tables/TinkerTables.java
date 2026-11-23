@@ -1,8 +1,6 @@
 package slimeknights.tconstruct.tables;
 
-import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import slimeknights.mantle.registration.holder.DeferredBlockEntity;
+import slimeknights.mantle.registration.object.ItemObject;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.inventory.MenuType;
@@ -94,7 +92,7 @@ public final class TinkerTables extends TinkerModule {
   /*
    * Blocks
    */
-  public static final DeferredBlock<TableBlock> craftingStation, tinkerStation, partBuilder, tinkersChest, partChest;
+  public static final ItemObject<TableBlock> craftingStation, tinkerStation, partBuilder, tinkersChest, partChest;
   static {
     Block.Properties WOOD_TABLE = builder(MapColor.WOOD, SoundType.WOOD).instrument(NoteBlockInstrument.BASS).strength(1.0F, 5.0F).noOcclusion();
     craftingStation = BLOCKS.register("crafting_station", () -> new CraftingStationBlock(WOOD_TABLE), BLOCK_ITEM);
@@ -104,14 +102,14 @@ public final class TinkerTables extends TinkerModule {
     partChest = BLOCKS.register("part_chest", () -> new ChestBlock(WOOD_TABLE, PartChestBlockEntity::new, true), BLOCK_ITEM);
   }
 
-  public static final DeferredBlock<TableBlock> castChest, modifierWorktable;
+  public static final ItemObject<TableBlock> castChest, modifierWorktable;
   static {
     Block.Properties STONE_TABLE = builder(MapColor.COLOR_GRAY, SoundType.METAL).instrument(NoteBlockInstrument.BASEDRUM).requiresCorrectToolForDrops().strength(3.0F, 9.0F).noOcclusion();
     castChest = BLOCKS.register("cast_chest", () -> new ChestBlock(STONE_TABLE, CastChestBlockEntity::new, false), BLOCK_ITEM);
     modifierWorktable = BLOCKS.register("modifier_worktable", () -> new GenericTableBlock(STONE_TABLE, ModifierWorktableBlockEntity::new), BLOCK_ITEM);
   }
 
-  public static final DeferredBlock<TableBlock> tinkersAnvil, scorchedAnvil;
+  public static final ItemObject<TableBlock> tinkersAnvil, scorchedAnvil;
   static {
     Block.Properties METAL_TABLE = builder(MapColor.COLOR_GRAY, SoundType.ANVIL).pushReaction(PushReaction.BLOCK).requiresCorrectToolForDrops().strength(5.0F, 1200.0F).noOcclusion();
     Function<Block, BlockItem> blockItem = block -> new AnvilBlockItem(block, ITEM_PROPS, TinkerToolParts.fakeStorageBlockItem, TinkerTags.Materials.COMPATABILITY_ALLOYS);
@@ -121,20 +119,20 @@ public final class TinkerTables extends TinkerModule {
   /*
    * Items
    */
-  public static final DeferredItem<Item> pattern = ITEMS.register("pattern", ITEM_PROPS);
+  public static final ItemObject<Item> pattern = ITEMS.register("pattern", ITEM_PROPS);
 
   /*
    * Tile entites
    */
-  public static final DeferredBlockEntity<CraftingStationBlockEntity> craftingStationTile = BLOCK_ENTITIES.register("crafting_station", CraftingStationBlockEntity::new, craftingStation);
-  public static final DeferredBlockEntity<TinkerStationBlockEntity> tinkerStationTile = BLOCK_ENTITIES.register("tinker_station", TinkerStationBlockEntity::new, builder ->
+  public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CraftingStationBlockEntity>> craftingStationTile = BLOCK_ENTITIES.register("crafting_station", CraftingStationBlockEntity::new, craftingStation);
+  public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TinkerStationBlockEntity>> tinkerStationTile = BLOCK_ENTITIES.register("tinker_station", TinkerStationBlockEntity::new, builder ->
     builder.add(tinkerStation.get(), tinkersAnvil.get(), scorchedAnvil.get()));
-  public static final DeferredBlockEntity<PartBuilderBlockEntity> partBuilderTile = BLOCK_ENTITIES.register("part_builder", PartBuilderBlockEntity::new, partBuilder);
-  public static final DeferredBlockEntity<ModifierWorktableBlockEntity> modifierWorktableTile = BLOCK_ENTITIES.register("modifier_worktable", ModifierWorktableBlockEntity::new, modifierWorktable);
+  public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PartBuilderBlockEntity>> partBuilderTile = BLOCK_ENTITIES.register("part_builder", PartBuilderBlockEntity::new, partBuilder);
+  public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ModifierWorktableBlockEntity>> modifierWorktableTile = BLOCK_ENTITIES.register("modifier_worktable", ModifierWorktableBlockEntity::new, modifierWorktable);
   // legacy name as tile entities cannot be remapped
-  public static final DeferredBlockEntity<TinkersChestBlockEntity> tinkersChestTile = BLOCK_ENTITIES.register("modifier_chest", TinkersChestBlockEntity::new, tinkersChest);
-  public static final DeferredBlockEntity<PartChestBlockEntity> partChestTile = BLOCK_ENTITIES.register("part_chest", PartChestBlockEntity::new, partChest);
-  public static final DeferredBlockEntity<CastChestBlockEntity> castChestTile = BLOCK_ENTITIES.register("cast_chest", CastChestBlockEntity::new, castChest);
+  public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TinkersChestBlockEntity>> tinkersChestTile = BLOCK_ENTITIES.register("modifier_chest", TinkersChestBlockEntity::new, tinkersChest);
+  public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PartChestBlockEntity>> partChestTile = BLOCK_ENTITIES.register("part_chest", PartChestBlockEntity::new, partChest);
+  public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CastChestBlockEntity>> castChestTile = BLOCK_ENTITIES.register("cast_chest", CastChestBlockEntity::new, castChest);
 
   /*
    * Containers
