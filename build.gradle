@@ -11,7 +11,7 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.141'
-    id 'io.freefair.lombok' version '8.6'
+    id 'io.freefair.lombok' version '8.11'
 }
 //apply plugin: 'maven'
 
@@ -172,7 +172,7 @@ configurations {
 
 dependencies {
     // Lombok annotations are used throughout the source tree; register the processor explicitly for CI/JDK 21.
-    compileOnly 'org.projectlombok:lombok:1.18.48'
+    compileOnly 'org.projectlombok:lombok:1.18.36'
     annotationProcessor 'org.projectlombok:lombok:1.18.48'
     implementation "slimeknights.mantle:Mantle:${minecraft_version}-${mantle_version}"
     // compile against the JEI API but do not include it at runtime
@@ -319,5 +319,14 @@ publishing {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xmaxerrs' << '10000'
+    // NeoForge's Gradle compiler instrumentation can abort Lombok's processing round with
+    // a TypeElement.getNestingKind() NPE. Fork javac directly so Lombok runs normally.
+    options.incremental = false
+    options.fork = true
+    options.forkOptions.executable = new File(
+        System.getProperty('java.home'),
+        org.gradle.internal.os.OperatingSystem.current().isWindows() ? 'bin/javac.exe' : 'bin/javac'
+    ).absolutePath
 }
