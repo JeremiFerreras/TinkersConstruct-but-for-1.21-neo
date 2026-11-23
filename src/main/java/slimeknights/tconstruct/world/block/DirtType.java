@@ -52,4 +52,10 @@ public enum DirtType implements StringRepresentable {
     }
     return slimeType;
   }
+
+  @Override
+  public String getSerializedName() {
+    return serializedName;
+  }
+
 }

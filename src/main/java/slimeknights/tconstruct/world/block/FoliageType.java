@@ -63,4 +63,10 @@ public enum FoliageType implements StringRepresentable {
     }
     return slimeType;
   }
+
+  @Override
+  public String getSerializedName() {
+    return serializedName;
+  }
+
 }
