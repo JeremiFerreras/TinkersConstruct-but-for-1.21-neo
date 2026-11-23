@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.fluids;
 
+import slimeknights.tconstruct.common.TinkerTags;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockSource;
@@ -496,7 +497,7 @@ public final class TinkerFluids extends TinkerModule {
   /** Adds all filled containers to the fluids tab. */
   private static void addFilledContainers(ItemDisplayParameters itemDisplayParameters, CreativeModeTab.Output output) {
     // add copper cans, tanks, and lanterns for all the fluids
-    CopperCanItem.addFilledVariants(output::accept);
+    CopperCanItem.addFilledVariants(TinkerSmeltery.copperCan.get(), TinkerTags.Fluids.HIDE_IN_CREATIVE_TANKS, output::accept);
     TankItem.addFilledVariants(output::accept);
   }
 

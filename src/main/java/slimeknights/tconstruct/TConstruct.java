@@ -65,6 +65,7 @@ import slimeknights.tconstruct.shared.TinkerCommons;
 import slimeknights.tconstruct.shared.TinkerEffects;
 import slimeknights.tconstruct.shared.TinkerMaterials;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
+import slimeknights.tconstruct.smeltery.item.CopperCanItem;
 import slimeknights.tconstruct.tables.TinkerTables;
 import slimeknights.tconstruct.tools.TinkerModifiers;
 import slimeknights.tconstruct.tools.TinkerToolParts;
@@ -121,6 +122,7 @@ public class TConstruct {
     bus.register(new TinkerTools());
     // smeltery
     bus.register(new TinkerSmeltery());
+    CopperCanItem.register(bus, TinkerSmeltery.copperCan);
     bus.register(new TinkerFluids());
 
     // init deferred registers

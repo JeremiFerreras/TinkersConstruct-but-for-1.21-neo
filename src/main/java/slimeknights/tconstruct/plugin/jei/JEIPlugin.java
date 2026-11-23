@@ -651,7 +651,7 @@ public class JEIPlugin implements IModPlugin {
 
     // fluid containers tab is hidden by tab, add back in the filled containers if requested
     if (Config.CLIENT.showFilledFluidTanks.get()) {
-      CopperCanItem.addFilledVariants(addItem);
+      CopperCanItem.addFilledVariants(TinkerSmeltery.copperCan.get(), TinkerTags.Fluids.HIDE_IN_CREATIVE_TANKS, addItem);
       TankItem.addFilledVariants(addItem);
     }
 

@@ -43,7 +43,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class TankItem extends BlockTooltipItem {
-  public static final String FLUID_ID = TConstruct.makeTranslationKey("item", "tank.fluid_id");
+  public static final String FLUID_ID = CopperCanItem.FLUID_ID;
   private static final Predicate<FluidStack> NO_FILL = FluidStack::isEmpty;
   private final boolean limitStackSize;
   public TankItem(Block blockIn, Properties builder, boolean limitStackSize) {
