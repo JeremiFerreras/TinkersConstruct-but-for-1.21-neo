@@ -1,17 +1,17 @@
 package slimeknights.tconstruct.library.tools.item;
 
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup.RegistryLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.EquipmentSlot.Type;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -22,19 +22,19 @@ import net.minecraft.world.inventory.ClickAction;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TieredItem;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.common.ItemAbility;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import slimeknights.mantle.client.SafeClientAccess;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.library.client.item.ModifiableItemClientExtension;
@@ -51,7 +51,6 @@ import slimeknights.tconstruct.library.modifiers.hook.interaction.SlotStackModif
 import slimeknights.tconstruct.library.modifiers.hook.interaction.UsingToolModifierHook;
 import slimeknights.tconstruct.library.modifiers.modules.build.RarityModule;
 import slimeknights.tconstruct.library.tools.IndestructibleItemEntity;
-import slimeknights.tconstruct.library.tools.capability.ToolCapabilityProvider;
 import slimeknights.tconstruct.library.tools.capability.inventory.ToolInventoryCapability;
 import slimeknights.tconstruct.library.tools.definition.ToolDefinition;
 import slimeknights.tconstruct.library.tools.definition.module.display.ToolNameHook;
@@ -65,12 +64,11 @@ import slimeknights.tconstruct.library.tools.helper.TooltipUtil;
 import slimeknights.tconstruct.library.tools.nbt.IModDataView;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
+import slimeknights.tconstruct.library.tools.part.MaterialItem;
 import slimeknights.tconstruct.tools.TinkerToolActions;
 
 import javax.annotation.Nullable;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -130,35 +128,20 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
   public boolean isBookEnchantable(ItemStack stack, ItemStack book) {
     return false;
   }
-
+  /** Reports the tool's virtual modifier enchantments to gameplay logic, they are never stored in NBT */
   @Override
-  public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
-    return enchantment.isCurse() && super.canApplyAtEnchantingTable(stack, enchantment);
-  }
-
-  @Override
-  public int getEnchantmentLevel(ItemStack stack, Enchantment enchantment) {
+  public int getEnchantmentLevel(ItemStack stack, Holder<Enchantment> enchantment) {
     return EnchantmentModifierHook.getEnchantmentLevel(stack, enchantment);
   }
 
+  /** Reports the tool's virtual modifier enchantments to gameplay logic, they are never stored in NBT */
   @Override
-  public Map<Enchantment,Integer> getAllEnchantments(ItemStack stack) {
-    return EnchantmentModifierHook.getAllEnchantments(stack);
+  public ItemEnchantments getAllEnchantments(ItemStack stack, RegistryLookup<Enchantment> lookup) {
+    return EnchantmentModifierHook.getEnchantmentComponent(stack);
   }
 
 
   /* Loading */
-
-  @Nullable
-  @Override
-  public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt) {
-    return new ToolCapabilityProvider(stack);
-  }
-
-  @Override
-  public void verifyTagAfterLoad(CompoundTag nbt) {
-    ToolStack.verifyTag(this, nbt, getToolDefinition());
-  }
 
   @Override
   public void onCraftedBy(ItemStack stack, Level worldIn, Player playerIn) {
@@ -175,11 +158,6 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return ModifierUtil.checkVolatileFlag(stack, SHINY);
   }
 
-  @Override
-  public Rarity getRarity(ItemStack stack) {
-    return RarityModule.getRarity(stack);
-  }
-
 
   /* Item entity */
 
@@ -194,9 +172,8 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return IndestructibleItemEntity.createFrom(world, original, stack);
   }
 
-  @Deprecated
   @Override
-  public void onDestroyed(ItemEntity entity) {
+  public void onDestroyed(ItemEntity entity, DamageSource damageSource) {
     ToolInventoryCapability.onDestroyed(entity);
   }
 
@@ -215,33 +192,26 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
   }
 
   @Override
-  public boolean canBeDepleted() {
-    return true;
-  }
-
-  @Override
   public int getMaxDamage(ItemStack stack) {
     return ToolDamageUtil.getFakeMaxDamage(stack);
   }
 
   @Override
   public int getDamage(ItemStack stack) {
-    if (!canBeDepleted()) {
-      return 0;
-    }
     return ToolStack.from(stack).getDamage();
   }
 
   @Override
   public void setDamage(ItemStack stack, int damage) {
-    if (canBeDepleted()) {
-      ToolStack.from(stack).setDamage(damage);
-    }
+    ToolStack.from(stack).setDamage(damage);
   }
 
   @Override
-  public <T extends LivingEntity> int damageItem(ItemStack stack, int amount, T damager, Consumer<T> onBroken) {
-    ToolDamageUtil.handleDamageItem(stack, amount, damager, onBroken);
+  public <T extends LivingEntity> int damageItem(ItemStack stack, int amount, T damager, Consumer<Item> onBroken) {
+    // emulate ItemStack.hurtAndBreak; we always return 0 to skip vanilla's handling so tools use our damage logic
+    if (stack.isDamageableItem() && ToolDamageUtil.damage(ToolStack.from(stack), amount, damager, stack)) {
+      onBroken.accept(stack.getItem());
+    }
     return 0;
   }
 
@@ -277,12 +247,8 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
   }
 
   @Override
-  public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-    CompoundTag nbt = stack.getTag();
-    if (nbt == null || slot.getType() != Type.HAND) {
-      return ImmutableMultimap.of();
-    }
-    return getAttributeModifiers(ToolStack.from(stack), slot);
+  public ItemAttributeModifiers getDefaultAttributeModifiers(ItemStack stack) {
+    return buildAttributeModifiers(stack, EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND);
   }
 
   @Override
@@ -307,11 +273,8 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
   public float getDestroySpeed(ItemStack stack, BlockState state) {
     return stack.getCount() == 1 ? MiningSpeedToolHook.getDestroySpeed(stack, state) : 0;
   }
-
-  @Override
-  public boolean onBlockStartBreak(ItemStack stack, BlockPos pos, Player player) {
-    return stack.getCount() > 1 || ToolHarvestLogic.handleBlockBreak(stack, pos, player);
-  }
+  // NeoForge 1.21 removed Item#onBlockStartBreak; AoE/expanded block breaking (ToolHarvestLogic.handleBlockBreak)
+  // is now triggered via the game-bus BlockEvent.BreakEvent handler in ToolEvents#onBlockBreak.
 
 
   /* Modifier interactions */
@@ -473,7 +436,7 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
   }
 
   @Override
-  public int getUseDuration(ItemStack stack) {
+  public int getUseDuration(ItemStack stack, LivingEntity entity) {
     ToolStack tool = ToolStack.from(stack);
     ModifierEntry activeModifier = GeneralInteractionModifierHook.getActiveModifier(tool);
     if (activeModifier != ModifierEntry.EMPTY) {
@@ -493,8 +456,8 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
   }
 
   @Override
-  public boolean canPerformAction(ItemStack stack, ItemAbility toolAction) {
-    return stack.getCount() == 1 && ModifierUtil.canPerformAction(ToolStack.from(stack), toolAction);
+  public boolean canPerformAction(ItemStack stack, ItemAbility itemAbility) {
+    return stack.getCount() == 1 && ModifierUtil.canPerformAction(ToolStack.from(stack), itemAbility);
   }
 
 
@@ -502,19 +465,17 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
 
   @Override
   public Component getName(ItemStack stack) {
-    return ToolNameHook.getName(getToolDefinition(), stack);
+    // 1.21 removed Item#getRarity(ItemStack), so style the name with the tool rarity directly
+    return MaterialItem.withRarity(ToolNameHook.getName(getToolDefinition(), stack), RarityModule.getRarity(stack));
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-    TooltipUtil.addInformation(this, stack, level, tooltip, SafeClientAccess.getTooltipKey(), flag);
+  public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+    TooltipUtil.addInformation(this, stack, context.level(), tooltip, SafeClientAccess.getTooltipKey(), flag);
   }
+  // TODO(neoport): getDefaultTooltipHideFlags removed in 1.21; tooltip visibility is now per-component (showInTooltip).
+  //  Hiding vanilla modifier/attribute tooltip lines must move to the component layer when the tool is built.
 
-  @Override
-  public int getDefaultTooltipHideFlags(ItemStack stack) {
-    return TooltipUtil.getModifierHideFlags(getToolDefinition());
-  }
-  
 
   /* Display */
 
@@ -562,26 +523,9 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
       return true;
     }
 
-    // if the attributes changed, reequip
-    Multimap<Attribute,AttributeModifier> attributesNew = newStack.getAttributeModifiers(EquipmentSlot.MAINHAND);
-    Multimap<Attribute, AttributeModifier> attributesOld = oldStack.getAttributeModifiers(EquipmentSlot.MAINHAND);
-    if (attributesNew.size() != attributesOld.size()) {
-      return true;
-    }
-    for (Attribute attribute : attributesOld.keySet()) {
-      if (!attributesNew.containsKey(attribute)) {
-        return true;
-      }
-      Iterator<AttributeModifier> iter1 = attributesNew.get(attribute).iterator();
-      Iterator<AttributeModifier> iter2 = attributesOld.get(attribute).iterator();
-      while (iter1.hasNext() && iter2.hasNext()) {
-        if (!iter1.next().equals(iter2.next())) {
-          return true;
-        }
-      }
-    }
-    // no changes, no reequip
-    return false;
+    // if the attributes changed, reequip. In 1.21 the stack exposes its full attribute set as an ItemAttributeModifiers
+    // component value, which is a record and compares structurally, so a direct equality check suffices.
+    return !newStack.getAttributeModifiers().equals(oldStack.getAttributeModifiers());
   }
 
   @Override
