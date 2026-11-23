@@ -1,13 +1,14 @@
 package slimeknights.tconstruct.tables.network;
 
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkEvent.Context;
-import slimeknights.mantle.network.packet.BlockEntityPacket;
-import slimeknights.mantle.network.packet.IThreadsafePacket;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import slimeknights.mantle.network.BlockEntityPacket;
+import slimeknights.mantle.network.ISimplePacket;
 import slimeknights.mantle.recipe.helper.RecipeHelper;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.recipe.tinkerstation.ITinkerStationRecipe;
@@ -18,7 +19,7 @@ import slimeknights.tconstruct.tables.client.inventory.TinkerStationScreen;
  * Packet to send the current crafting recipe to a player who opens the tinker station.
  * TODO 1.21: make record.
  */
-public class UpdateTinkerStationRecipePacket implements IThreadsafePacket {
+public class UpdateTinkerStationRecipePacket implements ISimplePacket {
   private final BlockPos pos;
   private final ResourceLocation recipe;
   public UpdateTinkerStationRecipePacket(BlockPos pos, ITinkerStationRecipe recipe) {
@@ -26,19 +27,18 @@ public class UpdateTinkerStationRecipePacket implements IThreadsafePacket {
     this.recipe = recipe.getId();
   }
 
-  public UpdateTinkerStationRecipePacket(FriendlyByteBuf buffer) {
+  public UpdateTinkerStationRecipePacket(RegistryFriendlyByteBuf buffer) {
     this.pos = buffer.readBlockPos();
     this.recipe = buffer.readResourceLocation();
   }
 
-  @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeBlockPos(pos);
     buffer.writeResourceLocation(recipe);
   }
 
   @Override
-  public void handleThreadsafe(Context context) {
+  public void handle(IPayloadContext context) {
     HandleClient.handle(this);
   }
 
@@ -71,5 +71,13 @@ public class UpdateTinkerStationRecipePacket implements IThreadsafePacket {
         }
       }
     }
+  }
+  public static final Type<UpdateTinkerStationRecipePacket> TYPE = new Type<>(TConstruct.getResource("update_tinker_station_recipe"));
+  public static final StreamCodec<RegistryFriendlyByteBuf, UpdateTinkerStationRecipePacket> CODEC =
+    StreamCodec.ofMember(UpdateTinkerStationRecipePacket::encode, UpdateTinkerStationRecipePacket::new);
+
+  @Override
+  public Type<UpdateTinkerStationRecipePacket> type() {
+    return TYPE;
   }
 }

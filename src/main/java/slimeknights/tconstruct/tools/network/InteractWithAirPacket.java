@@ -1,20 +1,22 @@
 package slimeknights.tconstruct.tools.network;
 
+import net.minecraft.network.codec.StreamCodec;
+import slimeknights.tconstruct.TConstruct;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent.Context;
-import slimeknights.mantle.network.packet.IThreadsafePacket;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import slimeknights.mantle.network.ISimplePacket;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.tools.logic.InteractionHandler;
 
 /** Packet sent client to server when an empty hand interaction */
 @RequiredArgsConstructor
-public enum InteractWithAirPacket implements IThreadsafePacket {
+public enum InteractWithAirPacket implements ISimplePacket {
   /** Right click with an empty main hand and a chestplate */
   MAINHAND(InteractionHand.MAIN_HAND),
   /** Right click with an empty off hand and a chestplate */
@@ -30,18 +32,17 @@ public enum InteractWithAirPacket implements IThreadsafePacket {
   }
 
   /** Gets the packet from the packet buffer */
-  public static InteractWithAirPacket read(FriendlyByteBuf buffer) {
+  public static InteractWithAirPacket read(RegistryFriendlyByteBuf buffer) {
     return buffer.readEnum(InteractWithAirPacket.class);
   }
 
-  @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeEnum(this);
   }
 
   @Override
-  public void handleThreadsafe(Context context) {
-    ServerPlayer player = context.getSender();
+  public void handle(IPayloadContext context) {
+    ServerPlayer player = (ServerPlayer) context.player();
     if (player != null && !player.isSpectator()) {
       if (this == LEFT_CLICK) {
         ItemStack held = player.getItemInHand(hand);
@@ -61,5 +62,13 @@ public enum InteractWithAirPacket implements IThreadsafePacket {
         }
       }
     }
+  }
+  public static final Type<InteractWithAirPacket> TYPE = new Type<>(TConstruct.getResource("interact_with_air"));
+  public static final StreamCodec<RegistryFriendlyByteBuf, InteractWithAirPacket> CODEC =
+    StreamCodec.ofMember(InteractWithAirPacket::encode, InteractWithAirPacket::read);
+
+  @Override
+  public Type<InteractWithAirPacket> type() {
+    return TYPE;
   }
 }

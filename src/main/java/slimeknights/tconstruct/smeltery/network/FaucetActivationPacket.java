@@ -1,12 +1,14 @@
 package slimeknights.tconstruct.smeltery.network;
 
+import net.minecraft.network.codec.StreamCodec;
+import slimeknights.tconstruct.TConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.minecraftforge.network.NetworkEvent.Context;
-import slimeknights.mantle.network.packet.BlockEntityPacket;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import slimeknights.mantle.network.BlockEntityPacket;
 import slimeknights.tconstruct.smeltery.block.entity.FaucetBlockEntity;
 
 /**
@@ -20,16 +22,15 @@ public class FaucetActivationPacket implements BlockEntityPacket<FaucetBlockEnti
   protected final FluidStack fluid;
   private final boolean isPouring;
 
-  public FaucetActivationPacket(FriendlyByteBuf buffer) {
+  public FaucetActivationPacket(RegistryFriendlyByteBuf buffer) {
     this.pos = buffer.readBlockPos();
-    this.fluid = buffer.readFluidStack();
+    this.fluid = FluidStack.OPTIONAL_STREAM_CODEC.decode(buffer);
     this.isPouring = buffer.readBoolean();
   }
 
-  @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeBlockPos(pos);
-    buffer.writeFluidStack(fluid);
+    FluidStack.OPTIONAL_STREAM_CODEC.encode(buffer, fluid);
     buffer.writeBoolean(isPouring);
   }
 
@@ -39,12 +40,20 @@ public class FaucetActivationPacket implements BlockEntityPacket<FaucetBlockEnti
   }
 
   @Override
-  public Class<FaucetBlockEntity> type() {
+  public Class<FaucetBlockEntity> blockEntityType() {
     return FaucetBlockEntity.class;
   }
 
   @Override
-  public void handleBlockEntity(Context context, FaucetBlockEntity be) {
+  public void handleBlockEntity(IPayloadContext context, FaucetBlockEntity be) {
     be.onActivationPacket(fluid, isPouring);
+  }
+  public static final Type<FaucetActivationPacket> TYPE = new Type<>(TConstruct.getResource("faucet_activation"));
+  public static final StreamCodec<RegistryFriendlyByteBuf, FaucetActivationPacket> CODEC =
+    StreamCodec.ofMember(FaucetActivationPacket::encode, FaucetActivationPacket::new);
+
+  @Override
+  public Type<FaucetActivationPacket> type() {
+    return TYPE;
   }
 }

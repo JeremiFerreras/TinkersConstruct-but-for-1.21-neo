@@ -1,35 +1,44 @@
 package slimeknights.tconstruct.tables.network;
 
+import net.minecraft.network.codec.StreamCodec;
+import slimeknights.tconstruct.TConstruct;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent.Context;
-import slimeknights.mantle.network.packet.IThreadsafePacket;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import slimeknights.mantle.network.ISimplePacket;
 import slimeknights.tconstruct.tables.block.entity.table.TinkerStationBlockEntity;
 import slimeknights.tconstruct.tables.menu.TinkerStationContainerMenu;
 
 /** Packet to send to the server to update the name in the UI */
 @RequiredArgsConstructor
-public class TinkerStationRenamePacket implements IThreadsafePacket {
+public class TinkerStationRenamePacket implements ISimplePacket {
   private final String name;
 
-  public TinkerStationRenamePacket(FriendlyByteBuf buf) {
+  public TinkerStationRenamePacket(RegistryFriendlyByteBuf buf) {
     this.name = buf.readUtf(Short.MAX_VALUE);
   }
 
-  @Override
-  public void encode(FriendlyByteBuf buf) {
+  public void encode(RegistryFriendlyByteBuf buf) {
     buf.writeUtf(name);
   }
 
   @Override
-  public void handleThreadsafe(Context context) {
-    ServerPlayer sender = context.getSender();
+  public void handle(IPayloadContext context) {
+    ServerPlayer sender = (ServerPlayer) context.player();
     if (sender != null && sender.containerMenu instanceof TinkerStationContainerMenu station) {
       TinkerStationBlockEntity tile = station.getTile();
       if (tile != null) {
         station.getTile().setItemName(name);
       }
     }
+  }
+  public static final Type<TinkerStationRenamePacket> TYPE = new Type<>(TConstruct.getResource("tinker_station_rename"));
+  public static final StreamCodec<RegistryFriendlyByteBuf, TinkerStationRenamePacket> CODEC =
+    StreamCodec.ofMember(TinkerStationRenamePacket::encode, TinkerStationRenamePacket::new);
+
+  @Override
+  public Type<TinkerStationRenamePacket> type() {
+    return TYPE;
   }
 }

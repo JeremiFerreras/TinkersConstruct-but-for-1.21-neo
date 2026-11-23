@@ -1,12 +1,14 @@
 package slimeknights.tconstruct.tools.network;
 
+import net.minecraft.network.codec.StreamCodec;
+import slimeknights.tconstruct.TConstruct;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import slimeknights.mantle.client.TooltipKey;
-import slimeknights.mantle.network.packet.IThreadsafePacket;
+import slimeknights.mantle.network.ISimplePacket;
 import slimeknights.tconstruct.shared.TinkerEffects;
 import slimeknights.tconstruct.tools.logic.DoubleJumpHandler;
 import slimeknights.tconstruct.tools.logic.InteractionHandler;
@@ -15,7 +17,7 @@ import slimeknights.tconstruct.tools.logic.InteractionHandler;
  * Generic packet for various controls the client may send to the server
  */
 @RequiredArgsConstructor
-public enum TinkerControlPacket implements IThreadsafePacket {
+public enum TinkerControlPacket implements ISimplePacket {
   DOUBLE_JUMP,
   ANTIGRAVITY_JUMP,
   // helmet
@@ -57,18 +59,17 @@ public enum TinkerControlPacket implements IThreadsafePacket {
     };
   }
 
-  public static TinkerControlPacket read(FriendlyByteBuf buffer) {
+  public static TinkerControlPacket read(RegistryFriendlyByteBuf buffer) {
     return buffer.readEnum(TinkerControlPacket.class);
   }
 
-  @Override
-  public void encode(FriendlyByteBuf packetBuffer) {
+  public void encode(RegistryFriendlyByteBuf packetBuffer) {
     packetBuffer.writeEnum(this);
   }
 
   @Override
-  public void handleThreadsafe(Context context) {
-    ServerPlayer player = context.getSender();
+  public void handle(IPayloadContext context) {
+    ServerPlayer player = (ServerPlayer) context.player();
     if (player != null) {
       switch (this) {
         case DOUBLE_JUMP -> DoubleJumpHandler.extraJump(player);
@@ -81,5 +82,13 @@ public enum TinkerControlPacket implements IThreadsafePacket {
         case STOP_LEGGINGS_INTERACT -> InteractionHandler.stopArmorInteract(player, EquipmentSlot.LEGS);
       }
     }
+  }
+  public static final Type<TinkerControlPacket> TYPE = new Type<>(TConstruct.getResource("tinker_control"));
+  public static final StreamCodec<RegistryFriendlyByteBuf, TinkerControlPacket> CODEC =
+    StreamCodec.ofMember(TinkerControlPacket::encode, TinkerControlPacket::read);
+
+  @Override
+  public Type<TinkerControlPacket> type() {
+    return TYPE;
   }
 }

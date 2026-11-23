@@ -1,12 +1,13 @@
 package slimeknights.tconstruct.tables.network;
 
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkEvent.Context;
-import slimeknights.mantle.network.packet.BlockEntityPacket;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import slimeknights.mantle.network.BlockEntityPacket;
 import slimeknights.mantle.recipe.helper.RecipeHelper;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.tables.block.entity.table.CraftingStationBlockEntity;
@@ -23,13 +24,12 @@ public class UpdateCraftingRecipePacket implements BlockEntityPacket<CraftingSta
     this.recipe = recipe.getId();
   }
 
-  public UpdateCraftingRecipePacket(FriendlyByteBuf buffer) {
+  public UpdateCraftingRecipePacket(RegistryFriendlyByteBuf buffer) {
     this.pos = buffer.readBlockPos();
     this.recipe = buffer.readResourceLocation();
   }
 
-  @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeBlockPos(pos);
     buffer.writeResourceLocation(recipe);
   }
@@ -40,12 +40,12 @@ public class UpdateCraftingRecipePacket implements BlockEntityPacket<CraftingSta
   }
 
   @Override
-  public Class<CraftingStationBlockEntity> type() {
+  public Class<CraftingStationBlockEntity> blockEntityType() {
     return CraftingStationBlockEntity.class;
   }
 
   @Override
-  public void handleBlockEntity(Context context, CraftingStationBlockEntity be) {
+  public void handleBlockEntity(IPayloadContext context, CraftingStationBlockEntity be) {
     Level level = be.getLevel();
     assert level != null;
     CraftingRecipe recipe = RecipeHelper.getRecipe(level.getRecipeManager(), this.recipe, CraftingRecipe.class).orElse(null);
@@ -54,5 +54,13 @@ public class UpdateCraftingRecipePacket implements BlockEntityPacket<CraftingSta
     } else {
       TConstruct.LOG.error("Failed to update Crafting Station Recipe at {}: unknown recipe {}", pos, this.recipe);
     }
+  }
+  public static final Type<UpdateCraftingRecipePacket> TYPE = new Type<>(TConstruct.getResource("update_crafting_recipe"));
+  public static final StreamCodec<RegistryFriendlyByteBuf, UpdateCraftingRecipePacket> CODEC =
+    StreamCodec.ofMember(UpdateCraftingRecipePacket::encode, UpdateCraftingRecipePacket::new);
+
+  @Override
+  public Type<UpdateCraftingRecipePacket> type() {
+    return TYPE;
   }
 }

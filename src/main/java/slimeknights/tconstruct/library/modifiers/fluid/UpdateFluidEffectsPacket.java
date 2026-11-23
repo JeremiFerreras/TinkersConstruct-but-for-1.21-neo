@@ -1,10 +1,11 @@
 package slimeknights.tconstruct.library.modifiers.fluid;
 
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.ApiStatus.Internal;
-import slimeknights.mantle.network.packet.IThreadsafePacket;
+import slimeknights.mantle.network.ISimplePacket;
 import slimeknights.tconstruct.TConstruct;
 
 import java.util.ArrayList;
@@ -12,9 +13,9 @@ import java.util.List;
 
 /** Packet to sync fluid predicates to the client */
 @Internal
-public record UpdateFluidEffectsPacket(List<FluidEffects.Entry> fluids) implements IThreadsafePacket {
+public record UpdateFluidEffectsPacket(List<FluidEffects.Entry> fluids) implements ISimplePacket {
   /** Clientside constructor, reading from the buffer */
-  public static UpdateFluidEffectsPacket decode(FriendlyByteBuf buffer) {
+  public static UpdateFluidEffectsPacket decode(RegistryFriendlyByteBuf buffer) {
     int size = buffer.readVarInt();
     List<FluidEffects.Entry> entries = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
@@ -31,8 +32,7 @@ public record UpdateFluidEffectsPacket(List<FluidEffects.Entry> fluids) implemen
     return new UpdateFluidEffectsPacket(List.copyOf(entries));
   }
 
-  @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeVarInt(fluids.size());
     for (FluidEffects.Entry entry : fluids) {
       ResourceLocation key = entry.name();
@@ -47,7 +47,15 @@ public record UpdateFluidEffectsPacket(List<FluidEffects.Entry> fluids) implemen
   }
 
   @Override
-  public void handleThreadsafe(Context context) {
+  public void handle(IPayloadContext context) {
     FluidEffectManager.INSTANCE.updateFromServer(fluids);
+  }
+  public static final Type<UpdateFluidEffectsPacket> TYPE = new Type<>(TConstruct.getResource("update_fluid_effects"));
+  public static final StreamCodec<RegistryFriendlyByteBuf, UpdateFluidEffectsPacket> CODEC =
+    StreamCodec.ofMember(UpdateFluidEffectsPacket::encode, UpdateFluidEffectsPacket::decode);
+
+  @Override
+  public Type<UpdateFluidEffectsPacket> type() {
+    return TYPE;
   }
 }

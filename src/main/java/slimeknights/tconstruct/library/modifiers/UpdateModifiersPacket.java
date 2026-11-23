@@ -1,17 +1,18 @@
 package slimeknights.tconstruct.library.modifiers;
 
+import net.minecraft.network.codec.StreamCodec;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.netty.handler.codec.DecoderException;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.minecraftforge.registries.ForgeRegistries;
-import slimeknights.mantle.network.packet.IThreadsafePacket;
+import slimeknights.mantle.network.ISimplePacket;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.modifiers.impl.ComposableModifier;
 import slimeknights.tconstruct.library.utils.GenericTagUtil;
@@ -24,7 +25,7 @@ import java.util.Map.Entry;
 
 /** Packet to sync modifiers */
 @RequiredArgsConstructor
-public class UpdateModifiersPacket implements IThreadsafePacket {
+public class UpdateModifiersPacket implements ISimplePacket {
   /** Collection of all modifiers */
   private final Map<ModifierId,Modifier> allModifiers;
   /** Map of all modifier tags */
@@ -75,7 +76,7 @@ public class UpdateModifiersPacket implements IThreadsafePacket {
     return modifier;
   }
 
-  public UpdateModifiersPacket(FriendlyByteBuf buffer) {
+  public UpdateModifiersPacket(RegistryFriendlyByteBuf buffer) {
     // read in modifiers
     int size = buffer.readVarInt();
     Map<ModifierId,Modifier> modifiers = new HashMap<>();
@@ -118,8 +119,7 @@ public class UpdateModifiersPacket implements IThreadsafePacket {
     enchantmentTagMappings = enchantmentTagBuilder.build();
   }
 
-  @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     ensureCalculated();
     // write modifiers
     buffer.writeVarInt(modifiers.size());
@@ -156,7 +156,15 @@ public class UpdateModifiersPacket implements IThreadsafePacket {
   }
 
   @Override
-  public void handleThreadsafe(Context context) {
+  public void handle(IPayloadContext context) {
     ModifierManager.INSTANCE.updateModifiersFromServer(allModifiers, tags, enchantmentMap, enchantmentTagMappings);
+  }
+  public static final Type<UpdateModifiersPacket> TYPE = new Type<>(TConstruct.getResource("update_modifiers"));
+  public static final StreamCodec<RegistryFriendlyByteBuf, UpdateModifiersPacket> CODEC =
+    StreamCodec.ofMember(UpdateModifiersPacket::encode, UpdateModifiersPacket::new);
+
+  @Override
+  public Type<UpdateModifiersPacket> type() {
+    return TYPE;
   }
 }

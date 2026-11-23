@@ -127,7 +127,7 @@ public class TConstruct {
 
     // init deferred registers
     TinkerModule.initRegisters(bus);
-    TinkerNetwork.setup();
+    bus.addListener(TinkerNetwork::registerPackets);
     TinkerTags.init();
     // init client logic
     if (FMLEnvironment.dist == Dist.CLIENT) {
