@@ -11,10 +11,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.data.DatapackBuiltinEntriesProvider;
-import net.minecraftforge.common.data.ExistingFileHelper;
-import net.minecraftforge.data.event.GatherDataEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.data.DatapackBuiltinEntriesProvider;
+import net.neoforged.neoforge.common.data.ExistingFileHelper;
+import net.neoforged.neoforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
@@ -109,7 +109,7 @@ public class TConstruct {
     MaterialRegistry.init();
 
     // initialize modules, done this way rather than with annotations to give us control over the order
-    MinecraftForge.EVENT_BUS.addListener(TConstruct::missingMappings);
+    NeoForge.EVENT_BUS.addListener(TConstruct::missingMappings);
     IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
     // base
     bus.register(new TinkerCommons());
@@ -237,7 +237,7 @@ public class TConstruct {
    */
   @SuppressWarnings("removal")
   public static ResourceLocation getResource(String name) {
-    return new ResourceLocation(MOD_ID, name);
+    return ResourceLocation.fromNamespaceAndPath(MOD_ID, name);
   }
 
   /**

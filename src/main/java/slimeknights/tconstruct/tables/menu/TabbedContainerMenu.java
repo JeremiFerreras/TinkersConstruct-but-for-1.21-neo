@@ -19,7 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import org.apache.commons.lang3.tuple.Pair;
 import slimeknights.mantle.inventory.EmptyItemHandler;
 import slimeknights.mantle.util.RegistryHelper;

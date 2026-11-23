@@ -6,7 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.common.MinecraftForge;
+import net.neoforged.neoforge.common.NeoForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
@@ -41,7 +41,7 @@ public class TinkerDataCapability {
   /** Registers this capability */
   public static void register() {
     FMLJavaModLoadingContext.get().getModEventBus().addListener(EventPriority.NORMAL, false, RegisterCapabilitiesEvent.class, TinkerDataCapability::register);
-    MinecraftForge.EVENT_BUS.addGenericListener(Entity.class, TinkerDataCapability::attachCapability);
+    NeoForge.EVENT_BUS.addGenericListener(Entity.class, TinkerDataCapability::attachCapability);
   }
 
   /** Registers the capability with the event bus */

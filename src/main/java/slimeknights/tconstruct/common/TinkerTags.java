@@ -20,8 +20,8 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TagsUpdatedEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import slimeknights.mantle.datagen.MantleTags;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
@@ -54,12 +54,12 @@ public class TinkerTags {
     Potions.init();
     CreativeTabs.init();
     Instruments.init();
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, TagsUpdatedEvent.class, event -> tagsLoaded = true);
+    NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, TagsUpdatedEvent.class, event -> tagsLoaded = true);
   }
 
   /** Resource location of the hidden from recipe tags used in JEI. */
   @SuppressWarnings("removal")
-  public static final ResourceLocation HIDDEN_FROM_RECIPE_VIEWERS = new ResourceLocation("c", "hidden_from_recipe_viewers");
+  public static final ResourceLocation HIDDEN_FROM_RECIPE_VIEWERS = ResourceLocation.fromNamespaceAndPath("c", "hidden_from_recipe_viewers");
 
   /** Creates a tag that hides things from JEI */
   @SuppressWarnings("SameParameterValue") // there really is no benefit to migrating to new constructors early; just lose Neo compat
@@ -214,10 +214,10 @@ public class TinkerTags {
     public static final TagKey<Block> BUDDING = common("budding");
     // ceramics compat
     @SuppressWarnings("removal")
-    public static final TagKey<Block> CISTERN_CONNECTIONS = TagKey.create(Registries.BLOCK, new ResourceLocation("ceramics", "cistern_connections"));
+    public static final TagKey<Block> CISTERN_CONNECTIONS = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath("ceramics", "cistern_connections"));
     // create compat
     @SuppressWarnings("removal")
-    public static final TagKey<Block> CREATE_ROOTS = TagKey.create(Registries.BLOCK, new ResourceLocation("create", "roots"));
+    public static final TagKey<Block> CREATE_ROOTS = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath("create", "roots"));
 
     /** Makes a tag in the tinkers domain */
     private static TagKey<Block> local(String name) {
@@ -578,7 +578,7 @@ public class TinkerTags {
     public static final TagKey<Item> BOSS_TROPHIES = local("boss_trophies");
     /** Create tree attachments */
     @SuppressWarnings("removal")
-    public static final TagKey<Item> TREE_ATTACHMENTS = TagKey.create(Registries.ITEM, new ResourceLocation("create", "tree_attachments"));
+    public static final TagKey<Item> TREE_ATTACHMENTS = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("create", "tree_attachments"));
 
     /** Fluids in this tag won't show in JEI */
     public static final TagKey<Item> HIDDEN_IN_RECIPE_VIEWERS = hiddenFromRecipeViewers(Registries.ITEM);

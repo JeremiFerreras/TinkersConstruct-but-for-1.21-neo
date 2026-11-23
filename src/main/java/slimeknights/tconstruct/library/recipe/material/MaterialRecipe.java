@@ -8,7 +8,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -31,7 +31,7 @@ import java.util.List;
 public class MaterialRecipe implements ICustomOutputRecipe<ISingleStackContainer>, IMaterialValue, IDisplayMaterialRecipe {
   /** Empty material instance for the cache */
   @SuppressWarnings("removal")
-  public static final MaterialRecipe EMPTY = new MaterialRecipe(new ResourceLocation("missingno"), "", Ingredient.EMPTY, 0, 0, MaterialId.UNKNOWN, ItemOutput.EMPTY);
+  public static final MaterialRecipe EMPTY = new MaterialRecipe(ResourceLocation.parse("missingno"), "", Ingredient.EMPTY, 0, 0, MaterialId.UNKNOWN, ItemOutput.EMPTY);
   public static final RecordLoadable<MaterialRecipe> LOADER = RecordLoadable.create(
     ContextKey.ID.requiredField(),
     LoadableRecipeSerializer.RECIPE_GROUP,

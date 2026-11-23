@@ -8,7 +8,7 @@ import net.minecraft.data.PackOutput.Target;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.common.crafting.CraftingHelper;
+import net.neoforged.neoforge.common.crafting.CraftingHelper;
 import net.minecraftforge.common.crafting.conditions.ICondition;
 import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
 import slimeknights.mantle.data.GenericDataProvider;
@@ -39,7 +39,7 @@ public abstract class AbstractMobEquipmentProvider extends GenericDataProvider {
   @Override
   public CompletableFuture<?> run(CachedOutput cache) {
     addEquipment();
-    return allOf(equipment.entrySet().stream().map(entry -> saveJson(cache, new ResourceLocation(modId, entry.getKey()), entry.getValue().serialize())));
+    return allOf(equipment.entrySet().stream().map(entry -> saveJson(cache, ResourceLocation.fromNamespaceAndPath(modId, entry.getKey()), entry.getValue().serialize())));
   }
 
   /** Creates a builder for the given entity */

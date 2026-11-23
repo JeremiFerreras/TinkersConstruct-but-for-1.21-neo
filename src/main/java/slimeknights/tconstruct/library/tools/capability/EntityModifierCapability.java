@@ -6,7 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.common.MinecraftForge;
+import net.neoforged.neoforge.common.NeoForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
@@ -81,7 +81,7 @@ public class EntityModifierCapability {
   /** Registers this capability with relevant busses*/
   public static void register() {
     FMLJavaModLoadingContext.get().getModEventBus().addListener(EventPriority.NORMAL, false, RegisterCapabilitiesEvent.class, event -> event.register(ModifierNBT.class));
-    MinecraftForge.EVENT_BUS.addGenericListener(Entity.class, EntityModifierCapability::attachCapability);
+    NeoForge.EVENT_BUS.addGenericListener(Entity.class, EntityModifierCapability::attachCapability);
   }
 
   /** Event listener to attach the capability */

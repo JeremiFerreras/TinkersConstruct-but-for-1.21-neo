@@ -14,10 +14,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.model.data.ModelData;
+import net.neoforged.neoforge.client.model.data.ModelData;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.ForgeEventFactory;
-import net.minecraftforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.event.EventHooks;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import org.apache.commons.lang3.StringUtils;
 import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.tconstruct.TConstruct;
@@ -218,7 +218,7 @@ public class TinkerStationBlockEntity extends RetexturedTableBlockEntity impleme
 
     // fire crafting events
     resultItem.onCraftedBy(this.level, player, amount);
-    ForgeEventFactory.firePlayerCraftingEvent(player, resultItem, this.inventoryWrapper);
+    EventHooks.firePlayerCraftingEvent(player, resultItem, this.inventoryWrapper);
     this.playCraftSound(player);
 
     // fetch this before updating inputs so they can do input sensitive shrinking

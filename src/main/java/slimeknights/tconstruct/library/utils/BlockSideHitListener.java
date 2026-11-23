@@ -3,10 +3,10 @@ package slimeknights.tconstruct.library.utils;
 import lombok.Getter;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action;
-import net.minecraftforge.event.level.BlockEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.tconstruct.TConstruct;
@@ -30,8 +30,8 @@ public class BlockSideHitListener {
       return;
     }
     init = true;
-    MinecraftForge.EVENT_BUS.addListener(BlockSideHitListener::onLeftClickBlock);
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, BlockSideHitListener::breakBlock);
+    NeoForge.EVENT_BUS.addListener(BlockSideHitListener::onLeftClickBlock);
+    NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, BlockSideHitListener::breakBlock);
   }
 
   /** Called when the player left-clicks a block to store the face */

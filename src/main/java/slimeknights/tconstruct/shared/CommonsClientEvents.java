@@ -2,9 +2,9 @@ package slimeknights.tconstruct.shared;
 
 import net.minecraft.client.gui.Font;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ModelEvent.RegisterGeometryLoaders;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
+import net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
