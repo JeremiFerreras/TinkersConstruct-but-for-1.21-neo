@@ -13,9 +13,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.data.ModelData;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.items.IItemHandler;
 import slimeknights.mantle.util.RetexturedHelper;
@@ -39,8 +36,6 @@ public class DuctBlockEntity extends SmelteryFluidIO implements MenuProvider {
 
   @Getter
   private final DuctItemHandler itemHandler = new DuctItemHandler(this);
-  private final LazyOptional<IItemHandler> itemCapability = LazyOptional.of(() -> itemHandler);
-
   public DuctBlockEntity(BlockPos pos, BlockState state) {
     this(TinkerSmeltery.duct.get(), pos, state);
   }
@@ -66,24 +61,9 @@ public class DuctBlockEntity extends SmelteryFluidIO implements MenuProvider {
 
   /* Capability */
 
-  @Nonnull
   @Override
-  public <C> LazyOptional<C> getCapability(Capability<C> capability, @Nullable Direction facing) {
-    if (capability == ForgeCapabilities.ITEM_HANDLER) {
-      return itemCapability.cast();
-    }
-    return super.getCapability(capability, facing);
-  }
-
-  @Override
-  public void invalidateCaps() {
-    super.invalidateCaps();
-    itemCapability.invalidate();
-  }
-
-  @Override
-  protected LazyOptional<IFluidHandler> makeWrapper(LazyOptional<IFluidHandler> capability) {
-    return LazyOptional.of(() -> new DuctTankWrapper(capability.orElse(emptyInstance), itemHandler));
+  protected IFluidHandler makeWrapper(IFluidHandler capability) {
+    return new DuctTankWrapper(capability, itemHandler);
   }
 
   @Nonnull
