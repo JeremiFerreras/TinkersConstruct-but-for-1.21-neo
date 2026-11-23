@@ -96,8 +96,8 @@ jobs:
           launcher=$!
           trap 'kill "$launcher" 2>/dev/null || true' EXIT
           for ((i=0; i<125; i++)); do
-            if grep -Eq 'Server thread/INFO.* joined the game' run/logs/latest.log 2>/dev/null; then
-              sleep 10
+            if grep -Eq 'Server thread/INFO.* joined the game' run/logs/latest.log 2>/dev/null && grep -q 'Reloaded EMI in' run/logs/latest.log; then
+              if grep -E 'Exception thrown setting remainders for tconstruct:|recipes loaded with the same id: tconstruct:' run/logs/latest.log; then exit 1; fi
               kill -0 "$launcher"
               exit 0
             fi

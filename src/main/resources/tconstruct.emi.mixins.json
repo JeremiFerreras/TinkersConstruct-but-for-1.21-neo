@@ -1,0 +1,7 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "slimeknights.tconstruct.plugin.emi.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["EmiShapedRecipeMixin"]
+}
