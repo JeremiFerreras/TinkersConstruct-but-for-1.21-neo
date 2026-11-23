@@ -74,7 +74,7 @@ public interface FluidEffect<C extends FluidEffectContext> extends IHaveLoader, 
     BlockState state = context.getBlockState();
     if (level.isFull() && state.getBlock() instanceof WeatheringCopper copper) {
       if (action.execute() && context.getLevel() instanceof ServerLevel world) {
-        copper.applyChangeOverTime(state, world, context.getBlockPos(), world.getRandom());
+        copper.changeOverTime(state, world, context.getBlockPos(), world.getRandom());
       }
       return 1;
     }
@@ -135,7 +135,7 @@ public interface FluidEffect<C extends FluidEffectContext> extends IHaveLoader, 
   BinaryOperator<Component> MERGE_COMPONENT_LIST = (left, right) -> Component.translatable(KEY_SEPARATOR, left, right);
 
   /** Gets the registry name for the given loader */
-  @SuppressWarnings({"unchecked", "removal"})
+  @SuppressWarnings("unchecked")
   static ResourceLocation getLoaderName(RecordLoadable<? extends FluidEffect<?>> loader) {
     ResourceLocation loaderId = ENTITY_EFFECTS.getName((RecordLoadable<? extends FluidEffect<? super FluidEffectContext.Entity>>)loader);
     if (loaderId != null) {

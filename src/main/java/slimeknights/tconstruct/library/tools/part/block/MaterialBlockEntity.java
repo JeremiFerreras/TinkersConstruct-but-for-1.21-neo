@@ -1,5 +1,7 @@
 package slimeknights.tconstruct.library.tools.part.block;
 
+
+import net.minecraft.core.HolderLookup;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -10,7 +12,7 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
 import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.tconstruct.library.client.model.ModelProperties;
-import slimeknights.tconstruct.library.materials.definition.MaterialId;
+import slimeknights.tconstruct.library.materials.definition.IMaterial;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
 import slimeknights.tconstruct.tools.TinkerToolParts;
 
@@ -23,7 +25,7 @@ import static slimeknights.tconstruct.library.tools.part.IMaterialItem.MATERIAL_
 public class MaterialBlockEntity extends MantleBlockEntity {
   @Nonnull
   @Getter
-  private MaterialVariantId material = MaterialId.UNKNOWN;
+  private MaterialVariantId material = IMaterial.UNKNOWN_ID;
 
   /** Constructor for addons to register a new block entity for their material blocks */
   public MaterialBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
@@ -57,18 +59,18 @@ public class MaterialBlockEntity extends MantleBlockEntity {
   }
 
   @Override
-  protected void saveSynced(CompoundTag tags) {
-    super.saveSynced(tags);
-    if (material != MaterialId.UNKNOWN) {
+  protected void saveSynced(CompoundTag tags, HolderLookup.Provider registries) {
+    super.saveSynced(tags, registries);
+    if (material != IMaterial.UNKNOWN_ID) {
       tags.putString(MATERIAL_TAG, material.toString());
     }
   }
 
   @Override
-  public void load(CompoundTag tags) {
-    super.load(tags);
+  protected void loadAdditional(CompoundTag tags, HolderLookup.Provider registries) {
+    super.loadAdditional(tags, registries);
     if (tags.contains(MATERIAL_TAG, Tag.TAG_STRING)) {
-      material = Objects.requireNonNullElse(MaterialVariantId.tryParse(tags.getString(MATERIAL_TAG)), MaterialId.UNKNOWN);
+      material = Objects.requireNonNullElse(MaterialVariantId.tryParse(tags.getString(MATERIAL_TAG)), IMaterial.UNKNOWN_ID);
       RetexturedHelper.onTextureUpdated(this);
     }
   }

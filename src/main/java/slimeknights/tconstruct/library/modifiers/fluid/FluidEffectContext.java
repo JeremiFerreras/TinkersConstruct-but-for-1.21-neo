@@ -20,7 +20,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import slimeknights.tconstruct.library.tools.helper.ToolAttackUtil;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -103,7 +102,7 @@ public abstract class FluidEffectContext {
 
   /** If true, this context is not allowed to place blocks at the given position */
   public boolean placeRestricted(ItemStack stack) {
-    return player != null && !player.mayBuild() && !stack.hasAdventureModePlaceTagForBlock(level.registryAccess().registryOrThrow(Registries.BLOCK), new BlockInWorld(level, getBlockPos(), false));
+    return player != null && !player.mayBuild() && !stack.canPlaceOnBlockInAdventureMode(new BlockInWorld(level, getBlockPos(), false));
   }
 
   /** Context for fluid effects targeting an entity */
@@ -137,7 +136,7 @@ public abstract class FluidEffectContext {
     /** @deprecated use {@link #builder(Level)} */
     @Deprecated(forRemoval = true)
     public Entity(Level level, @Nullable LivingEntity holder, @Nullable Projectile projectile, net.minecraft.world.entity.Entity target, @Nullable Vec3 location) {
-      this(level, holder, asPlayer(holder), projectile, target, ToolAttackUtil.getLivingEntity(target), location);
+      this(level, holder, asPlayer(holder), projectile, target, asLiving(target), location);
     }
 
     /** @deprecated use {@link #builder(Level)} */
@@ -272,7 +271,7 @@ public abstract class FluidEffectContext {
 
     /** Creates an entity context */
     public Entity target(net.minecraft.world.entity.Entity target) {
-      return target(target, ToolAttackUtil.getLivingEntity(target));
+      return target(target, asLiving(target));
     }
 
     /** Creates an entity context */
