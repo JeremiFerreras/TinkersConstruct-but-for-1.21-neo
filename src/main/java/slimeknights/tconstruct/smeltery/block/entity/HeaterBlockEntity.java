@@ -10,9 +10,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
 import net.neoforged.neoforge.items.IItemHandler;
 import slimeknights.mantle.block.entity.NameableBlockEntity;
 import slimeknights.tconstruct.TConstruct;
@@ -29,7 +26,6 @@ public class HeaterBlockEntity extends NameableBlockEntity {
   private static final Component TITLE = TConstruct.makeTranslation("gui", "heater");
 
   private final HeaterItemHandler itemHandler = new HeaterItemHandler(this);
-  private final LazyOptional<IItemHandler> itemCapability = LazyOptional.of(() -> itemHandler);
 
   protected HeaterBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
     super(type, pos, state, TITLE);
@@ -37,6 +33,11 @@ public class HeaterBlockEntity extends NameableBlockEntity {
 
   public HeaterBlockEntity(BlockPos pos, BlockState state) {
     this(TinkerSmeltery.heater.get(), pos, state);
+  }
+
+  /** Handler exposed to automation through NeoForge RegisterCapabilitiesEvent. */
+  public HeaterItemHandler getItemHandler() {
+    return itemHandler;
   }
 
   @Nullable
@@ -47,22 +48,6 @@ public class HeaterBlockEntity extends NameableBlockEntity {
 
 
   /* Capability */
-
-  @Nonnull
-  @Override
-  public <C> LazyOptional<C> getCapability(Capability<C> capability, @Nullable Direction facing) {
-    if (capability == ForgeCapabilities.ITEM_HANDLER) {
-      return itemCapability.cast();
-    }
-    return super.getCapability(capability, facing);
-  }
-
-  @Override
-  public void invalidateCaps() {
-    super.invalidateCaps();
-    itemCapability.invalidate();
-  }
-
 
   /* NBT */
 
