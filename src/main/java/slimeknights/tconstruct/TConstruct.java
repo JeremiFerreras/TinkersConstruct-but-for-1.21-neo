@@ -125,7 +125,7 @@ public class TConstruct {
     bus.register(new TinkerStructures(bus));
     // tools
     bus.register(new TinkerTables());
-    bus.register(new TinkerModifiers(bus));
+    bus.register(new TinkerModifiers());
     bus.register(new TinkerToolParts());
     bus.register(new TinkerTools());
     // smeltery
@@ -186,7 +186,7 @@ public class TConstruct {
 
     // other datagen
     generator.addProvider(server, new TConstructLootTableProvider(packOutput));
-    generator.addProvider(server, new AdvancementsProvider(packOutput));
+    generator.addProvider(server, new AdvancementsProvider(packOutput, lookupProvider));
     generator.addProvider(server, new GlobalLootModifiersProvider(packOutput));
     generator.addProvider(server, new LootTableInjectionProvider(packOutput));
     generator.addProvider(server, new ConfigurationDataProvider(packOutput));
