@@ -195,7 +195,7 @@ public class SmelteryRecipeProvider extends BaseRecipeProvider implements ISmelt
                           .unlockedBy("has_item", has(TinkerSmeltery.grout)).save(c);
     ConditionalRecipe.builder()
                      .addCondition(new ModLoadedCondition("ceramics"))
-                     .addRecipe(c -> fastGrout.accept(ConsumerWrapperBuilder.wrap(ResourceLocation.fromNamespaceAndPath("ceramics", "kiln")).build(c)))
+                     .addRecipe(fastGrout)
                      .addCondition(TrueCondition.INSTANCE)
                      .addRecipe(fastGrout)
                      .generateAdvancement()
@@ -646,7 +646,7 @@ public class SmelteryRecipeProvider extends BaseRecipeProvider implements ISmelt
                                 .unlockedBy("has_item", has(TinkerSmeltery.netherGrout)).save(c);
     ConditionalRecipe.builder()
                      .addCondition(new ModLoadedCondition("ceramics"))
-                     .addRecipe(c -> fastGrout.accept(ConsumerWrapperBuilder.wrap(ResourceLocation.fromNamespaceAndPath("ceramics", "kiln")).build(c)))
+                     .addRecipe(fastGrout)
                      .addCondition(TrueCondition.INSTANCE)
                      .addRecipe(fastGrout)
                      .generateAdvancement()
