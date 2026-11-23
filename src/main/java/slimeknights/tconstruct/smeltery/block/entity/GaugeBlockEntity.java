@@ -29,4 +29,4 @@ public class GaugeBlockEntity extends BlockEntity {
     IFluidHandler handler = level.getCapability(Capabilities.FluidHandler.BLOCK, getBlockPos().relative(side.getOpposite()), side);
     return handler == null ? EmptyFluidHandler.INSTANCE : handler;
   }
-}}
+}
