@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import slimeknights.mantle.network.ISimplePacket;
+import slimeknights.mantle.network.packet.ISimplePacket;
 import slimeknights.tconstruct.TConstruct;
 
 import java.util.Map;

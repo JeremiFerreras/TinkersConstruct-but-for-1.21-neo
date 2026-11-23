@@ -5,7 +5,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.ApiStatus.Internal;
-import slimeknights.mantle.network.ISimplePacket;
+import slimeknights.mantle.network.packet.ISimplePacket;
 import slimeknights.tconstruct.TConstruct;
 
 import java.util.ArrayList;

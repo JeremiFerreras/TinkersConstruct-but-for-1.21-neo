@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import slimeknights.mantle.network.ISimplePacket;
+import slimeknights.mantle.network.packet.ISimplePacket;
 
 import java.util.Collection;
 
