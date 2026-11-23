@@ -1,0 +1,3 @@
+[submodule "neomantle"]
+	path = neomantle
+	url = https://github.com/vancevoj/neomantle.git
