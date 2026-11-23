@@ -49,6 +49,9 @@ import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.fluids.TinkerFluids;
 import slimeknights.tconstruct.gadgets.TinkerGadgets;
 import slimeknights.tconstruct.library.materials.MaterialRegistry;
+import slimeknights.tconstruct.library.tools.capability.EntityModifierCapability;
+import slimeknights.tconstruct.library.tools.capability.PersistentDataCapability;
+import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.ComputableDataKey;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.TinkerDataKey;
 import slimeknights.tconstruct.library.tools.definition.ToolDefinitionLoader;
@@ -104,13 +107,18 @@ public class TConstruct {
     Config.init(container);
     MaterialRegistry.init();
 
+    // NeoForge 1.21 data attachments must be registered on the mod bus before registries freeze.
+    TinkerDataCapability.register(bus);
+    PersistentDataCapability.register(bus);
+    EntityModifierCapability.register(bus);
+
     // initialize modules, done this way rather than with annotations to give us control over the order
     bus.addListener(TConstruct::registerAliases);
     // base
     bus.register(new TinkerCommons());
     bus.register(new TinkerMaterials());
     bus.register(new TinkerEffects(bus));
-    bus.register(new TinkerGadgets());
+    bus.register(new TinkerGadgets(bus));
     bus.register(new TinkerAttributes(bus));
     // world
     bus.register(new TinkerWorld());
