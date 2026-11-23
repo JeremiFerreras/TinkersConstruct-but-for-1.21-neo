@@ -80,6 +80,7 @@ sourceSets {
             exclude 'slimeknights/tconstruct/plugin/DummmmmmyPlugin.java'
             exclude 'slimeknights/tconstruct/plugin/ImmersiveEngineeringPlugin.java'
             exclude 'slimeknights/tconstruct/plugin/jsonthings/**'
+            exclude 'slimeknights/tconstruct/plugin/craftingtweaks/**'
         }
         resources {
             srcDirs "src/generated/resources"

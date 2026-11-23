@@ -15,7 +15,6 @@ import net.neoforged.neoforge.data.event.GatherDataEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -59,7 +58,6 @@ import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.Tin
 import slimeknights.tconstruct.library.tools.definition.ToolDefinitionLoader;
 import slimeknights.tconstruct.library.tools.layout.StationSlotLayoutLoader;
 import slimeknights.tconstruct.library.utils.Util;
-import slimeknights.tconstruct.plugin.craftingtweaks.CraftingTweaksPlugin;
 import slimeknights.tconstruct.shared.TinkerAttributes;
 import slimeknights.tconstruct.shared.TinkerClient;
 import slimeknights.tconstruct.shared.TinkerCommons;
@@ -143,13 +141,8 @@ public class TConstruct {
       TinkerClient.onConstruct();
     }
 
-    // compat
-    ModList modList = ModList.get();
-    // Immersive Engineering, JSON Things and Diet integrations are excluded from
-    // this NeoForge 1.21.1 port until their matching compile APIs are available.
-    if (modList.isLoaded("craftingtweaks")) {
-      CraftingTweaksPlugin.onConstruct();
-    }
+    // Optional compat integrations are disabled in this port until their
+    // matching NeoForge 1.21.1 compile APIs have been migrated.
   }
 
   @SubscribeEvent
