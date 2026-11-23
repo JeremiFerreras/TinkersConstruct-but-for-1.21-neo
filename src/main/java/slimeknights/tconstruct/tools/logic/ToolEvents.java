@@ -34,13 +34,12 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingEvent.LivingTickEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEvent.LivingVisibilityEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.Event.Result;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -93,7 +92,7 @@ import java.util.Objects;
 /**
  * Event subscriber for tool events
  */
-@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Bus.FORGE)
+@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Bus.GAME)
 public class ToolEvents {
   @SuppressWarnings("removal")
   @SubscribeEvent
@@ -131,7 +130,7 @@ public class ToolEvents {
     }
 
     // next, add in armor haste
-    double armorMultiplier = player.getAttributeValue(TinkerAttributes.MINING_SPEED_MULTIPLIER.get()) + ArmorStatModule.getStat(player, TinkerDataKeys.MINING_SPEED);
+    double armorMultiplier = player.getAttributeValue(TinkerAttributes.MINING_SPEED_MULTIPLIER) + ArmorStatModule.getStat(player, TinkerDataKeys.MINING_SPEED);
     if (armorMultiplier >= 0) {
       event.setNewSpeed((float) (event.getNewSpeed() * armorMultiplier));
     }
@@ -140,7 +139,7 @@ public class ToolEvents {
   @SubscribeEvent
   static void onHarvest(ToolHarvestEvent event) {
     // prevent processing if already processed
-    if (event.getResult() != Result.DEFAULT) {
+    if (!event.getResult().isDefault()) {
       return;
     }
     BlockState state = event.getState();
@@ -169,7 +168,7 @@ public class ToolEvents {
         0.05D,
         0.05D * facing.getStepZ() + world.random.nextDouble() * 0.02D);
       world.addFreshEntity(itemEntity);
-      event.setResult(Result.ALLOW);
+      event.setResult(TriState.TRUE);
     }
 
     // hives: get the honey
@@ -182,22 +181,31 @@ public class ToolEvents {
 
         // if not smoking, make the bees angry
         if (!CampfireBlock.isSmokeyPos(world, pos)) {
-          if (beehive.hiveContainsBees(world, pos)) {
-            beehive.angerNearbyBees(world, pos);
+          if (world.getBlockEntity(pos) instanceof BeehiveBlockEntity hive && !hive.isEmpty()) {
+            net.minecraft.world.phys.AABB aabb = new net.minecraft.world.phys.AABB(pos).inflate(8.0, 6.0, 8.0);
+            java.util.List<net.minecraft.world.entity.animal.Bee> bees = world.getEntitiesOfClass(net.minecraft.world.entity.animal.Bee.class, aabb);
+            java.util.List<Player> players = world.getEntitiesOfClass(Player.class, aabb);
+            if (!bees.isEmpty() && !players.isEmpty()) {
+              for (net.minecraft.world.entity.animal.Bee bee : bees) {
+                if (bee.getTarget() == null) {
+                  bee.setTarget(players.get(world.random.nextInt(players.size())));
+                }
+              }
+            }
           }
           beehive.releaseBeesAndResetHoneyLevel(world, state, pos, event.getPlayer(), BeehiveBlockEntity.BeeReleaseStatus.EMERGENCY);
         } else {
           beehive.resetHoneyLevel(world, state, pos);
         }
-        event.setResult(Result.ALLOW);
+        event.setResult(TriState.TRUE);
       } else {
-        event.setResult(Result.DENY);
+        event.setResult(TriState.FALSE);
       }
     }
   }
 
   @SubscribeEvent(priority = EventPriority.LOW)
-  static void livingAttack(LivingAttackEvent event) {
+  static void livingAttack(LivingIncomingDamageEvent event) {
     LivingEntity entity = event.getEntity();
     // client side always returns false, so this should be fine?
     if (entity.level().isClientSide() || entity.isDeadOrDying()) {
@@ -269,7 +277,7 @@ public class ToolEvents {
   // low priority to minimize conflict as we apply reduction as if we are the final change to damage before vanilla
   @SuppressWarnings("removal")
   @SubscribeEvent(priority = EventPriority.LOW)
-  static void livingHurt(LivingHurtEvent event) {
+  static void livingHurt(LivingDamageEvent.Pre event) {
     LivingEntity entity = event.getEntity();
 
     // determine if there is any modifiable armor, if not nothing to do
@@ -277,7 +285,7 @@ public class ToolEvents {
     EquipmentContext context = new EquipmentContext(entity);
     int vanillaModifier = 0;
     float modifierValue = 0;
-    float originalDamage = event.getAmount();
+    float originalDamage = event.getNewDamage();
 
     Entity attacker = source.getEntity();
     if (attacker instanceof LivingEntity living) {
@@ -314,7 +322,7 @@ public class ToolEvents {
 
       // run shulking global damage "boost", its a bit hardcoded Java wise to make it softcoded in JSON
       if (attacker.isCrouching()) {
-        double crouchMultiplier = living.getAttributeValue(TinkerAttributes.CROUCH_DAMAGE_MULTIPLIER.get());
+        double crouchMultiplier = living.getAttributeValue(TinkerAttributes.CROUCH_DAMAGE_MULTIPLIER);
         crouchMultiplier += ArmorStatModule.getStat(attacker, TinkerDataKeys.CROUCH_DAMAGE);
         if (crouchMultiplier != 0) {
           originalDamage *= crouchMultiplier;
@@ -324,21 +332,21 @@ public class ToolEvents {
 
     // conducting - boosts damage from fire
     if (source.is(TinkerTags.DamageTypes.FIRE_PROTECTION)) {
-      int level = TinkerEffect.getLevel(entity, TinkerEffects.conductive);
+      int level = TinkerEffect.getLevel(entity, TinkerEffects.conductive.get());
       if (level > 0) {
         originalDamage *= Math.pow(2, level);
       }
     }
     // venom - boosts damage from magic
     if (source.is(TinkerTags.DamageTypes.MAGIC_PROTECTION)) {
-      int level = TinkerEffect.getLevel(entity, TinkerEffects.venom);
+      int level = TinkerEffect.getLevel(entity, TinkerEffects.venom.get());
       if (level > 0) {
         originalDamage *= Math.pow(2, level);
       }
     }
     
     // ensure any changes made so far apply, though we may change it again
-    event.setAmount(originalDamage);
+    event.setNewDamage(originalDamage);
 
     // for our own armor, we have boosts from modifiers to consider
     if (context.hasModifiableArmor()) {
@@ -346,14 +354,15 @@ public class ToolEvents {
       originalDamage = ModifyDamageModifierHook.modifyDamageTaken(ModifierHooks.MODIFY_HURT, context, source, originalDamage, OnAttackedModifierHook.isDirectDamage(source));
       event.setAmount(originalDamage);
       if (originalDamage <= 0) {
-        event.setCanceled(true);
         return;
       }
 
       // remaining logic is reducing damage like vanilla protection
       // fetch vanilla enchant level, assuming its not bypassed in vanilla
       if (DamageSourcePredicate.CAN_PROTECT.matches(source)) {
-        modifierValue = vanillaModifier = EnchantmentHelper.getDamageProtection(entity.getArmorSlots(), source);
+        if (entity.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+          modifierValue = vanillaModifier = (int) EnchantmentHelper.getDamageProtection(serverLevel, entity, source);
+        }
       }
 
       // next, determine how much tinkers armor wants to change it
@@ -368,7 +377,9 @@ public class ToolEvents {
         modifierValue *= 4;
       }
     } else if (DamageSourcePredicate.CAN_PROTECT.matches(source) && entity.getType().is(TinkerTags.EntityTypes.SMALL_ARMOR)) {
-      vanillaModifier = EnchantmentHelper.getDamageProtection(entity.getArmorSlots(), source);
+      if (entity.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+        vanillaModifier = (int) EnchantmentHelper.getDamageProtection(serverLevel, entity, source);
+      }
       modifierValue = vanillaModifier * 4;
     }
 
@@ -390,7 +401,7 @@ public class ToolEvents {
 
       // set the final dealt damage
       float finalDamage = ArmorUtil.getDamageForEvent(originalDamage, armor, toughness, vanillaModifier, modifierValue, cap);
-      event.setAmount(finalDamage);
+      event.setNewDamage(finalDamage);
 
       // armor is damaged less as a result of our math, so damage the armor based on the difference if there is one
       if (!source.is(DamageTypeTags.BYPASSES_ARMOR)) {
@@ -400,14 +411,14 @@ public class ToolEvents {
           for (EquipmentSlot slotType : ModifiableArmorMaterial.ARMOR_SLOTS) {
             // for our own armor, saves effort to damage directly with our utility
             IToolStackView tool = context.getToolInSlot(slotType);
-            if (tool != null && (!source.is(DamageTypeTags.IS_FIRE) || !tool.getItem().isFireResistant())) {
+            if (tool != null && (!source.is(DamageTypeTags.IS_FIRE) || !entity.getItemBySlot(slotType).has(net.minecraft.core.component.DataComponents.FIRE_RESISTANT))) {
               // mark this as protection (any valid modifier really would do) so tanned can reduce it to not count it as separate damage
               ToolDamageUtil.damageAnimated(tool, damageMissed, entity, slotType, ARMOR_DAMAGE);
             } else {
               // if not our armor, damage using vanilla like logic
               ItemStack armorStack = entity.getItemBySlot(slotType);
-              if (!armorStack.isEmpty() && (!source.is(DamageTypeTags.IS_FIRE) || !armorStack.getItem().isFireResistant()) && armorStack.getItem() instanceof ArmorItem) {
-                armorStack.hurtAndBreak(damageMissed, entity, e -> e.broadcastBreakEvent(slotType));
+              if (!armorStack.isEmpty() && (!source.is(DamageTypeTags.IS_FIRE) || !armorStack.has(net.minecraft.core.component.DataComponents.FIRE_RESISTANT)) && armorStack.getItem() instanceof ArmorItem) {
+                armorStack.hurtAndBreak(damageMissed, entity, slotType)
               }
             }
           }
@@ -417,7 +428,7 @@ public class ToolEvents {
   }
 
   @SubscribeEvent
-  static void livingDamage(LivingDamageEvent event) {
+  static void livingDamage(LivingDamageEvent.Post event) {
     LivingEntity entity = event.getEntity();
     DamageSource source = event.getSource();
 
@@ -426,10 +437,6 @@ public class ToolEvents {
     EquipmentContext context = new EquipmentContext(entity);
     if (context.hasModifiableArmor()) {
       amount = ModifyDamageModifierHook.modifyDamageTaken(ModifierHooks.MODIFY_DAMAGE, context, source, amount, OnAttackedModifierHook.isDirectDamage(source));
-      event.setAmount(amount);
-      if (amount <= 0) {
-        event.setCanceled(true);
-      }
     }
 
     // for remaining code, ensure amount is not more than they will take
@@ -474,8 +481,8 @@ public class ToolEvents {
 
   /** Called the modifier hook when an entity's position changes */
   @SubscribeEvent
-  static void livingWalk(LivingTickEvent event) {
-    LivingEntity living = event.getEntity();
+  static void livingWalk(EntityTickEvent.Pre event) {
+    if (!(event.getEntity() instanceof LivingEntity living)) return;
     // this event runs before vanilla updates prevBlockPos
     BlockPos pos = living.blockPosition();
     if (!living.isSpectator() && !living.level().isClientSide() && living.isAlive() && !Objects.equals(living.lastPos, pos)) {
@@ -545,20 +552,9 @@ public class ToolEvents {
           if (TinkerEffects.canHitWithProjectile(target) || nbt.getBoolean(TinkerEffects.ENDERFERENCE_KEY)) {
 
             // if its a piercing arrow, skip modifier effects when at the piercing limit, arrow is going to skip the hit
-            boolean canBlock = true;
-            if (projectile instanceof AbstractArrow arrow) {
-              int pierce = arrow.getPierceLevel();
-              if (pierce > 0) {
-                if (arrow.piercingIgnoreEntityIds != null && arrow.piercingIgnoreEntityIds.size() >= pierce + 1) {
-                  return;
-                }
-                canBlock = false;
-              }
-            }
-
-            // ensure we are not blocking, that means projectile shouldn't hit
+            // Ensure a shield is not blocking, unless this is a piercing arrow.
             boolean notBlocked = true;
-            if (canBlock && target != null && target.isBlocking()) {
+            if (target != null && target.isBlocking() && (!(projectile instanceof AbstractArrow arrow) || arrow.getPierceLevel() == 0)) {
               Vec3 direction = projectile.position().vectorTo(target.position()).normalize();
               direction = new Vec3(direction.x, 0.0D, direction.z);
               if (direction.dot(target.getViewVector(1.0F)) < 0.0D) {
