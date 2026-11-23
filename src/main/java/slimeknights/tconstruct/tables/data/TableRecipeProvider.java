@@ -1,7 +1,7 @@
 package slimeknights.tconstruct.tables.data;
 
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.recipes.RecipeOutput;
+import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.data.recipes.ShapelessRecipeBuilder;
@@ -21,7 +21,7 @@ import slimeknights.mantle.Mantle;
 import slimeknights.mantle.recipe.crafting.ShapedRetexturedRecipeBuilder;
 import slimeknights.mantle.recipe.data.ItemNameIngredient;
 import slimeknights.mantle.recipe.data.ItemNameOutput;
-import slimeknights.mantle.recipe.helper.SimpleRecipeOutput;
+import slimeknights.mantle.recipe.helper.SimpleFinishedRecipe;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.data.BaseRecipeProvider;
@@ -39,6 +39,7 @@ import slimeknights.tconstruct.tables.recipe.TinkerStationPartSwappingBuilder;
 import slimeknights.tconstruct.tools.TinkerToolParts;
 import slimeknights.tconstruct.tools.TinkerTools;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class TableRecipeProvider extends BaseRecipeProvider {
@@ -53,13 +54,13 @@ public class TableRecipeProvider extends BaseRecipeProvider {
   }
 
   @Override
-  protected void buildRecipes(RecipeOutput consumer) {
+  protected void buildRecipes(Consumer<FinishedRecipe> consumer) {
     this.tableRecipes(consumer);
     this.damageRecipes(consumer);
     this.recyclingRecipes(consumer);
   }
 
-  private void tableRecipes(RecipeOutput consumer) {
+  private void tableRecipes(Consumer<FinishedRecipe> consumer) {
     String folder = "tables/";
     // pattern
     ShapedRecipeBuilder.shaped(RecipeCategory.MISC, TinkerTables.pattern, 6)
@@ -206,7 +207,7 @@ public class TableRecipeProvider extends BaseRecipeProvider {
       .build(consumer, prefix(TinkerTables.scorchedAnvil, folder));
 
     // tool forge - just a humor recipe
-    RecipeOutput toolForge;
+    Consumer<FinishedRecipe> toolForge;
     {
       CompoundTag nbt = new CompoundTag();
       CompoundTag display = new CompoundTag();
@@ -240,7 +241,7 @@ public class TableRecipeProvider extends BaseRecipeProvider {
       .build(toolForge, location(folder + "scorched_forge"));
 
     // material recipes - for the material fallbacks
-    RecipeOutput materialConsumer = MaterialsConsumerBuilder.shaped("m").build(consumer);
+    Consumer<FinishedRecipe> materialConsumer = MaterialsConsumerBuilder.shaped("m").build(consumer);
     Ingredient fakeStorageBlock = MaterialIngredient.of(TinkerToolParts.fakeStorageBlock, MaterialPredicate.tag(TinkerTags.Materials.COMPATABILITY_ALLOYS));
     ShapedRecipeBuilder.shaped(RecipeCategory.MISC, TinkerTables.tinkersAnvil)
       .define('m', fakeStorageBlock)
@@ -291,11 +292,11 @@ public class TableRecipeProvider extends BaseRecipeProvider {
       .save(consumer, location(folder + "throwing_axe_part_swapping"));
 
     // tool repair recipe
-    consumer.accept(new SimpleRecipeOutput(location(folder + "tinker_station_repair"), TinkerTables.tinkerStationRepairSerializer.get()));
-    consumer.accept(new SimpleRecipeOutput(location(folder + "crafting_table_repair"), TinkerTables.craftingTableRepairSerializer.get()));
+    consumer.accept(new SimpleFinishedRecipe(location(folder + "tinker_station_repair"), TinkerTables.tinkerStationRepairSerializer.get()));
+    consumer.accept(new SimpleFinishedRecipe(location(folder + "crafting_table_repair"), TinkerTables.craftingTableRepairSerializer.get()));
   }
 
-  private void damageRecipes(RecipeOutput consumer) {
+  private void damageRecipes(Consumer<FinishedRecipe> consumer) {
     // tool damaging
     String damageFolder = "tables/tinker_station_damaging/";
     TinkerStationDamagingRecipeBuilder.damage(Ingredient.of(TinkerFluids.magmaBottle), 20)
@@ -313,7 +314,7 @@ public class TableRecipeProvider extends BaseRecipeProvider {
   }
 
   @SuppressWarnings("removal")
-  private void recyclingRecipes(RecipeOutput consumer) {
+  private void recyclingRecipes(Consumer<FinishedRecipe> consumer) {
     // recipes for recycling vanilla tools
     String folder = "tables/recycling/";
 
@@ -385,7 +386,7 @@ public class TableRecipeProvider extends BaseRecipeProvider {
     // twilight forest
     String tfId = "twilightforest";
     Function<String,ResourceLocation> tf = name -> ResourceLocation.fromNamespaceAndPath(tfId, name);
-    RecipeOutput tfConsumer = withCondition(consumer, new ModLoadedCondition(tfId));
+    Consumer<FinishedRecipe> tfConsumer = withCondition(consumer, new ModLoadedCondition(tfId));
     // naga scale armor
     ResourceLocation nagaScale = tf.apply("naga_scale");
     PartBuilderRecycleBuilder.tool(ItemNameIngredient.from(tf.apply("naga_chestplate")))
