@@ -2,13 +2,13 @@ package slimeknights.tconstruct.tables.data;
 
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.RecipeOutput;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.data.recipes.ShapelessRecipeBuilder;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Component.Serializer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
@@ -21,12 +21,10 @@ import slimeknights.mantle.Mantle;
 import slimeknights.mantle.recipe.crafting.ShapedRetexturedRecipeBuilder;
 import slimeknights.mantle.recipe.data.ItemNameIngredient;
 import slimeknights.mantle.recipe.data.ItemNameOutput;
-import slimeknights.mantle.recipe.helper.SimpleRecipeOutput;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.data.BaseRecipeProvider;
 import slimeknights.tconstruct.fluids.TinkerFluids;
-import slimeknights.tconstruct.library.data.recipe.CraftingNBTWrapper;
 import slimeknights.tconstruct.library.json.predicate.material.MaterialPredicate;
 import slimeknights.tconstruct.library.recipe.ingredient.MaterialIngredient;
 import slimeknights.tconstruct.library.recipe.material.MaterialsConsumerBuilder;
@@ -35,6 +33,8 @@ import slimeknights.tconstruct.library.recipe.partbuilder.recycle.PartBuilderRec
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 import slimeknights.tconstruct.tables.TinkerTables;
 import slimeknights.tconstruct.tables.recipe.TinkerStationDamagingRecipeBuilder;
+import slimeknights.tconstruct.tables.recipe.TinkerStationRepairRecipe;
+import slimeknights.tconstruct.tables.recipe.CraftingTableRepairKitRecipe;
 import slimeknights.tconstruct.tables.recipe.TinkerStationPartSwappingBuilder;
 import slimeknights.tconstruct.tools.TinkerToolParts;
 import slimeknights.tconstruct.tools.TinkerTools;
@@ -205,15 +205,9 @@ public class TableRecipeProvider extends BaseRecipeProvider {
       .setMatchAll()
       .build(consumer, prefix(TinkerTables.scorchedAnvil, folder));
 
-    // tool forge - just a humor recipe
-    RecipeOutput toolForge;
-    {
-      CompoundTag nbt = new CompoundTag();
-      CompoundTag display = new CompoundTag();
-      display.putString("Name", Serializer.toJson(Component.translatable("block.tconstruct.tool_forge")));
-      nbt.put("display", display);
-      toolForge = CraftingNBTWrapper.wrap(consumer, nbt);
-    }
+    // tool forge - just a humor recipe. The old arbitrary result-NBT wrapper was removed in 1.21.
+    // Keep the recipe available with the normal anvil item components.
+    RecipeOutput toolForge = consumer;
     ShapedRetexturedRecipeBuilder.fromShaped(
       ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, TinkerTables.tinkersAnvil)
         .define('m', TinkerTags.Items.ANVIL_METAL)
@@ -291,8 +285,10 @@ public class TableRecipeProvider extends BaseRecipeProvider {
       .save(consumer, location(folder + "throwing_axe_part_swapping"));
 
     // tool repair recipe
-    consumer.accept(new SimpleRecipeOutput(location(folder + "tinker_station_repair"), TinkerTables.tinkerStationRepairSerializer.get()));
-    consumer.accept(new SimpleRecipeOutput(location(folder + "crafting_table_repair"), TinkerTables.craftingTableRepairSerializer.get()));
+    ResourceLocation stationRepairId = location(folder + "tinker_station_repair");
+    consumer.accept(ResourceKey.create(Registries.RECIPE, stationRepairId), new TinkerStationRepairRecipe(stationRepairId), null);
+    ResourceLocation craftingRepairId = location(folder + "crafting_table_repair");
+    consumer.accept(ResourceKey.create(Registries.RECIPE, craftingRepairId), new CraftingTableRepairKitRecipe(craftingRepairId), null);
   }
 
   private void damageRecipes(RecipeOutput consumer) {

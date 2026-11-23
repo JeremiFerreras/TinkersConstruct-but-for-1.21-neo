@@ -16,7 +16,6 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.common.Tags;
-import net.neoforged.neoforge.common.crafting.ConditionalRecipe;
 import net.neoforged.neoforge.common.crafting.DifferenceIngredient;
 import net.neoforged.neoforge.common.crafting.IntersectionIngredient;
 import net.neoforged.neoforge.common.conditions.ICondition;
@@ -318,29 +317,23 @@ public class SmelteryRecipeBuilder {
               .setOre(oreRate, oreByproducts[0].getOreRate())
               .save(wrapped, location);
     } else {
-      // multiple options, will need a conditonal recipe
-      ConditionalRecipe.Builder builder = ConditionalRecipe.builder();
+      // Multiple conditional alternatives share one recipe ID through RecipeOutput conditions.
       boolean alwaysPresent = false;
       for (IByproduct byproduct : oreByproducts) {
-        // found an always present byproduct? no need to tag and we are done
         alwaysPresent = byproduct.isAlwaysPresent();
-        if (alwaysPresent) {
-          builder.addCondition(TrueCondition.INSTANCE);
-        } else {
-          builder.addCondition(tagCondition("ingots/" + byproduct.getName()));
-        }
-        builder.addRecipe(supplier.get().addByproduct(byproduct.getFluid(scale)).setOre(oreRate, byproduct.getOreRate())::save);
-
+        ICondition condition = alwaysPresent ? TrueCondition.INSTANCE : tagCondition("ingots/" + byproduct.getName());
+        supplier.get()
+          .addByproduct(byproduct.getFluid(scale))
+          .setOre(oreRate, byproduct.getOreRate())
+          .save(wrapped.withConditions(condition), location);
         if (alwaysPresent) {
           break;
         }
       }
-      // not always present? add a recipe with no byproducts as a final fallback
+      // If no byproduct is guaranteed, add a final no-byproduct fallback.
       if (!alwaysPresent) {
-        builder.addCondition(TrueCondition.INSTANCE);
-        builder.addRecipe(supplier.get()::save);
+        supplier.get().save(wrapped.withConditions(TrueCondition.INSTANCE), location);
       }
-      builder.build(wrapped, location);
     }
   }
 
