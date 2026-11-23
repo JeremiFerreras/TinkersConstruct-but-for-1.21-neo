@@ -13,6 +13,7 @@ import net.neoforged.neoforge.common.data.DatapackBuiltinEntriesProvider;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.NeoForgeMod;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.common.Mod;
@@ -98,6 +99,7 @@ public class TConstruct {
   public static TConstruct instance;
 
   public TConstruct(IEventBus bus, ModContainer container) {
+    NeoForgeMod.enableMilkFluid();
     instance = this;
 
     Config.init(container);

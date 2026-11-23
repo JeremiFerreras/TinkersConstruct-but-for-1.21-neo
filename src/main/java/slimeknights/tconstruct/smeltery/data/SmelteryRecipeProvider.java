@@ -17,7 +17,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
@@ -25,7 +25,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraftforge.common.ForgeMod;
+import net.neoforged.neoforge.common.NeoForgeMod;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.common.crafting.CompoundIngredient;
 import net.neoforged.neoforge.common.crafting.DifferenceIngredient;
@@ -1196,17 +1196,17 @@ public class SmelteryRecipeProvider extends BaseRecipeProvider implements ISmelt
                             .setFluidAndTime(new FluidStack(Fluids.WATER, FluidValues.BOTTLE))
                             .setCast(new BlockTagIngredient(BlockTags.CONVERTABLE_TO_MUD), true)
                             .save(consumer, location(waterFolder + "mud"));
-    ItemCastingRecipeBuilder.tableRecipe(ItemOutput.fromStack(PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.WATER)))
+    ItemCastingRecipeBuilder.tableRecipe(ItemOutput.fromStack(PotionContents.createItemStack(Items.POTION, Potions.WATER)))
                             .setFluid(MantleTags.Fluids.WATER, FluidValues.BOTTLE * 2)
                             .setCoolingTime(1)
                             .setCast(Items.GLASS_BOTTLE, true)
                             .save(consumer, location(waterFolder + "bottle"));
-    ItemCastingRecipeBuilder.tableRecipe(ItemOutput.fromStack(PotionUtils.setPotion(new ItemStack(Items.SPLASH_POTION), Potions.WATER)))
+    ItemCastingRecipeBuilder.tableRecipe(ItemOutput.fromStack(PotionContents.createItemStack(Items.SPLASH_POTION, Potions.WATER)))
                             .setFluid(MantleTags.Fluids.WATER, FluidValues.BOTTLE * 2)
                             .setCoolingTime(1)
                             .setCast(MantleTags.Items.SPLASH_BOTTLE, true)
                             .save(consumer, location(waterFolder + "splash"));
-    ItemCastingRecipeBuilder.tableRecipe(ItemOutput.fromStack(PotionUtils.setPotion(new ItemStack(Items.LINGERING_POTION), Potions.WATER)))
+    ItemCastingRecipeBuilder.tableRecipe(ItemOutput.fromStack(PotionContents.createItemStack(Items.LINGERING_POTION, Potions.WATER)))
                             .setFluid(MantleTags.Fluids.WATER, FluidValues.BOTTLE * 2)
                             .setCoolingTime(1)
                             .setCast(MantleTags.Items.LINGERING_BOTTLE, true)
@@ -2157,9 +2157,9 @@ public class SmelteryRecipeProvider extends BaseRecipeProvider implements ISmelt
                               .save(consumer, location(folder + "strength"));
 
     // melt skeletons to get the milk out
-    EntityMeltingRecipeBuilder.melting(EntityIngredient.of(TinkerTags.EntityTypes.MELTABLE_SKELETON), new FluidStack(ForgeMod.MILK.get(), FluidType.BUCKET_VOLUME / 10))
+    EntityMeltingRecipeBuilder.melting(EntityIngredient.of(TinkerTags.EntityTypes.MELTABLE_SKELETON), new FluidStack(NeoForgeMod.MILK.get(), FluidType.BUCKET_VOLUME / 10))
                               .save(consumer, location(folder + "skeletons"));
-    MeltingRecipeBuilder.melting(Ingredient.of(Items.SKELETON_SKULL, Items.WITHER_SKELETON_SKULL, TinkerWorld.heads.get(TinkerHeadType.STRAY)), ForgeMod.MILK.get(), FluidType.BUCKET_VOLUME / 4)
+    MeltingRecipeBuilder.melting(Ingredient.of(Items.SKELETON_SKULL, Items.WITHER_SKELETON_SKULL, TinkerWorld.heads.get(TinkerHeadType.STRAY)), NeoForgeMod.MILK.get(), FluidType.BUCKET_VOLUME / 4)
                         .save(consumer, location(headFolder + "skeleton"));
 
     // slimes melt into slime, shocker
