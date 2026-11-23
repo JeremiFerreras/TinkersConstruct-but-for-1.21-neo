@@ -8,6 +8,7 @@ import net.minecraft.ResourceLocationException;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
 import slimeknights.mantle.data.loadable.Loadable;
@@ -20,15 +21,16 @@ import javax.annotation.Nullable;
 
 /** Represents a material that possibly has a variant. Variants are simply a different texture with the same material properties */
 public sealed interface MaterialVariantId permits MaterialId, MaterialVariantIdImpl {
-  Loadable<MaterialVariantId> LOADABLE = StringLoadable.DEFAULT.mapChecked((text, error) -> {
+  Loadable<MaterialVariantId> LOADABLE = StringLoadable.DEFAULT.comapFlatMap((text, error) -> {
     MaterialVariantId location = tryParse(text);
     if (location == null) {
       throw error.create("Expected a material variant ID, was '" + text + "'");
     }
     return location;
-  }, (id, error) -> id.toString());
+  }, MaterialVariantId::toString);
   ContextKey<MaterialVariantId> CONTEXT_KEY = new ContextKey<>("material_variant");
-  EntityDataSerializer<MaterialVariantId> DATA_ACCESSOR = EntityDataSerializer.simple((buffer, material) -> material.toNetwork(buffer), MaterialVariantId::fromNetwork);
+  EntityDataSerializer<MaterialVariantId> DATA_ACCESSOR = EntityDataSerializer.forValueType(
+    StreamCodec.of((buffer, material) -> material.toNetwork(buffer), MaterialVariantId::fromNetwork));
 
   /** Variant ID that will match normal {@link MaterialId} with no variant, to allow checking for non-variant materials specifically. */
   String DEFAULT_VARIANT = "default";

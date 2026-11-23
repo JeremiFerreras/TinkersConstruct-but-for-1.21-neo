@@ -5,7 +5,7 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.netty.handler.codec.EncoderException;
 import net.minecraft.ResourceLocationException;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import slimeknights.mantle.data.loadable.primitive.StringLoadable;
 import slimeknights.mantle.util.typed.TypedMap;
@@ -42,17 +42,17 @@ public record IdParser<T extends ResourceLocation>(Function<String, T> construct
   }
 
   @Override
-  public String getString(T object, TypedMap context) {
+  public String getString(T object) {
     return object.toString();
   }
 
   @Override
-  public T decode(RegistryFriendlyByteBuf buf, TypedMap context) {
+  public T decode(FriendlyByteBuf buf, TypedMap context) {
     return constructor.apply(buf.readUtf(Short.MAX_VALUE));
   }
 
   @Override
-  public void encode(RegistryFriendlyByteBuf buffer, T object, TypedMap context) throws EncoderException {
+  public void encode(FriendlyByteBuf buffer, T object) throws EncoderException {
     buffer.writeResourceLocation(object);
   }
 
@@ -85,7 +85,6 @@ public record IdParser<T extends ResourceLocation>(Function<String, T> construct
    * @return  Resource location, or exception if invalid
    * @throws CommandSyntaxException  If parsing fails
    */
-  @SuppressWarnings("removal")
   public static ResourceLocation read(String defaultDomain, StringReader reader) throws CommandSyntaxException {
     int start = reader.getCursor();
     while(reader.canRead() && ResourceLocation.isAllowedInResourceLocation(reader.peek())) {
