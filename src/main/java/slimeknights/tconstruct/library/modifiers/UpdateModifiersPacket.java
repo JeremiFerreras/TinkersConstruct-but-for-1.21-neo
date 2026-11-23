@@ -1,18 +1,17 @@
 package slimeknights.tconstruct.library.modifiers;
 
-import net.minecraft.network.codec.StreamCodec;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.netty.handler.codec.DecoderException;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-
-import slimeknights.mantle.network.packet.ISimplePacket;
+import slimeknights.mantle.network.packet.IThreadsafePacket;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.modifiers.impl.ComposableModifier;
 import slimeknights.tconstruct.library.utils.GenericTagUtil;
@@ -25,7 +24,7 @@ import java.util.Map.Entry;
 
 /** Packet to sync modifiers */
 @RequiredArgsConstructor
-public class UpdateModifiersPacket implements ISimplePacket {
+public class UpdateModifiersPacket implements IThreadsafePacket {
   /** Collection of all modifiers */
   private final Map<ModifierId,Modifier> allModifiers;
   /** Map of all modifier tags */
@@ -35,7 +34,7 @@ public class UpdateModifiersPacket implements ISimplePacket {
   /** Map of modifier redirect ID pairs */
   private Map<ModifierId,ModifierId> redirects;
   /** Map of enchantment to modifier pair */
-  private final Map<Enchantment,Modifier> enchantmentMap;
+  private final Map<ResourceKey<Enchantment>,Modifier> enchantmentMap;
   /** Collection of all enchantment tag mappings */
   private final Map<TagKey<Enchantment>, Modifier> enchantmentTagMappings;
 
@@ -76,7 +75,7 @@ public class UpdateModifiersPacket implements ISimplePacket {
     return modifier;
   }
 
-  public UpdateModifiersPacket(RegistryFriendlyByteBuf buffer) {
+  public UpdateModifiersPacket(FriendlyByteBuf buffer) {
     // read in modifiers
     int size = buffer.readVarInt();
     Map<ModifierId,Modifier> modifiers = new HashMap<>();
@@ -101,11 +100,11 @@ public class UpdateModifiersPacket implements ISimplePacket {
     this.tags = GenericTagUtil.decodeTags(buffer, ModifierManager.REGISTRY_KEY, id -> getModifier(modifiers, new ModifierId(id)));
 
     // read in enchantment to modifier mapping
-    ImmutableMap.Builder<Enchantment,Modifier> enchantmentBuilder = ImmutableMap.builder();
+    ImmutableMap.Builder<ResourceKey<Enchantment>,Modifier> enchantmentBuilder = ImmutableMap.builder();
     size = buffer.readVarInt();
     for (int i = 0; i < size; i++) {
       enchantmentBuilder.put(
-        buffer.readRegistryIdUnsafe(buffer.registryAccess().registryOrThrow(Registries.ENCHANTMENT)),
+        ResourceKey.create(Registries.ENCHANTMENT, buffer.readResourceLocation()),
         getModifier(modifiers, new ModifierId(buffer.readResourceLocation())));
     }
     enchantmentMap = enchantmentBuilder.build();
@@ -119,7 +118,8 @@ public class UpdateModifiersPacket implements ISimplePacket {
     enchantmentTagMappings = enchantmentTagBuilder.build();
   }
 
-  public void encode(RegistryFriendlyByteBuf buffer) {
+  @Override
+  public void encode(FriendlyByteBuf buffer) {
     ensureCalculated();
     // write modifiers
     buffer.writeVarInt(modifiers.size());
@@ -144,8 +144,8 @@ public class UpdateModifiersPacket implements ISimplePacket {
 
     // enchantment mapping
     buffer.writeVarInt(enchantmentMap.size());
-    for (Entry<Enchantment,Modifier> entry : enchantmentMap.entrySet()) {
-      buffer.writeRegistryIdUnsafe(buffer.registryAccess().registryOrThrow(Registries.ENCHANTMENT), entry.getKey());
+    for (Entry<ResourceKey<Enchantment>,Modifier> entry : enchantmentMap.entrySet()) {
+      buffer.writeResourceLocation(entry.getKey().location());
       buffer.writeResourceLocation(entry.getValue().getId());
     }
     buffer.writeVarInt(enchantmentTagMappings.size());
@@ -156,15 +156,7 @@ public class UpdateModifiersPacket implements ISimplePacket {
   }
 
   @Override
-  public void handle(IPayloadContext context) {
+  public void handleThreadsafe(IPayloadContext context) {
     ModifierManager.INSTANCE.updateModifiersFromServer(allModifiers, tags, enchantmentMap, enchantmentTagMappings);
-  }
-  public static final Type<UpdateModifiersPacket> TYPE = new Type<>(TConstruct.getResource("update_modifiers"));
-  public static final StreamCodec<RegistryFriendlyByteBuf, UpdateModifiersPacket> CODEC =
-    StreamCodec.ofMember(UpdateModifiersPacket::encode, UpdateModifiersPacket::new);
-
-  @Override
-  public Type<UpdateModifiersPacket> type() {
-    return TYPE;
   }
 }
