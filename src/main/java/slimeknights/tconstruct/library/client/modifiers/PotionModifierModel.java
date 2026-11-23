@@ -1,5 +1,7 @@
 package slimeknights.tconstruct.library.client.modifiers;
 
+
+import net.minecraft.core.registries.Registries;
 import com.mojang.math.Transformation;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +13,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.alchemy.Potion;
-import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import slimeknights.mantle.client.model.util.MantleItemLayerModel;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -37,7 +39,6 @@ import java.util.function.Function;
 public class PotionModifierModel implements SimpleModifierModel {
   public static final RecordLoadable<PotionModifierModel> LOADER = SimpleModifierModel.loader(PotionModifierModel::new);
   /** @deprecated legacy system, use {@link #LOADER} */
-  @SuppressWarnings("DeprecatedIsStillUsed")
   @Deprecated
   public static final IUnbakedModifierModel UNBAKED_INSTANCE = (smallGetter, largeGetter) -> {
     Material smallTexture = smallGetter.apply("");
@@ -66,7 +67,6 @@ public class PotionModifierModel implements SimpleModifierModel {
     return new CacheKey(modifier, tool.getPersistentData().getString(modifier));
   }
 
-  @SuppressWarnings("deprecation")
   @Override
   public void addQuads(IToolStackView tool, ModifierEntry modifier, Function<Material,TextureAtlasSprite> spriteGetter, Transformation transforms, boolean isLarge, int startTintIndex, Consumer<Collection<BakedQuad>> quadConsumer, @Nullable ItemLayerPixels pixels) {
     Material texture = isLarge ? large : small;
@@ -76,10 +76,10 @@ public class PotionModifierModel implements SimpleModifierModel {
       if (toolData.contains(key, Tag.TAG_STRING)) {
         ResourceLocation id = ResourceLocation.tryParse(toolData.getString(key));
         if (id != null) {
-          Potion potion = BuiltInRegistries.POTION.get(id);
-          if (potion != Potions.EMPTY) {
-            quadConsumer.accept(MantleItemLayerModel.getQuadsForSprite(0xFF000000 | PotionUtils.getColor(potion), -1, spriteGetter.apply(texture), transforms, 0, pixels));
-          }
+          // PORT: Potions.EMPTY is gone; potions are holders. Skip missing ids.
+          BuiltInRegistries.POTION.getHolder(id).ifPresent(holder -> {
+            quadConsumer.accept(MantleItemLayerModel.getQuadsForSprite(0xFF000000 | PotionContents.getColor(holder), -1, spriteGetter.apply(texture), transforms, 0, pixels));
+          });
         }
       }
     }
