@@ -6,6 +6,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.TierSortingRegistry;
 import slimeknights.mantle.client.ResourceColorManager;
 import slimeknights.mantle.data.listener.ISafeManagerReloadListener;
@@ -39,6 +40,11 @@ public class HarvestTiers {
    */
   public static Component getName(Tier tier) {
     return harvestLevelNames.computeIfAbsent(tier, n ->  makeLevelKey(tier));
+  }
+
+  /** Checks whether the given tier is sufficient for drops from this block state. */
+  public static boolean isCorrectTierForDrops(Tier tier, BlockState state) {
+    return TierSortingRegistry.isCorrectTierForDrops(tier, state);
   }
 
   /** Gets the larger of two tiers */

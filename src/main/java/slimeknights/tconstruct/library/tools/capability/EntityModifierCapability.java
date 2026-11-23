@@ -4,10 +4,11 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.common.util.INBTSerializable;
-import slimeknights.mantle.registration.deferred.AttachmentTypeDeferredRegister;
-import slimeknights.mantle.registration.holder.DeferredAttachment;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.tools.nbt.ModifierNBT;
 
@@ -38,9 +39,10 @@ public class EntityModifierCapability {
   /** List of predicates to check if the entity supports this capability */
   private static final List<Predicate<Entity>> ENTITY_PREDICATES = new ArrayList<>();
 
-  private static final AttachmentTypeDeferredRegister ATTACHMENTS = new AttachmentTypeDeferredRegister(TConstruct.MOD_ID);
-  private static final DeferredAttachment<StoredModifiers> MODIFIERS = ATTACHMENTS.registerType("modifiers", () ->
-    AttachmentType.serializable(StoredModifiers::new));
+  private static final DeferredRegister<AttachmentType<?>> ATTACHMENTS =
+    DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, TConstruct.MOD_ID);
+  private static final DeferredHolder<AttachmentType<?>, AttachmentType<StoredModifiers>> MODIFIERS =
+    ATTACHMENTS.register("modifiers", () -> AttachmentType.serializable(StoredModifiers::new));
 
   public static EntityModifiers getCapability(Entity entity) {
     return supportCapability(entity) ? entity.getData(MODIFIERS) : EMPTY;
