@@ -38,7 +38,7 @@ public sealed interface BreakSpeedContext {
   /** If true, the tool is effective against this block type */
   boolean isEffective();
 
-  /** Original mining speed before modifiers applied. Includes modifiers from other listeners to {@link net.minecraftforge.event.entity.player.PlayerEvent.BreakSpeed}. */
+  /** Original mining speed before modifiers applied. Includes modifiers from other listeners to {@link net.neoforged.neoforge.event.entity.player.PlayerEvent.BreakSpeed}. */
   float originalSpeed();
 
   /** Calculated modifier from potion effects such as haste and environment such as water, use for additive bonuses to ensure consistency with the mining speed stat. */
@@ -74,7 +74,7 @@ public sealed interface BreakSpeedContext {
       }
     }
     // water
-    if (entity.isEyeInFluid(FluidTags.WATER) && !EnchantmentHelper.hasAquaAffinity(entity)) {
+    if (entity.isEyeInFluid(FluidTags.WATER) && entity.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.SUBMERGED_MINING_SPEED) < 1.0) {
       modifier /= 5.0F;
     }
     if (!entity.onGround()) {

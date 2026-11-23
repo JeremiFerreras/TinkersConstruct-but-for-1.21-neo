@@ -37,9 +37,9 @@ import slimeknights.tconstruct.tools.TinkerTools;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import slimeknights.tconstruct.library.utils.StackNBT;
 
 /** Generic modifier hooks that don't quite fit elsewhere */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -86,26 +86,6 @@ public final class ModifierUtil {
   }
 
   /**
-   * Checks if the given entity pays the resource costs of using a tool, such as draining the tank or consuming ammo.
-   * Creative players get their resources for free, matching {@link ToolDamageUtil#directDamage(IToolStackView, int, LivingEntity, ItemStack)} skipping durability for them.
-   * @param entity  Entity using the tool. Anything that is not a creative player consumes, including mobs and null.
-   * @return  True if resources should be consumed.
-   */
-  public static boolean consumesResources(@Nullable LivingEntity entity) {
-    return !(entity instanceof Player player) || consumesResources(player);
-  }
-
-  /**
-   * Checks if the given player pays the resource costs of using a tool, such as draining the tank or consuming ammo.
-   * Creative players get their resources for free, matching {@link ToolDamageUtil#directDamage(IToolStackView, int, LivingEntity, ItemStack)} skipping durability for them.
-   * @param player  Player using the tool. Null consumes, as only creative players get their resources for free.
-   * @return  True if resources should be consumed.
-   */
-  public static boolean consumesResources(@Nullable Player player) {
-    return player == null || !player.isCreative();
-  }
-
-  /**
    * Direct method to get the level of a modifier from a stack. If you need to get multiple modifier levels, using {@link ToolStack} is faster
    * @param stack     Stack to check
    * @param modifier  Modifier to search for
@@ -113,7 +93,7 @@ public final class ModifierUtil {
    */
   public static int getModifierLevel(ItemStack stack, ModifierId modifier) {
     if (!stack.isEmpty() && stack.is(TinkerTags.Items.MODIFIABLE)) {
-      CompoundTag nbt = stack.getTag();
+      CompoundTag nbt = StackNBT.getTag(stack);
       if (nbt != null && nbt.contains(ToolStack.TAG_MODIFIERS, Tag.TAG_LIST)) {
         ListTag list = nbt.getList(ToolStack.TAG_MODIFIERS, Tag.TAG_COMPOUND);
         int size = list.size();
@@ -134,7 +114,7 @@ public final class ModifierUtil {
   /** Checks if the given stack has upgrades */
   public static boolean hasUpgrades(ItemStack stack) {
     if (!stack.isEmpty() && stack.is(TinkerTags.Items.MODIFIABLE)) {
-      CompoundTag nbt = stack.getTag();
+      CompoundTag nbt = StackNBT.getTag(stack);
       return nbt != null && !nbt.getList(ToolStack.TAG_UPGRADES, Tag.TAG_COMPOUND).isEmpty();
     }
     return false;
@@ -152,7 +132,7 @@ public final class ModifierUtil {
 
   /** Shortcut to get a volatile flag when the tool stack is not needed otherwise */
   public static boolean checkVolatileFlag(ItemStack stack, ResourceLocation flag) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = StackNBT.getTag(stack);
     if (nbt != null && nbt.contains(ToolStack.TAG_VOLATILE_MOD_DATA, Tag.TAG_COMPOUND)) {
       return nbt.getCompound(ToolStack.TAG_VOLATILE_MOD_DATA).getBoolean(flag.toString());
     }
@@ -161,7 +141,7 @@ public final class ModifierUtil {
 
   /** Shortcut to get a persistent flag when the tool stack is not needed otherwise */
   public static boolean checkPersistentPresent(ItemStack stack, ResourceLocation key) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = StackNBT.getTag(stack);
     if (nbt != null && nbt.contains(ToolStack.TAG_VOLATILE_MOD_DATA, Tag.TAG_COMPOUND)) {
       return nbt.getCompound(ToolStack.TAG_VOLATILE_MOD_DATA).contains(key.toString());
     }
@@ -170,7 +150,7 @@ public final class ModifierUtil {
 
   /** Shortcut to get a volatile int value when the tool stack is not needed otherwise */
   public static int getVolatileInt(ItemStack stack, ResourceLocation flag) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = StackNBT.getTag(stack);
     if (nbt != null && nbt.contains(ToolStack.TAG_VOLATILE_MOD_DATA, Tag.TAG_COMPOUND)) {
       return nbt.getCompound(ToolStack.TAG_VOLATILE_MOD_DATA).getInt(flag.toString());
     }
@@ -179,7 +159,7 @@ public final class ModifierUtil {
 
   /** Shortcut to get a volatile int value when the tool stack is not needed otherwise */
   public static int getPersistentInt(ItemStack stack, ResourceLocation flag, int defealtValue) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = StackNBT.getTag(stack);
     if (nbt != null && nbt.contains(ToolStack.TAG_PERSISTENT_MOD_DATA, Tag.TAG_COMPOUND)) {
       CompoundTag persistent = nbt.getCompound(ToolStack.TAG_PERSISTENT_MOD_DATA);
       String flagString = flag.toString();
@@ -192,7 +172,7 @@ public final class ModifierUtil {
 
   /** Shortcut to get a persistent string value when the tool stack is not needed otherwise */
   public static String getPersistentString(ItemStack stack, ResourceLocation flag) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = StackNBT.getTag(stack);
     if (nbt != null && nbt.contains(ToolStack.TAG_PERSISTENT_MOD_DATA, Tag.TAG_COMPOUND)) {
       return nbt.getCompound(ToolStack.TAG_PERSISTENT_MOD_DATA).getString(flag.toString());
     }
@@ -302,9 +282,6 @@ public final class ModifierUtil {
   public interface FoodConsumer {
     /** Called when food is eaten to notify compat that food was eaten */
     void onConsume(Player player, ItemStack stack, int hunger, float saturation);
-
-    /** Called when a list of foods is eaten at once is eaten to notify compat that food was eaten */
-    default void onConsume(Player player, List<ItemStack> stacks, int hunger, float saturation) {}
   }
 
   /** Instance of the current food consumer, will be either no-op or an implementation calling the Diet API, never null. */
