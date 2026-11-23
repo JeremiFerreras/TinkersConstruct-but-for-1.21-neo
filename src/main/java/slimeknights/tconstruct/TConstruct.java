@@ -24,6 +24,7 @@ import net.neoforged.neoforge.registries.RegisterEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import slimeknights.tconstruct.common.TinkerModule;
+import slimeknights.tconstruct.library.recipe.ingredient.TinkerIngredients;
 import slimeknights.tconstruct.common.TinkerCapabilityEvents;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.config.Config;
@@ -138,6 +139,7 @@ public class TConstruct {
 
     // init deferred registers
     TinkerModule.initRegisters(bus);
+    TinkerIngredients.init(bus);
     bus.addListener(TinkerNetwork::registerPackets);
     TinkerTags.init();
     // init client logic
