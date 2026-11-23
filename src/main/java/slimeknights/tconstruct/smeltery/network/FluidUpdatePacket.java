@@ -1,14 +1,16 @@
 package slimeknights.tconstruct.smeltery.network;
 
-import net.minecraft.network.codec.StreamCodec;
-import slimeknights.tconstruct.TConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import slimeknights.mantle.network.BlockEntityPacket;
+import slimeknights.mantle.network.packet.BlockEntityPacket;
+import slimeknights.mantle.network.packet.ISimplePacket;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.smeltery.network.FluidUpdatePacket.IFluidPacketReceiver;
 
 /**
@@ -18,17 +20,26 @@ import slimeknights.tconstruct.smeltery.network.FluidUpdatePacket.IFluidPacketRe
 @RequiredArgsConstructor
 @ToString
 public class FluidUpdatePacket implements BlockEntityPacket<IFluidPacketReceiver> {
+  public static final Type<FluidUpdatePacket> TYPE = new Type<>(TConstruct.getResource("fluid_update"));
+  public static final StreamCodec<RegistryFriendlyByteBuf,FluidUpdatePacket> STREAM_CODEC = ISimplePacket.codec(FluidUpdatePacket::new);
+
   protected final BlockPos pos;
   protected final FluidStack fluid;
 
-  public FluidUpdatePacket(RegistryFriendlyByteBuf buffer) {
+  public FluidUpdatePacket(FriendlyByteBuf buffer) {
     this.pos = buffer.readBlockPos();
-    this.fluid = FluidStack.OPTIONAL_STREAM_CODEC.decode(buffer);
+    this.fluid = FluidStack.OPTIONAL_STREAM_CODEC.decode((RegistryFriendlyByteBuf) buffer);
   }
 
-  public void encode(RegistryFriendlyByteBuf buffer) {
+  @Override
+  public void encode(FriendlyByteBuf buffer) {
     buffer.writeBlockPos(pos);
-    FluidStack.OPTIONAL_STREAM_CODEC.encode(buffer, fluid);
+    FluidStack.OPTIONAL_STREAM_CODEC.encode((RegistryFriendlyByteBuf) buffer, fluid);
+  }
+
+  @Override
+  public Type<FluidUpdatePacket> type() {
+    return TYPE;
   }
 
   @Override
@@ -53,13 +64,5 @@ public class FluidUpdatePacket implements BlockEntityPacket<IFluidPacketReceiver
      * @param fluid New fluidstack
      */
     void updateFluidTo(FluidStack fluid);
-  }
-  public static final Type<FluidUpdatePacket> TYPE = new Type<>(TConstruct.getResource("fluid_update"));
-  public static final StreamCodec<RegistryFriendlyByteBuf, FluidUpdatePacket> CODEC =
-    StreamCodec.ofMember(FluidUpdatePacket::encode, FluidUpdatePacket::new);
-
-  @Override
-  public Type<FluidUpdatePacket> type() {
-    return TYPE;
   }
 }
