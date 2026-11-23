@@ -46,7 +46,7 @@ public class FoodCakeBlock extends CakeBlock {
   }
 
   @Override
-  protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player) {
+  protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
     return eatSlice(world, pos, state, player);
   }
 
