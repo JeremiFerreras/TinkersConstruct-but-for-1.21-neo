@@ -27,7 +27,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action;
-import net.minecraftforge.eventbus.api.Event.Result;
+import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -61,7 +61,7 @@ import java.util.function.Function;
 /**
  * This class handles interaction based event hooks
  */
-@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Bus.FORGE)
+@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Bus.GAME)
 public class InteractionHandler {
   public static final EquipmentSlot[] HAND_SLOTS = {EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND};
 
@@ -184,7 +184,7 @@ public class InteractionHandler {
         UseOnContext context = new UseOnContext(player, hand, trace);
 
         // first, before block use (in forge, onItemUseFirst)
-        if (event.getUseItem() != Result.DENY) {
+        if (!event.getUseItem().isFalse()) {
           InteractionResult result = onBlockUse(context, tool, chestplate, entry -> entry.getHook(ModifierHooks.BLOCK_INTERACT).beforeBlockUse(tool, entry, context, InteractionSource.ARMOR));
           if (result.consumesAction()) {
             event.setCanceled(true);
@@ -196,11 +196,11 @@ public class InteractionHandler {
         // next, block interaction
         // empty stack automatically bypasses sneak, so no need to check the hand we interacted with, just need to check the other hand
         BlockPos pos = event.getPos();
-        Result useBlock = event.getUseBlock();
+        TriState useBlock = event.getUseBlock();
         Level level = player.level();
-        if (useBlock == Result.ALLOW || (useBlock != Result.DENY
+        if (useBlock.isTrue() || (!useBlock.isFalse()
                                          && (!player.isSecondaryUseActive() || player.getItemInHand(Util.getOpposite(hand)).doesSneakBypassUse(level, pos, player)))) {
-          InteractionResult result = level.getBlockState(pos).use(level, player, hand, trace);
+          InteractionResult result = level.getBlockState(pos).useWithoutItem(level, player, trace);
           if (result.consumesAction()) {
             if (player instanceof ServerPlayer serverPlayer) {
               CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, ItemStack.EMPTY);
@@ -212,9 +212,9 @@ public class InteractionHandler {
         }
 
         // regular item interaction: must not be deny, and either be allow or not have a cooldown
-        Result useItem = event.getUseItem();
+        TriState useItem = event.getUseItem();
         event.setCancellationResult(InteractionResult.PASS);
-        if (useItem != Result.DENY && (useItem == Result.ALLOW || !player.getCooldowns().isOnCooldown(chestplate.getItem()))) {
+        if (!useItem.isFalse() && (useItem.isTrue() || !player.getCooldowns().isOnCooldown(chestplate.getItem()))) {
           // finally, after block use (in forge, onItemUse)
           InteractionResult result = onBlockUse(context, tool, chestplate, entry -> entry.getHook(ModifierHooks.BLOCK_INTERACT).afterBlockUse(tool, entry, context, InteractionSource.ARMOR));
           if (result.consumesAction()) {
@@ -404,7 +404,7 @@ public class InteractionHandler {
     }
     // ensure we have not fired this tick
     Player player = event.getEntity();
-    if (player.getCapability(TinkerDataCapability.CAPABILITY).filter(data -> data.computeIfAbsent(LAST_TICK).update(player)).isEmpty()) {
+    if (TinkerDataCapability.getOptional(player).filter(data -> data.computeIfAbsent(LAST_TICK).update(player)).isEmpty()) {
       return;
     }
     // must support interaction
